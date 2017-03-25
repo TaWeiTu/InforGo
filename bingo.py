@@ -122,46 +122,78 @@ class Bingo(object):
 
         return False
 
+    def refresh(self):
+        self.__init__()
+
 
 class MDP(object):
     
-    def __init__(self, states, distribution, actions, prob, gamma, reward_function):
-        self.S = states
+    def __init__(self, distribution, prob, reward_function):
         self.D = distribution
         self.P = prob
-        self.gamma = gamma
         self.R = reward_function
-        self.env = Bingo()
+        self.bingo = Bingo()
+
+    def get_initial_state(self):
+        self.bingo.refresh()
+        # TODO: return initial state based on the probability distribution
+        pass
 
     def get_state(self):
         # TODO: compress bingo board to a presentable state
-        pass
+        state = []
+        for h in range(4):
+            for r in range(4):
+                for c in range(4):
+                    state.append(self.bingo.board[h][r][c])
+        return state
+
+    def get_reward(self, state):
+        return self.R(state)
 
     def take_action(self, action):
-        # TODO: return new_state, win, reward
-        pass
+        current_player = self.bingo.player
+        height, row, col = action
+        valid_flag = self.bingo.place(height, row, col)
+        win = self.bingo.win(current_player)
+        new_state = self.get_state()
+        reward = self.get_reward(new_state)
+
+        return valid_flag, win, new_state, reward
 
 
+class QLearning(object):
+    
+    def __init__(self, n_epoch, lr, gamma, reward_function, state_size, action_size):
+        self.n_epoch = n_epoch
+        self.lr = lr
+        self.gamma = gamma
+        self.MDP = MDP([[0 for i in range(64)]: 1], [], reward_function)
+        self.Q = np.zeros([state_size, action_size])
+        self.state_size = state_size
+        self.action_size = action_size
 
-def test():
-    bingo = Bingo()
-    player = 1
-    win = False
-    while not win:
-        h, r, c = map(int, input().split())
-        if not bingo.place(h, r, c):
-            print("Invalid")
-            continue
+    def learn(self):
+        score = []
+        for e in range(self.n_epoch):
+            s = self.MDP.get_initial_state()
+            reward = 0
+            while True:
+                a = np.argmax(Q[s, :]) + np.random.randn(1, self.action_size) * (1. / (e + 1))
+                valid_flag, win, s_prime, R = self.MDP.take_action(a)
+                Q[s, a] = Q[s, a] + lr * (R + self.gamma * np.max(Q[s_prime, :]) - Q[s, a])
+                s = s_prime
+                reward += R
+                if win:
+                    break
+            score.append(reward)
 
-        win = bingo.win(player)
-        if player == 1:
-            player = 2
-        else:
-            player = 1
+        return score
 
-        bingo.plot()
 
+def main():
+    pass
 
 
 if __name__ == '__main__':
-    test()
+    main()
