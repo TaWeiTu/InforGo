@@ -1,5 +1,5 @@
-import numpy
-import tensorflow
+import numpy as np
+import tensorflow as tf
 import matplotlib.pyplot as plt
 
 
@@ -7,15 +7,21 @@ class Bingo(object):
 
     def __init__(self):
         self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
+        self.height = [[0 for i in range(4)] for j in range(4)]
 
         # player = 1 for the player who play first and player = 2 for the opposite
         self.player = 1
 
-    def place(self, height, row, col):
+    def place(self, row, col):
         '''
         place a cube on position(height, row, col), and return whether the operation is valid
         '''
         # if the position is already taken
+        height = self.height[row][col]
+        
+        if height >= 4:
+            return False
+
         if self.board[height][row][col] != 0:
             return False
 
@@ -27,7 +33,39 @@ class Bingo(object):
         self.board[height][row][col] = self.player
         self.change_player()
 
+        self.height[row][col] += 1
+
         return True
+
+    def play(self, row, col):
+        if not self.place(row, col):
+            return -1
+        print("AI place at ({}, {}, {})".format(self.height[row][col] - 1, row, col)) 
+        if self.win(1):
+            print("Player1 win")
+            return 1
+
+        self.plot()
+        print("Your turn")
+        r, c = map(int, input().split())
+        while not self.place( r, c):
+            print("Invalid Move")
+            h, r, c = map(int, input().split())
+        
+        if self.win(2):
+            print("Player2 win")
+            return 2
+        self.plot()
+        return 0
+        
+
+    def plot(self):
+        for r in range(4):
+            for h in range(4):
+                print(" | ", end='')
+                for c in range(4):
+                    print(self.board[h][r][c], end='')
+            print()
 
     def change_player(self):
         '''
@@ -150,122 +188,152 @@ class MDP(object):
     Markov Decision Process
     which can be represented as M(S, D, A, P, gamma, R)
     '''
-    def __init__(self, distribution, prob, reward_function):
-
-        # D is a probability distribution of the initial state s0
-        self.D = distribution
-        
-        # P(s, a, s1) is the probablity of state s becoming state s1 by taking action a
-        self.P = prob
-
+    def __init__(self, reward_function):
         # R(s, a) is the reward obtaining by taking action a at state s
         self.R = reward_function
-
         self.bingo = Bingo()
 
     def get_initial_state(self):
         '''
         Refresh the game and return the Initial state s0 based on D
         '''
-        self.bingo.retart()
-
-        # TODO: return initial state based on the probability distribution
-        pass
+        self.bingo.restart()
+        return np.zeros(shape=[1, 64])
 
     def get_state(self):
         '''
         Return current state, which is a 4x4x4 bingo board, and compress it to a 1D array for the sake of simplicity
         '''
-        state = []
+        state = np.zeros(shape=[1, 64])
+        ind = 0
         for h in range(4):
             for r in range(4):
                 for c in range(4):
-                    state.append(self.bingo.board[h][r][c])
+                    state[0][ind] = self.bingo.board[h][r][c]
+                    ind += 1
 
         return state
 
-    def get_reward(self, s, a):
+    def get_reward(self, s, flag):
         '''
         Return the reward of taking action a at state s
         '''
-        return self.R(s, a)
+        return self.R(s, flag)
 
     def take_action(self, action):
         '''
         Take action and Return whether the action is valid, whether the player win or not, new state and the reward
         '''
-        current_player = self.bingo.player
-        height, row, col = action
-        valid_flag = self.bingo.place(height, row, col)
-        win = self.bingo.win(current_player)
+        row, col = action
+        flag = self.bingo.play(row, col)
+
         new_state = self.get_state()
-        reward = self.get_reward(new_state)
+        reward = self.get_reward(new_state, flag)
 
-        return valid_flag, win, new_state, reward
+        return flag, new_state, reward
 
 
-class QLearning(object):
-    '''
-    A QLearning model using Dynamic Programming
-    '''
-    def __init__(self, n_epoch, lr, gamma, reward_function, state_size, action_size):
+class Qlearning(object):
+    
+    def __init__(self, n_epoch, learning_rate, gamma, reward_function):
 
-        # n_epoch = the number of epoches
+        # number of epoches
         self.n_epoch = n_epoch
-
-        # lr = learning rate
-        self.lr = lr
-
-        # gamma = discount factor of MDP
+        # Learning rate between 0 to 1
+        self.lr = learning_rate
+        # Discount factor between 0 to 1
         self.gamma = gamma
+        # R(s) is the reward obtain by achieving state s
+        self.reward_function = reward_function
+        
+        self.MDP = MDP(reward_function)
 
-        # In bingo game, the probablity of initial state being the board clear is 1
-        self.MDP = MDP([[0 for i in range(64)]: 1], [], reward_function)
+        # Neuron Network Setup
+        self.inp = tf.placeholder(shape=[1,64], dtype=tf.float32)
+        self.W = tf.Variable(tf.random_uniform([64, 16], 0, 0.1))
+        self.Q = tf.matmul(self.inp, self.W)
+        self.predict = tf.argmax(self.Q, 1)
 
-        # Initial Q-value table
-        self.Q = np.zeros([state_size, action_size])
-
-        # size of the state space and the size of the action space
-        self.state_size = state_size
-        self.action_size = action_size
+        self.Q_update = tf.placeholder(shape=[1,16], dtype=tf.float32)
+        self.loss = tf.reduce_sum(tf.square(self.Q - self.Q_update))
+        self.trainer = tf.train.GradientDescentOptimizer(self.lr)
+        self.model = self.trainer.minimize(self.loss)
+    
+    def decode_action(self, action_num):
+        action = [0, 0]
+        for i in range(2):
+            action[i] = action_num % 4
+            action_num //= 4
+        return action
 
     def learn(self):
-        '''
-        The main learning process
-        '''
-        # store the score obtain by every epoches
-        score = []
+        
+        init = tf.global_variables_initializer()
+        reward_list = []
 
-        for e in range(self.n_epoch):
+        with tf.Session() as sess:
+            sess.run(init)
+            for e in range(self.n_epoch):
+                s = self.MDP.get_initial_state()
+                reward = 0
+                game_over = False
+                fail = False
 
-            # get initial state from MDP
-            s = self.MDP.get_initial_state()
-            reward = 0
-            
-            while True:
+                while game_over is False:
+                    if not fail:
+                        print(sess.run(self.W))
+                    a, Q_val = sess.run([self.predict, self.Q], feed_dict={self.inp: s})
+                    flag, new_s, R = self.MDP.take_action(self.decode_action(a[0]))
 
-                # greediy take action according to the Q-value table
-                a = np.argmax(Q[s, :]) + np.random.randn(1, self.action_size) * (1. / (e + 1))
-                valid_flag, win, s_prime, R = self.MDP.take_action(a)
+                    if flag == -1:
 
-                # update the Q-value table based on Bellman Equation
-                Q[s, a] = Q[s, a] + lr * (R + self.gamma * np.max(Q[s_prime, :]) - Q[s, a])
+                        # TODO: when an invalid action occur, set the Q-value to a negative number
 
-                # Change the state and add the reward
-                s = s_prime
-                reward += R
+                        fix_Q = Q_val
+                        fix_Q[0, a[0]] = -100
 
-                if win:
-                    break
+                        sess.run(self.model, feed_dict={self.inp: s, self.Q_update: fix_Q})
 
-            score.append(reward)
+                        if not fail:
+                            print("Invalid")
+                        fail = True
+                        continue
 
-        return score
+                    if flag == 1 or flag == 2:
+                        print("GameOver")
+                        game_over = True
 
+                    new_Q = sess.run(self.Q, feed_dict={self.inp: new_s})
+                    max_Q = np.max(new_Q)
+                    print("maxQ = {}".format(max_Q))
+                    opt_Q = Q_val
+                    opt_Q[0, a[0]] = R + self.gamma * max_Q
+                    
+                    reward += R
 
-def main():
+                    _, new_W = sess.run([self.model, self.W], feed_dict={self.inp: s, self.Q_update: opt_Q})
+                
+                reward_list.append(reward)
     
+        return reward_list
 
 
 if __name__ == '__main__':
+
+    def main():
+        print("n_epoch, lr, gamma:")
+        n_epoch = int(input())
+        lr = float(input())
+        gamma = float(input())
+
+        def reward_function(state, flag):
+            if flag == 1:
+                return 1
+            if flag == 2:
+                return -1
+            return 0
+
+        Learner = Qlearning(n_epoch, lr, gamma, reward_function)
+        Learner.learn()
+
     main()
