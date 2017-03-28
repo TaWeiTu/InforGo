@@ -50,7 +50,7 @@ class Bingo(object):
         r, c = map(int, input().split())
         while not self.place( r, c):
             print("Invalid Move")
-            h, r, c = map(int, input().split())
+            r, c = map(int, input().split())
         
         if self.win(2):
             print("Player2 win")
@@ -284,10 +284,9 @@ class Qlearning(object):
                         print(sess.run(self.W))
                     a, Q_val = sess.run([self.predict, self.Q], feed_dict={self.inp: s})
                     flag, new_s, R = self.MDP.take_action(self.decode_action(a[0]))
+                
 
                     if flag == -1:
-
-                        # TODO: when an invalid action occur, set the Q-value to a negative number
 
                         fix_Q = Q_val
                         fix_Q[0, a[0]] = -100
@@ -310,6 +309,7 @@ class Qlearning(object):
                     opt_Q[0, a[0]] = R + self.gamma * max_Q
                     
                     reward += R
+                    s = new_s
 
                     _, new_W = sess.run([self.model, self.W], feed_dict={self.inp: s, self.Q_update: opt_Q})
                 
