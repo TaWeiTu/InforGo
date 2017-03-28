@@ -40,6 +40,9 @@ class Bingo(object):
         return True
 
     def full(self):
+        '''
+        Return whether the board is full
+        '''
         for r in range(4):
             for c in range(4):
                 if self.height[r][c] < 4:
@@ -47,7 +50,13 @@ class Bingo(object):
         return True
 
     def play(self, row, col):
-
+        '''
+        Player1 go first, return 1 if player1 win
+        Player2 go second, return 2 if player2 win
+        return -1 if the action is invalid
+        return 3 if it's tie
+        return 0 otherwise
+        '''
         if self.full():
             print("Draw")
             f.write("Draw")
@@ -68,7 +77,9 @@ class Bingo(object):
             f.write("Draw")
             return 3
 
+        # Simple bot take action
         r, c = self.generate_move()
+
         while not self.place(r, c):
             r, c = self.generate_move()
 
@@ -88,6 +99,9 @@ class Bingo(object):
         
 
     def plot(self):
+        '''
+        Debug: plot the board
+        '''
         for r in range(4):
             for h in range(4):
                 print(" | ", end='')
@@ -308,14 +322,24 @@ class Qlearning(object):
         
         self.MDP = MDP(reward_function)
 
-        # Neuron Network Setup
-        self.inp = tf.placeholder(shape=[1,64], dtype=tf.float32)
-        self.W = tf.Variable(tf.random_uniform([64, 16], 0, 0.1))
-        self.Q = tf.matmul(self.inp, self.W)
-        self.predict = tf.argmax(self.Q, 1)
+        # Neural Network Setup
 
+        # input layer: 1x64 vector representing the state
+        self.inp = tf.placeholder(shape=[1,64], dtype=tf.float32)
+
+        # Weight: 64x16 matrix
+        self.W = tf.Variable(tf.random_uniform([64, 16], 0, 0.1))
+
+        # Output layer: 1x16 vector representing the Q-value obtained by taking the corresponding action
+        self.Q = tf.matmul(self.inp, self.W)
+
+        # Q-value to update the weight
         self.Q_update = tf.placeholder(shape=[1,16], dtype=tf.float32)
+
+        # Cost function
         self.loss = tf.reduce_sum(tf.square(self.Q - self.Q_update))
+        
+        # use gradient descent to optimize out model
         self.trainer = tf.train.GradientDescentOptimizer(self.lr)
         self.model = self.trainer.minimize(self.loss)
     
@@ -327,7 +351,11 @@ class Qlearning(object):
         return action
 
     def learn(self):
-        
+        '''
+        Main Learning Process
+        return final score, graph_x, graph_y
+        '''
+
         init = tf.initialize_all_variables()
 
         reward_list = []
@@ -343,40 +371,51 @@ class Qlearning(object):
 
                 print("Game {}".format(epoch + 1))
                 f.write("New Game")
+
                 s = self.MDP.get_initial_state()
                 reward = 0
                 game_over = False
-                fail = False
 
                 while game_over is False:
+
+                    # Compute the Q-value of current state
                     _, Q_val = sess.run([self.predict, self.Q], feed_dict={self.inp: s})
                     Q_slice = Q_val[0, :]
 
+                    # Sort actions with their Q-value
                     action = sorted([i for i in range(16)], key=lambda k:Q_slice[k], reverse=True)
 
                     flag, new_s, R = 0, 0, 0
-
                     valid_action = 0
 
                     for a in action:
                         flag, new_s, R = self.MDP.take_action(self.decode_action(a))
+
+                        # If valid
                         if flag != -1:
                             valid_action = a
                             break
                 
                     if flag == 1 or flag == 2 or flag == 3:
+
+                        # if AI wins
                         if flag == 1:
                             AI_win += 1
-                        game_over = True
 
+                        game_over = True
+                    
+                    # Compute the Q-value of the new state
                     new_Q = sess.run(self.Q, feed_dict={self.inp: new_s})
+
+                    # Use the max Q-value to update the Network
                     max_Q = np.max(new_Q)
                     opt_Q = Q_val
                     opt_Q[0, valid_action] = R + self.gamma * max_Q
                     
                     reward += R
                     s = new_s
-
+                    
+                    # Run the backpropogation to update the model
                     _, new_W = sess.run([self.model, self.W], feed_dict={self.inp: s, self.Q_update: opt_Q})
                 
                 reward_list.append(reward)
@@ -396,7 +435,8 @@ if __name__ == '__main__':
         n_epoch = int(input())
         lr = float(input())
         gamma = float(input())
-
+        
+        # Design a reward function
         def reward_function(state, flag):
             if flag == 1:
                 return 1
