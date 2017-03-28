@@ -1,7 +1,9 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import random
 
+f = open("record-170328-4.txt", "w")
 
 class Bingo(object):
 
@@ -37,25 +39,51 @@ class Bingo(object):
 
         return True
 
+    def full(self):
+        for r in range(4):
+            for c in range(4):
+                if self.height[r][c] < 4:
+                    return False
+        return True
+
     def play(self, row, col):
+
+        if self.full():
+            print("Draw")
+            f.write("Draw")
+            return 3
+
         if not self.place(row, col):
             return -1
-        print("AI place at ({}, {}, {})".format(self.height[row][col] - 1, row, col)) 
+
+        f.write("[{}, {}, {}]".format(self.height[row][col] - 1, row, col))
+
         if self.win(1):
             print("Player1 win")
+            f.write("Player1 win")
             return 1
-
-        self.plot()
-        print("Your turn")
-        r, c = map(int, input().split())
-        while not self.place( r, c):
-            print("Invalid Move")
-            r, c = map(int, input().split())
         
+        if self.full():
+            print("Draw")
+            f.write("Draw")
+            return 3
+
+        r, c = self.generate_move()
+        while not self.place(r, c):
+            r, c = self.generate_move()
+
+        f.write("[{}, {}, {}], ".format(self.height[r][c] - 1, r, c))
+
         if self.win(2):
             print("Player2 win")
+            f.write("Player2 win")
             return 2
-        self.plot()
+
+        if self.full():
+            print("Draw")
+            f.write("Draw")
+            return 3
+
         return 0
         
 
@@ -182,6 +210,38 @@ class Bingo(object):
         '''
         self.__init__()
 
+    def generate_move(self):
+        '''
+        1. if player2 can win
+        2. if player1 is going to win
+        3. random
+        '''
+        for h in range(4):
+            for r in range(4):
+                for c in range(4):
+                    if self.board[h][r][c] == 0 and (h == 0 or self.board[h - 1][r][c] != 0):
+                        self.board[h][r][c] = 2
+                        move = False
+                        if self.win(2):
+                            move = True
+                        self.board[h][r][c] = 0
+                        if move:
+                            return r, c
+
+        for h in range(4):
+            for r in range(4):
+                for c in range(4):
+                    if self.board[h][r][c] == 0 and (h == 0 or self.board[h - 1][r][c] != 0):
+                        self.board[h][r][c] = 1
+                        move = False
+                        if self.win(1):
+                            move = True
+                        self.board[h][r][c] = 0
+                        if move:
+                            return r, c
+        
+        return random.randint(0, 3), random.randint(0, 3)
+
 
 class MDP(object):
     '''
@@ -268,45 +328,51 @@ class Qlearning(object):
 
     def learn(self):
         
-        init = tf.global_variables_initializer()
+        init = tf.initialize_all_variables()
+
         reward_list = []
+        AI_win = 0
+
+        graph_x = np.zeros(self.n_epoch)
+        graph_y = np.zeros(self.n_epoch)
 
         with tf.Session() as sess:
             sess.run(init)
-            for e in range(self.n_epoch):
+
+            for epoch in range(self.n_epoch):
+
+                print("Game {}".format(epoch + 1))
+                f.write("New Game")
                 s = self.MDP.get_initial_state()
                 reward = 0
                 game_over = False
                 fail = False
 
                 while game_over is False:
-                    if not fail:
-                        print(sess.run(self.W))
-                    a, Q_val = sess.run([self.predict, self.Q], feed_dict={self.inp: s})
-                    flag, new_s, R = self.MDP.take_action(self.decode_action(a[0]))
+                    _, Q_val = sess.run([self.predict, self.Q], feed_dict={self.inp: s})
+                    Q_slice = Q_val[0, :]
+
+                    action = sorted([i for i in range(16)], key=lambda k:Q_slice[k], reverse=True)
+
+                    flag, new_s, R = 0, 0, 0
+
+                    valid_action = 0
+
+                    for a in action:
+                        flag, new_s, R = self.MDP.take_action(self.decode_action(a))
+                        if flag != -1:
+                            valid_action = a
+                            break
                 
-
-                    if flag == -1:
-
-                        fix_Q = Q_val
-                        fix_Q[0, a[0]] = -100
-
-                        sess.run(self.model, feed_dict={self.inp: s, self.Q_update: fix_Q})
-
-                        if not fail:
-                            print("Invalid")
-                        fail = True
-                        continue
-
-                    if flag == 1 or flag == 2:
-                        print("GameOver")
+                    if flag == 1 or flag == 2 or flag == 3:
+                        if flag == 1:
+                            AI_win += 1
                         game_over = True
 
                     new_Q = sess.run(self.Q, feed_dict={self.inp: new_s})
                     max_Q = np.max(new_Q)
-                    print("maxQ = {}".format(max_Q))
                     opt_Q = Q_val
-                    opt_Q[0, a[0]] = R + self.gamma * max_Q
+                    opt_Q[0, valid_action] = R + self.gamma * max_Q
                     
                     reward += R
                     s = new_s
@@ -314,8 +380,13 @@ class Qlearning(object):
                     _, new_W = sess.run([self.model, self.W], feed_dict={self.inp: s, self.Q_update: opt_Q})
                 
                 reward_list.append(reward)
+                f.write("\n")
+
+                graph_x[epoch] = epoch
+                graph_y[epoch] = AI_win / (epoch + 1) * 100.
     
-        return reward_list
+        return reward_list, graph_x, graph_y
+
 
 
 if __name__ == '__main__':
@@ -334,6 +405,11 @@ if __name__ == '__main__':
             return 0
 
         Learner = Qlearning(n_epoch, lr, gamma, reward_function)
-        Learner.learn()
+        _, graph_x, graph_y = Learner.learn()
+
+        plt.plot(graph_x, graph_y)
+        plt.show()
+
+        f.close()
 
     main()
