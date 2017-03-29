@@ -361,17 +361,48 @@ class Qlearning(object):
         else:
             self.W2 = tf.Variable(tf.random_uniform([self.n_node_hidden, 16], 0, 0.01))
 
+        
+        if os.path.isfile("_bias1.txt"):
+            bias1_f = open("_bias1.txt", "r")
+
+            b1 = np.zeros(shape=[1, self.n_node_hidden])
+            for i in range(self.n_node_hidden):
+                b1[0, i] = float(bias1_f.readline())
+
+            self.B1 = tf.Variable(tf.cast(b1, tf.float32))
+            bias1_f.close()
+
+        else:
+            self.B1 = tf.Variable(tf.random_uniform([1, self.n_node_hidden], 0, 0.1))
+
+
+        if os.path.isfile("_bias2.txt"):
+            bias2_f = open("_bias2.txt", "r")
+
+            b2 = np.zeros(shape=[1, 16])
+            for i in range(16):
+                b2[0, i] = float(bias2_f.readline())
+
+            self.B2 = tf.Variable(tf.cast(b2, tf.float32))
+            bias2_f.close()
+
+        else:
+            self.B2 = tf.Variable(tf.random_uniform([1, 16], 0, 0.1))
+
+
         # Output layer: 1x16 vector representing the Q-value obtained by taking the corresponding action
-        self.Y1 = tf.matmul(self.inp, self.W1)
+
+        self.Y1 = tf.add(tf.matmul(self.inp, self.W1), self.B1)
         self.activate_Y1 = tf.nn.relu(self.Y1)
 
-        self.Q = tf.matmul(self.activate_Y1, self.W2)
+        self.Q = tf.add(tf.matmul(self.activate_Y1, self.W2), self.B2)
 
         # Q-value to update the weight
         self.Q_update = tf.placeholder(shape=[1,16], dtype=tf.float32)
 
         # Cost function
-        self.loss = tf.reduce_sum(tf.square(self.Q - self.Q_update))
+        # self.loss = tf.reduce_sum(tf.square(self.Q - self.Q_update))
+        self.loss = tf.reduce_mean(-tf.reduce_sum(self.Q_update * tf.log(self.Q)))
         
         # use gradient descent to optimize out model
         self.trainer = tf.train.GradientDescentOptimizer(self.lr)
@@ -393,14 +424,16 @@ class Qlearning(object):
         init = tf.initialize_all_variables()
 
         reward_list = []
-        AI_win = 0
 
         graph_x = np.zeros(self.n_epoch)
         graph_y = np.zeros(self.n_epoch)
 
         with tf.Session() as sess:
             sess.run(init)
+
             percentage = 0
+            win = 0
+
             for epoch in range(self.n_epoch):
 
                 f.write("New Game")
@@ -433,7 +466,7 @@ class Qlearning(object):
 
                         # if AI wins
                         if flag == 1:
-                            AI_win += 1
+                            win += 1
 
                         game_over = True
 
@@ -455,36 +488,50 @@ class Qlearning(object):
                 f.write("\n")
 
                 graph_x[epoch] = epoch
-                graph_y[epoch] = AI_win / (epoch + 1) * 100.
+                graph_y[epoch] = win / (epoch + 1) * 100.
 
                 if epoch / self.n_epoch > percentage / 100:
-                    print("Training complete: {}%, Winning rate: {}%".format(percentage, graph_y[epoch]))
+                    print("Training complete: {}%, Winning rate: {}%".format(percentage, graph_y[epoch]))   
                     percentage += 1
     
-            self.store_weight(sess.run([self.W1, self.W2]))
+            self.store_weight_and_bias(sess.run([self.W1, self.W2, self.B1, self.B2]))
+
         return reward_list, graph_x, graph_y
 
-    def store_weight(self, W):
-        weight_f1 = open("_weight1.txt", "w")
-        weight_f2 = open("_weight2.txt", "w")
+    def store_weight_and_bias(self, ctx):
 
-        w1, w2 = W
+        weight1_f = open("_weight1.txt", "w")
+        weight2_f = open("_weight2.txt", "w")
+        bias1_f = open("_bias1.txt", "w")
+        bias2_f = open("_bias2.txt", "w")
+
+        w1, w2, b1, b2 = ctx        
 
         def parse(number):
             return "%.3f" % number
 
         for i in range(64):
             for j in range(self.n_node_hidden):
-                weight_f1.write(parse(w1[i, j]))
-                weight_f1.write("\n")
+                weight1_f.write(parse(w1[i, j]))
+                weight1_f.write("\n")
         
         for i in range(self.n_node_hidden):
             for j in range(16):
-                weight_f2.write(parse(w2[i, j]))
-                weight_f2.write("\n")
+                weight2_f.write(parse(w2[i, j]))
+                weight2_f.write("\n")
 
-        weight_f1.close()
-        weight_f2.close()
+        for i in range(self.n_node_hidden):
+            bias1_f.write(parse(b1[0, i]))
+            bias1_f.write("\n")
+
+        for i in range(16):
+            bias2_f.write(parse(b2[0, i]))
+            bias2_f.write("\n") 
+
+        weight1_f.close()
+        weight2_f.close()
+        bias1_f.close()
+        bias2_f.close()
 
 
 if __name__ == '__main__':
