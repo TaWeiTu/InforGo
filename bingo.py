@@ -307,7 +307,7 @@ class MDP(object):
 
 class Qlearning(object):
 
-    def __init__(self, n_epoch, n_node_hidden, learning_rate, gamma, reward_function):
+    def __init__(self, n_epoch, n_node_hidden, learning_rate, gamma, regularization_param, reward_function):
 
         # number of epoches
         self.n_epoch = n_epoch
@@ -319,13 +319,14 @@ class Qlearning(object):
         self.reward_function = reward_function
         # Number of nodes in hidden layer
         self.n_node_hidden = n_node_hidden
+        self.regularization_param = regularization_param
         
         self.MDP = MDP(reward_function)
 
         # Neural Network Setup
 
         # input layer: 1x64 vector representing the state
-        self.inp = tf.placeholder(shape=[1,64], dtype=tf.float32)
+        self.inp = tf.placeholder(shape=[1,64], dtype=tf.float64)
         
         # Weight: 64x16 matrix
         if os.path.isfile("_weight1.txt"):
@@ -337,12 +338,12 @@ class Qlearning(object):
                 for j in range(self.n_node_hidden):
                     w1[i, j] = float(weight1_f.readline())
             
-            self.W1 = tf.Variable(tf.cast(w1, tf.float32))
+            self.W1 = tf.Variable(tf.cast(w1, tf.float64))
 
             weight1_f.close()
 
         else:
-            self.W1 = tf.Variable(tf.random_uniform([64, self.n_node_hidden], 0, 0.01))
+            self.W1 = tf.Variable(tf.cast(tf.random_uniform([64, self.n_node_hidden], 0, 0.01), dtype=tf.float64))
 
         
         if os.path.isfile("_weight2.txt"):
@@ -354,12 +355,12 @@ class Qlearning(object):
                 for j in range(16):
                     w2[i, j] = float(weight2_f.readline())
 
-            self.W2 = tf.Variable(tf.cast(w2, tf.float32))
+            self.W2 = tf.Variable(tf.cast(w2, tf.float64))
 
             weight2_f.close()
 
         else:
-            self.W2 = tf.Variable(tf.random_uniform([self.n_node_hidden, 16], 0, 0.01))
+            self.W2 = tf.Variable(tf.cast(tf.random_uniform([self.n_node_hidden, 16], 0, 0.01), dtype=tf.float64))
 
         
         if os.path.isfile("_bias1.txt"):
@@ -369,11 +370,11 @@ class Qlearning(object):
             for i in range(self.n_node_hidden):
                 b1[0, i] = float(bias1_f.readline())
 
-            self.B1 = tf.Variable(tf.cast(b1, tf.float32))
+            self.B1 = tf.Variable(tf.cast(b1, tf.float64))
             bias1_f.close()
 
         else:
-            self.B1 = tf.Variable(tf.random_uniform([1, self.n_node_hidden], 0, 0.1))
+            self.B1 = tf.Variable(tf.cast(tf.random_uniform([1, self.n_node_hidden], 0, 0.1), dtype=tf.float64))
 
 
         if os.path.isfile("_bias2.txt"):
@@ -383,11 +384,11 @@ class Qlearning(object):
             for i in range(16):
                 b2[0, i] = float(bias2_f.readline())
 
-            self.B2 = tf.Variable(tf.cast(b2, tf.float32))
+            self.B2 = tf.Variable(tf.cast(b2, tf.float64))
             bias2_f.close()
 
         else:
-            self.B2 = tf.Variable(tf.random_uniform([1, 16], 0, 0.1))
+            self.B2 = tf.Variable(tf.cast(tf.random_uniform([1, 16], 0, 0.1), dtype=tf.float64))
 
 
         # Output layer: 1x16 vector representing the Q-value obtained by taking the corresponding action
@@ -398,11 +399,14 @@ class Qlearning(object):
         self.Q = tf.add(tf.matmul(self.activate_Y1, self.W2), self.B2)
 
         # Q-value to update the weight
-        self.Q_update = tf.placeholder(shape=[1,16], dtype=tf.float32)
+        self.Q_update = tf.placeholder(shape=[1,16], dtype=tf.float64)
 
         # Cost function
         # self.loss = tf.reduce_sum(tf.square(self.Q - self.Q_update))
-        self.loss = tf.reduce_mean(-tf.reduce_sum(self.Q_update * tf.log(self.Q)))
+        def L2_Regularization():
+            return tf.nn.l2_loss(self.W1) + tf.nn.l2_loss(self.W2) + tf.nn.l2_loss(self.B1) + tf.nn.l2_loss(self.B2)
+
+        self.loss = tf.add(tf.reduce_sum(tf.square(self.Q - self.Q_update)), self.regularization_param * L2_Regularization())
         
         # use gradient descent to optimize out model
         self.trainer = tf.train.GradientDescentOptimizer(self.lr)
@@ -541,6 +545,7 @@ if __name__ == '__main__':
         n_node_hidden = int(argv[3])
         lr = float(argv[4])
         gamma = float(argv[5])
+        regularization_param = float(argv[6])
         
         # Design a reward function
         def reward_function(state, flag):
@@ -550,7 +555,7 @@ if __name__ == '__main__':
                 return -1
             return 0
 
-        Learner = Qlearning(n_epoch, n_node_hidden, lr, gamma, reward_function)
+        Learner = Qlearning(n_epoch, n_node_hidden, lr, gamma, regularization_param, reward_function)
         _, graph_x, graph_y = Learner.learn()
 
         plt.plot(graph_x, graph_y)
