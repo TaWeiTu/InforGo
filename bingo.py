@@ -2,8 +2,9 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import random
+import os.path
 
-f = open("record-170328-4.txt", "w")
+f = open("record-170328-6.txt", "w")
 
 class Bingo(object):
 
@@ -328,7 +329,20 @@ class Qlearning(object):
         self.inp = tf.placeholder(shape=[1,64], dtype=tf.float32)
 
         # Weight: 64x16 matrix
-        self.W = tf.Variable(tf.random_uniform([64, 16], 0, 0.1))
+        if os.path.isfile("_weight.txt"):
+
+            weight_f = open("_weight.txt", "r")
+
+            w = np.zeros(shape=[64, 16])
+            for i in range(64):
+                for j in range(16):
+                    w[i, j] = float(weight_f.readline())
+            
+            self.W = tf.Variable(tf.cast(w, tf.float32))
+            weight_f.close()
+
+        else:
+            self.W = tf.Variable(tf.random_uniform([64, 16], 0, 0.1))
 
         # Output layer: 1x16 vector representing the Q-value obtained by taking the corresponding action
         self.Q = tf.matmul(self.inp, self.W)
@@ -379,7 +393,7 @@ class Qlearning(object):
                 while game_over is False:
 
                     # Compute the Q-value of current state
-                    _, Q_val = sess.run([self.predict, self.Q], feed_dict={self.inp: s})
+                    Q_val = sess.run(self.Q, feed_dict={self.inp: s})
                     Q_slice = Q_val[0, :]
 
                     # Sort actions with their Q-value
@@ -424,8 +438,22 @@ class Qlearning(object):
                 graph_x[epoch] = epoch
                 graph_y[epoch] = AI_win / (epoch + 1) * 100.
     
+            self.store_weight(sess.run(self.W))
         return reward_list, graph_x, graph_y
 
+    def store_weight(self, w):
+        weight_f = open("_weight.txt", "w")
+        
+        def parse(number):
+            return "%.3f" % number
+
+        for i in range(64):
+            for j in range(16):
+                weight_f.write(parse(w[i, j]))
+                print(parse(w[i, j]))
+                weight_f.write("\n")
+
+        weight_f.close()
 
 
 if __name__ == '__main__':
