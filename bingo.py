@@ -380,10 +380,9 @@ class Qlearning(object):
 
         with tf.Session() as sess:
             sess.run(init)
-
+            percentage = 0
             for epoch in range(self.n_epoch):
 
-                print("Game {}".format(epoch + 1))
                 f.write("New Game")
 
                 s = self.MDP.get_initial_state()
@@ -437,6 +436,10 @@ class Qlearning(object):
 
                 graph_x[epoch] = epoch
                 graph_y[epoch] = AI_win / (epoch + 1) * 100.
+
+                if epoch / self.n_epoch > percentage / 100:
+                    print("Training complete: {}%, Winning rate: {}%".format(percentage, graph_y[epoch]))
+                    percentage += 1
     
             self.store_weight(sess.run(self.W))
         return reward_list, graph_x, graph_y
@@ -450,7 +453,6 @@ class Qlearning(object):
         for i in range(64):
             for j in range(16):
                 weight_f.write(parse(w[i, j]))
-                print(parse(w[i, j]))
                 weight_f.write("\n")
 
         weight_f.close()
