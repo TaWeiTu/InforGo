@@ -354,7 +354,7 @@ class Qlearning(object):
                 for j in range(16):
                     w2[i, j] = float(weight2_f.readline())
 
-            self.W2 = tf.Variable(tf.cast(W2, tf.float32))
+            self.W2 = tf.Variable(tf.cast(w2, tf.float32))
 
             weight2_f.close()
 
