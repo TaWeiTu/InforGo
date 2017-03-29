@@ -306,8 +306,8 @@ class MDP(object):
 
 
 class Qlearning(object):
-    
-    def __init__(self, n_epoch, learning_rate, gamma, reward_function):
+
+    def __init__(self, n_epoch, n_node_hidden, learning_rate, gamma, reward_function):
 
         # number of epoches
         self.n_epoch = n_epoch
@@ -317,6 +317,8 @@ class Qlearning(object):
         self.gamma = gamma
         # R(s) is the reward obtain by achieving state s
         self.reward_function = reward_function
+        # Number of nodes in hidden layer
+        self.n_node_hidden = n_node_hidden
         
         self.MDP = MDP(reward_function)
 
@@ -324,25 +326,46 @@ class Qlearning(object):
 
         # input layer: 1x64 vector representing the state
         self.inp = tf.placeholder(shape=[1,64], dtype=tf.float32)
-
+        
         # Weight: 64x16 matrix
-        if os.path.isfile("_weight.txt"):
+        if os.path.isfile("_weight1.txt"):
 
-            weight_f = open("_weight.txt", "r")
+            weight1_f = open("_weight1.txt", "r")
 
-            w = np.zeros(shape=[64, 16])
+            w1 = np.zeros(shape=[64, self.n_node_hidden])
             for i in range(64):
-                for j in range(16):
-                    w[i, j] = float(weight_f.readline())
+                for j in range(self.n_node_hidden):
+                    w1[i, j] = float(weight1_f.readline())
             
-            self.W = tf.Variable(tf.cast(w, tf.float32))
-            weight_f.close()
+            self.W1 = tf.Variable(tf.cast(w1, tf.float32))
+
+            weight1_f.close()
 
         else:
-            self.W = tf.Variable(tf.random_uniform([64, 16], 0, 0.1))
+            self.W1 = tf.Variable(tf.random_uniform([64, self.n_node_hidden], 0, 0.01))
+
+        
+        if os.path.isfile("_weight2.txt"):
+
+            weight2_f = open("_weight2.txt", "r")
+
+            w2 = np.zeros(shape=[self.n_node_hidden, 16])
+            for i in range(n_node_hidden):
+                for j in range(16):
+                    w2[i, j] = float(weight2_f.readline())
+
+            self.W2 = tf.Variable(tf.cast(W2, tf.float32))
+
+            weight2_f.close()
+
+        else:
+            self.W2 = tf.Variable(tf.random_uniform([self.n_node_hidden, 16], 0, 0.01))
 
         # Output layer: 1x16 vector representing the Q-value obtained by taking the corresponding action
-        self.Q = tf.matmul(self.inp, self.W)
+        self.Y1 = tf.matmul(self.inp, self.W1)
+        self.activate_Y1 = tf.nn.relu(self.Y1)
+
+        self.Q = tf.matmul(self.activate_Y1, self.W2)
 
         # Q-value to update the weight
         self.Q_update = tf.placeholder(shape=[1,16], dtype=tf.float32)
@@ -413,7 +436,7 @@ class Qlearning(object):
                             AI_win += 1
 
                         game_over = True
-                    
+
                     # Compute the Q-value of the new state
                     new_Q = sess.run(self.Q, feed_dict={self.inp: new_s})
 
@@ -426,7 +449,7 @@ class Qlearning(object):
                     s = new_s
                     
                     # Run the backpropogation to update the model
-                    _, new_W = sess.run([self.model, self.W], feed_dict={self.inp: s, self.Q_update: opt_Q})
+                    _, W1, W2 = sess.run([self.model, self.W1, self.W2], feed_dict={self.inp: s, self.Q_update: opt_Q})
                 
                 reward_list.append(reward)
                 f.write("\n")
@@ -438,29 +461,39 @@ class Qlearning(object):
                     print("Training complete: {}%, Winning rate: {}%".format(percentage, graph_y[epoch]))
                     percentage += 1
     
-            self.store_weight(sess.run(self.W))
+            self.store_weight(sess.run([self.W1, self.W2]))
         return reward_list, graph_x, graph_y
 
-    def store_weight(self, w):
-        weight_f = open("_weight.txt", "w")
-        
+    def store_weight(self, W):
+        weight_f1 = open("_weight1.txt", "w")
+        weight_f2 = open("_weight2.txt", "w")
+
+        w1, w2 = W
+
         def parse(number):
             return "%.3f" % number
 
         for i in range(64):
+            for j in range(self.n_node_hidden):
+                weight_f1.write(parse(w1[i, j]))
+                weight_f1.write("\n")
+        
+        for i in range(self.n_node_hidden):
             for j in range(16):
-                weight_f.write(parse(w[i, j]))
-                weight_f.write("\n")
+                weight_f2.write(parse(w2[i, j]))
+                weight_f2.write("\n")
 
-        weight_f.close()
+        weight_f1.close()
+        weight_f2.close()
 
 
 if __name__ == '__main__':
 
     def main():
         n_epoch = int(argv[2])
-        lr = float(argv[3])
-        gamma = float(argv[4])
+        n_node_hidden = int(argv[3])
+        lr = float(argv[4])
+        gamma = float(argv[5])
         
         # Design a reward function
         def reward_function(state, flag):
@@ -470,7 +503,7 @@ if __name__ == '__main__':
                 return -1
             return 0
 
-        Learner = Qlearning(n_epoch, lr, gamma, reward_function)
+        Learner = Qlearning(n_epoch, n_node_hidden, lr, gamma, reward_function)
         _, graph_x, graph_y = Learner.learn()
 
         plt.plot(graph_x, graph_y)
