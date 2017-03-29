@@ -59,7 +59,6 @@ class Bingo(object):
         return 0 otherwise
         '''
         if self.full():
-            print("Draw")
             f.write("Draw")
             return 3
 
@@ -69,12 +68,10 @@ class Bingo(object):
         f.write("[{}, {}, {}]".format(self.height[row][col] - 1, row, col))
 
         if self.win(1):
-            print("Player1 win")
             f.write("Player1 win")
             return 1
         
         if self.full():
-            print("Draw")
             f.write("Draw")
             return 3
 
