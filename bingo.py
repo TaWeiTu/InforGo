@@ -2,9 +2,11 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import random
+import sys
 import os.path
 
-f = open("record-170328-6.txt", "w")
+argv = sys.argv
+f = open("record-" + argv[1] + ".txt", "w")
 
 class Bingo(object):
 
@@ -84,12 +86,10 @@ class Bingo(object):
         f.write("[{}, {}, {}], ".format(self.height[r][c] - 1, r, c))
 
         if self.win(2):
-            print("Player2 win")
             f.write("Player2 win")
             return 2
 
         if self.full():
-            print("Draw")
             f.write("Draw")
             return 3
 
@@ -458,10 +458,9 @@ class Qlearning(object):
 if __name__ == '__main__':
 
     def main():
-        print("n_epoch, lr, gamma:")
-        n_epoch = int(input())
-        lr = float(input())
-        gamma = float(input())
+        n_epoch = int(argv[2])
+        lr = float(argv[3])
+        gamma = float(argv[4])
         
         # Design a reward function
         def reward_function(state, flag):
