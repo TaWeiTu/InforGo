@@ -307,12 +307,15 @@ class MDP(object):
 
 class Qlearning(object):
 
-    def __init__(self, n_epoch, n_node_hidden, learning_rate, gamma, regularization_param, reward_function):
+    def __init__(self, n_epoch, n_node_hidden, learning_rate, gamma, regularization_param, reward_function, decay_step, decay_rate):
 
         # number of epoches
         self.n_epoch = n_epoch
+
         # Learning rate between 0 to 1
-        self.lr = learning_rate
+        self.global_step = tf.Variable(0, trainable=False)
+        self.learning_rate = tf.train.exponential_decay(learning_rate, self.global_step, decay_step, decay_rate, staircase=True)
+
         # Discount factor between 0 to 1
         self.gamma = gamma
         # R(s) is the reward obtain by achieving state s
@@ -402,15 +405,14 @@ class Qlearning(object):
         self.Q_update = tf.placeholder(shape=[1,16], dtype=tf.float64)
 
         # Cost function
-        # self.loss = tf.reduce_sum(tf.square(self.Q - self.Q_update))
         def L2_Regularization():
             return tf.nn.l2_loss(self.W1) + tf.nn.l2_loss(self.W2) + tf.nn.l2_loss(self.B1) + tf.nn.l2_loss(self.B2)
 
-        self.loss = tf.add(tf.reduce_sum(tf.square(self.Q - self.Q_update)), self.regularization_param * L2_Regularization())
+        self.loss = tf.add(tf.reduce_sum(tf.square(self.Q - self.Q_update)), self.regularization_param / self.n_epoch * L2_Regularization())
         
         # use gradient descent to optimize out model
-        self.trainer = tf.train.GradientDescentOptimizer(self.lr)
-        self.model = self.trainer.minimize(self.loss)
+        self.trainer = tf.train.GradientDescentOptimizer(self.learning_rate)
+        self.model = self.trainer.minimize(self.loss, global_step=self.global_step)
     
     def decode_action(self, action_num):
         action = [0, 0]
@@ -546,6 +548,8 @@ if __name__ == '__main__':
         lr = float(argv[4])
         gamma = float(argv[5])
         regularization_param = float(argv[6])
+        decay_step = int(argv[7])
+        decay_rate = float(argv[8])
         
         # Design a reward function
         def reward_function(state, flag):
@@ -555,7 +559,7 @@ if __name__ == '__main__':
                 return -1
             return 0
 
-        Learner = Qlearning(n_epoch, n_node_hidden, lr, gamma, regularization_param, reward_function)
+        Learner = Qlearning(n_epoch, n_node_hidden, lr, gamma, regularization_param, reward_function, decay_step, decay_rate)
         _, graph_x, graph_y = Learner.learn()
 
         plt.plot(graph_x, graph_y)
