@@ -305,38 +305,50 @@ class MDP(object):
 
 
 class Qlearning(object):
-
+    '''
+    A Neural Network model for training 3D-bingo AI
+    input-layer: 4 x 4 x 4 board
+    convolution-layer: stride = 1 x 1 x 1
+    hidden-layer: relu function
+    output-layer: 16 Q-value for corresponding action
+    '''
     def __init__(self, n_epoch, n_node_hidden, learning_rate, gamma, regularization_param, reward_function, decay_step, decay_rate, filter_depth, filter_height, filter_width, out_channel):
 
         # number of epoches
         self.n_epoch = n_epoch
 
-        # Learning rate between 0 to 1
+        # Learning rate decay
         self.global_step = tf.Variable(0, trainable=False)
         self.learning_rate = tf.train.exponential_decay(learning_rate, self.global_step, decay_step, decay_rate, staircase=True)
 
         # Discount factor between 0 to 1
         self.gamma = gamma
+
         # R(s) is the reward obtain by achieving state s
         self.reward_function = reward_function
+
         # Number of nodes in hidden layer
         self.n_node_hidden = n_node_hidden
+
+        # L2 regularization paramater
         self.regularization_param = regularization_param
         
         self.MDP = MDP(reward_function)
 
         # Neural Network Setup
 
-        # input layer: 1x64 vector representing the state
+        # input layer: 4 x 4 x 4 Tensor representing the state
         self.inp = tf.placeholder(shape=[4, 4, 4, 1, 1], dtype=tf.float64)
 
+        # 3D-Convolution layer
         self.conv_layer_w = tf.cast(tf.Variable(tf.random_uniform(shape=[filter_depth, filter_height, filter_width, 1, out_channel])), tf.float64)
         self.conv_layer = tf.nn.conv3d(input=self.inp, filter=self.conv_layer_w, strides=[1, 1, 1, 1, 1], padding='SAME')
 
+        # Flatten the convolution layer
         self.conv_layer_output = tf.reshape(self.conv_layer, [1, -1])
         self.conv_layer_length = 4 * 4 * 4 * out_channel
 
-        # Weight: 64x16 matrix
+        # Weights: convolution layer -> hidden layer
         if os.path.isfile("_weight1.txt"):
 
             weight1_f = open("_weight1.txt", "r")
@@ -353,7 +365,7 @@ class Qlearning(object):
         else:
             self.W1 = tf.Variable(tf.cast(tf.random_uniform([self.conv_layer_length, self.n_node_hidden], 0, 0.01), dtype=tf.float64))
 
-        
+        # Weights: hidden layer -> output layer
         if os.path.isfile("_weight2.txt"):
 
             weight2_f = open("_weight2.txt", "r")
@@ -371,6 +383,7 @@ class Qlearning(object):
             self.W2 = tf.Variable(tf.cast(tf.random_uniform([self.n_node_hidden, 16], 0, 0.01), dtype=tf.float64))
 
         
+        # Biases: convolution layer -> hidden layer
         if os.path.isfile("_bias1.txt"):
             bias1_f = open("_bias1.txt", "r")
 
@@ -385,6 +398,7 @@ class Qlearning(object):
             self.B1 = tf.Variable(tf.cast(tf.random_uniform([1, self.n_node_hidden], 0, 0.1), dtype=tf.float64))
 
 
+        # Biases: hidden layer -> output layer
         if os.path.isfile("_bias2.txt"):
             bias2_f = open("_bias2.txt", "r")
 
@@ -399,11 +413,11 @@ class Qlearning(object):
             self.B2 = tf.Variable(tf.cast(tf.random_uniform([1, 16], 0, 0.1), dtype=tf.float64))
 
 
-        # Output layer: 1x16 vector representing the Q-value obtained by taking the corresponding action
-
+        # Hidden layer with relu activate function
         self.Y1 = tf.add(tf.matmul(self.conv_layer_output, self.W1), self.B1)
         self.activate_Y1 = tf.nn.relu(self.Y1)
 
+        # Output layer
         self.Q = tf.add(tf.matmul(self.activate_Y1, self.W2), self.B2)
 
         # Q-value to update the weight
