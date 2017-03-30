@@ -5,6 +5,7 @@ import random
 import sys
 import os.path
 
+LOG_DIR = 'log/tensorboard'
 argv = sys.argv
 f = open("record-" + argv[1] + ".txt", "w")
 
@@ -338,15 +339,17 @@ class Qlearning(object):
         # Neural Network Setup
 
         # input layer: 4 x 4 x 4 Tensor representing the state
-        self.inp = tf.placeholder(shape=[4, 4, 4, 1, 1], dtype=tf.float64)
+        with tf.name_scope('Input-Layer'):
+            self.inp = tf.placeholder(shape=[4, 4, 4, 1, 1], dtype=tf.float64, name='input')
 
         # 3D-Convolution layer
-        self.conv_layer_w = tf.cast(tf.Variable(tf.random_uniform(shape=[filter_depth, filter_height, filter_width, 1, out_channel])), tf.float64)
-        self.conv_layer = tf.nn.conv3d(input=self.inp, filter=self.conv_layer_w, strides=[1, 1, 1, 1, 1], padding='SAME')
+        with tf.name_scope('Convolution-Layer'):
+            self.conv_layer_w = tf.cast(tf.Variable(tf.random_uniform(shape=[filter_depth, filter_height, filter_width, 1, out_channel])), tf.float64, name='weight')
+            self.conv_layer = tf.nn.conv3d(input=self.inp, filter=self.conv_layer_w, strides=[1, 1, 1, 1, 1], padding='SAME', name='Conv-Layer')
 
-        # Flatten the convolution layer
-        self.conv_layer_output = tf.reshape(self.conv_layer, [1, -1])
-        self.conv_layer_length = 4 * 4 * 4 * out_channel
+            # Flatten the convolution layer
+            self.conv_layer_output = tf.reshape(self.conv_layer, [1, -1], name='Flattend')
+            self.conv_layer_length = 4 * 4 * 4 * out_channel
 
         # Weights: convolution layer -> hidden layer
         if os.path.isfile("_weight1.txt"):
@@ -535,7 +538,7 @@ class Qlearning(object):
         def parse(number):
             return "%.3f" % number
 
-        for i in range(64):
+        for i in range(self.conv_layer_length):
             for j in range(self.n_node_hidden):
                 weight1_f.write(parse(w1[i, j]))
                 weight1_f.write("\n")
