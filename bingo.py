@@ -270,19 +270,18 @@ class MDP(object):
         Refresh the game and return the Initial state s0 based on D
         '''
         self.bingo.restart()
-        return np.zeros(shape=[1, 64])
+        return np.zeros(shape=[4, 4, 4, 1, 1])
 
     def get_state(self):
         '''
         Return current state, which is a 4x4x4 bingo board, and compress it to a 1D array for the sake of simplicity
         '''
-        state = np.zeros(shape=[1, 64])
+        state = np.zeros(shape=[4, 4, 4, 1, 1])
         ind = 0
         for h in range(4):
             for r in range(4):
                 for c in range(4):
-                    state[0][ind] = self.bingo.board[h][r][c]
-                    ind += 1
+                    state[h][r][c][0][0] = self.bingo.board[h][r][c]
 
         return state
 
@@ -307,7 +306,7 @@ class MDP(object):
 
 class Qlearning(object):
 
-    def __init__(self, n_epoch, n_node_hidden, learning_rate, gamma, regularization_param, reward_function, decay_step, decay_rate):
+    def __init__(self, n_epoch, n_node_hidden, learning_rate, gamma, regularization_param, reward_function, decay_step, decay_rate, filter_depth, filter_height, filter_width, out_channel):
 
         # number of epoches
         self.n_epoch = n_epoch
@@ -329,15 +328,21 @@ class Qlearning(object):
         # Neural Network Setup
 
         # input layer: 1x64 vector representing the state
-        self.inp = tf.placeholder(shape=[1,64], dtype=tf.float64)
-        
+        self.inp = tf.placeholder(shape=[4, 4, 4, 1, 1], dtype=tf.float64)
+
+        self.conv_layer_w = tf.cast(tf.Variable(tf.random_uniform(shape=[filter_depth, filter_height, filter_width, 1, out_channel])), tf.float64)
+        self.conv_layer = tf.nn.conv3d(input=self.inp, filter=self.conv_layer_w, strides=[1, 1, 1, 1, 1], padding='SAME')
+
+        self.conv_layer_output = tf.reshape(self.conv_layer, [1, -1])
+        self.conv_layer_length = 4 * 4 * 4 * out_channel
+
         # Weight: 64x16 matrix
         if os.path.isfile("_weight1.txt"):
 
             weight1_f = open("_weight1.txt", "r")
 
-            w1 = np.zeros(shape=[64, self.n_node_hidden])
-            for i in range(64):
+            w1 = np.zeros(shape=[self.conv_layer_length, self.n_node_hidden])
+            for i in range(self.conv_layer_length):
                 for j in range(self.n_node_hidden):
                     w1[i, j] = float(weight1_f.readline())
             
@@ -346,7 +351,7 @@ class Qlearning(object):
             weight1_f.close()
 
         else:
-            self.W1 = tf.Variable(tf.cast(tf.random_uniform([64, self.n_node_hidden], 0, 0.01), dtype=tf.float64))
+            self.W1 = tf.Variable(tf.cast(tf.random_uniform([self.conv_layer_length, self.n_node_hidden], 0, 0.01), dtype=tf.float64))
 
         
         if os.path.isfile("_weight2.txt"):
@@ -396,13 +401,13 @@ class Qlearning(object):
 
         # Output layer: 1x16 vector representing the Q-value obtained by taking the corresponding action
 
-        self.Y1 = tf.add(tf.matmul(self.inp, self.W1), self.B1)
+        self.Y1 = tf.add(tf.matmul(self.conv_layer_output, self.W1), self.B1)
         self.activate_Y1 = tf.nn.relu(self.Y1)
 
         self.Q = tf.add(tf.matmul(self.activate_Y1, self.W2), self.B2)
 
         # Q-value to update the weight
-        self.Q_update = tf.placeholder(shape=[1,16], dtype=tf.float64)
+        self.Q_update = tf.placeholder(shape=[1, 16], dtype=tf.float64)
 
         # Cost function
         def L2_Regularization():
@@ -550,6 +555,10 @@ if __name__ == '__main__':
         regularization_param = float(argv[6])
         decay_step = int(argv[7])
         decay_rate = float(argv[8])
+        filter_depth = int(argv[9])
+        filter_height = int(argv[10])
+        filter_width = int(argv[11])
+        out_channel = int(argv[12])
         
         # Design a reward function
         def reward_function(state, flag):
@@ -559,7 +568,7 @@ if __name__ == '__main__':
                 return -1
             return 0
 
-        Learner = Qlearning(n_epoch, n_node_hidden, lr, gamma, regularization_param, reward_function, decay_step, decay_rate)
+        Learner = Qlearning(n_epoch, n_node_hidden, lr, gamma, regularization_param, reward_function, decay_step, decay_rate, filter_depth, filter_height, filter_width, out_channel)
         _, graph_x, graph_y = Learner.learn()
 
         plt.plot(graph_x, graph_y)
