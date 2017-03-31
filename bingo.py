@@ -9,6 +9,7 @@ LOG_DIR = 'log/tensorboard'
 argv = sys.argv
 f = open("record-" + argv[1] + ".txt", "w")
 
+
 class Bingo(object):
 
     def __init__(self):
@@ -17,6 +18,28 @@ class Bingo(object):
 
         # player = 1 for the player who play first and player = 2 for the opposite
         self.player = 1
+
+        self.random_permutation = []
+        self.random_permutation_ind = 0
+
+        if os.path.isfile('_random.txt'):
+            random_f = open('_random.txt', 'r')
+            for k in range(4):
+                for i in range(4):
+                    for j in range(4):
+                        r, c = map(int, random_f.readline().split())
+                        self.random_permutation.append((r, c))
+
+            random_f.close()
+
+        else:
+            for k in range(4):
+                for i in range(4):
+                    for j in range(4):
+                        self.random_permutation.append((i, j))
+
+            random.shuffle(self.random_permutation)
+
 
     def place(self, row, col):
         '''
@@ -252,7 +275,11 @@ class Bingo(object):
                         self.board[h][r][c] = 0
                         if move:
                             return r, c
-        
+
+        ret = self.random_permutation[self.random_permutation_ind]
+        self.random_permutation_ind += 1
+
+        # return ret
         return random.randint(0, 3), random.randint(0, 3)
 
 
@@ -342,6 +369,7 @@ class Qlearning(object):
         with tf.name_scope('Input-Layer'):
             self.inp = tf.placeholder(shape=[4, 4, 4, 1, 1], dtype=tf.float64, name='input')
 
+
         # 3D-Convolution layer
         with tf.name_scope('Convolution-Layer'):
             self.conv_layer_w = tf.cast(tf.Variable(tf.random_uniform(shape=[filter_depth, filter_height, filter_width, 1, out_channel])), tf.float64, name='weight')
@@ -351,90 +379,94 @@ class Qlearning(object):
             self.conv_layer_output = tf.reshape(self.conv_layer, [1, -1], name='Flattend')
             self.conv_layer_length = 4 * 4 * 4 * out_channel
 
-        # Weights: convolution layer -> hidden layer
-        if os.path.isfile("_weight1.txt"):
 
-            weight1_f = open("_weight1.txt", "r")
+        # Hidden Layer
+        with tf.name_scope('Hidden-Layer'):
+            # Weight
+            if os.path.isfile("_weight1.txt"):
 
-            w1 = np.zeros(shape=[self.conv_layer_length, self.n_node_hidden])
-            for i in range(self.conv_layer_length):
-                for j in range(self.n_node_hidden):
-                    w1[i, j] = float(weight1_f.readline())
+                weight1_f = open("_weight1.txt", "r")
+
+                w1 = np.zeros(shape=[self.conv_layer_length, self.n_node_hidden])
+                for i in range(self.conv_layer_length):
+                    for j in range(self.n_node_hidden):
+                        w1[i, j] = float(weight1_f.readline())
             
-            self.W1 = tf.Variable(tf.cast(w1, tf.float64))
+                self.W1 = tf.Variable(tf.cast(w1, tf.float64), name='weight')
 
-            weight1_f.close()
+                weight1_f.close()
 
-        else:
-            self.W1 = tf.Variable(tf.cast(tf.random_uniform([self.conv_layer_length, self.n_node_hidden], 0, 0.01), dtype=tf.float64))
+            else:
+                self.W1 = tf.Variable(tf.cast(tf.random_uniform([self.conv_layer_length, self.n_node_hidden], 0, 0.01), dtype=tf.float64), name='weight')
 
-        # Weights: hidden layer -> output layer
-        if os.path.isfile("_weight2.txt"):
+            # Biases
+            if os.path.isfile("_bias1.txt"):
+                bias1_f = open("_bias1.txt", "r")
 
-            weight2_f = open("_weight2.txt", "r")
+                b1 = np.zeros(shape=[1, self.n_node_hidden])
+                for i in range(self.n_node_hidden):
+                    b1[0, i] = float(bias1_f.readline())
 
-            w2 = np.zeros(shape=[self.n_node_hidden, 16])
-            for i in range(n_node_hidden):
-                for j in range(16):
-                    w2[i, j] = float(weight2_f.readline())
+                self.B1 = tf.Variable(tf.cast(b1, tf.float64), name='baises')
+                bias1_f.close()
 
-            self.W2 = tf.Variable(tf.cast(w2, tf.float64))
+            else:
+                self.B1 = tf.Variable(tf.cast(tf.random_uniform([1, self.n_node_hidden], 0, 0.1), dtype=tf.float64), name='biases')
 
-            weight2_f.close()
+            # Hidden layer with relu activate function
+            self.Y1 = tf.add(tf.matmul(self.conv_layer_output, self.W1), self.B1, name='z')
+            self.activate_Y1 = tf.nn.relu(self.Y1, name='Activated')
 
-        else:
-            self.W2 = tf.Variable(tf.cast(tf.random_uniform([self.n_node_hidden, 16], 0, 0.01), dtype=tf.float64))
+
+        # Output Layer
+        with tf.name_scope('Output-Layer'):
+            # Weights
+            if os.path.isfile("_weight2.txt"):
+
+                weight2_f = open("_weight2.txt", "r")
+
+                w2 = np.zeros(shape=[self.n_node_hidden, 16])
+                for i in range(n_node_hidden):
+                    for j in range(16):
+                        w2[i, j] = float(weight2_f.readline())
+
+                self.W2 = tf.Variable(tf.cast(w2, tf.float64), name='weight')
+
+                weight2_f.close()
+
+            else:
+                self.W2 = tf.Variable(tf.cast(tf.random_uniform([self.n_node_hidden, 16], 0, 0.01), dtype=tf.float64), name='weight')
 
         
-        # Biases: convolution layer -> hidden layer
-        if os.path.isfile("_bias1.txt"):
-            bias1_f = open("_bias1.txt", "r")
+            # Biases
+            if os.path.isfile("_bias2.txt"):
+                bias2_f = open("_bias2.txt", "r")
 
-            b1 = np.zeros(shape=[1, self.n_node_hidden])
-            for i in range(self.n_node_hidden):
-                b1[0, i] = float(bias1_f.readline())
+                b2 = np.zeros(shape=[1, 16])
+                for i in range(16):
+                    b2[0, i] = float(bias2_f.readline())
 
-            self.B1 = tf.Variable(tf.cast(b1, tf.float64))
-            bias1_f.close()
+                self.B2 = tf.Variable(tf.cast(b2, tf.float64), name='biases')
+                bias2_f.close()
 
-        else:
-            self.B1 = tf.Variable(tf.cast(tf.random_uniform([1, self.n_node_hidden], 0, 0.1), dtype=tf.float64))
+            else:
+                self.B2 = tf.Variable(tf.cast(tf.random_uniform([1, 16], 0, 0.1), dtype=tf.float64), name='biases')
 
+            self.Q = tf.add(tf.matmul(self.activate_Y1, self.W2), self.B2, name='output')
 
-        # Biases: hidden layer -> output layer
-        if os.path.isfile("_bias2.txt"):
-            bias2_f = open("_bias2.txt", "r")
+        with tf.name_scope('Gradient-Descent'):
+            # Q-value to update the weight
+            self.Q_update = tf.placeholder(shape=[1, 16], dtype=tf.float64)
 
-            b2 = np.zeros(shape=[1, 16])
-            for i in range(16):
-                b2[0, i] = float(bias2_f.readline())
+            # Cost function
+            def L2_Regularization():
+                return tf.nn.l2_loss(self.W1) + tf.nn.l2_loss(self.W2) + tf.nn.l2_loss(self.B1) + tf.nn.l2_loss(self.B2)
 
-            self.B2 = tf.Variable(tf.cast(b2, tf.float64))
-            bias2_f.close()
-
-        else:
-            self.B2 = tf.Variable(tf.cast(tf.random_uniform([1, 16], 0, 0.1), dtype=tf.float64))
-
-
-        # Hidden layer with relu activate function
-        self.Y1 = tf.add(tf.matmul(self.conv_layer_output, self.W1), self.B1)
-        self.activate_Y1 = tf.nn.relu(self.Y1)
-
-        # Output layer
-        self.Q = tf.add(tf.matmul(self.activate_Y1, self.W2), self.B2)
-
-        # Q-value to update the weight
-        self.Q_update = tf.placeholder(shape=[1, 16], dtype=tf.float64)
-
-        # Cost function
-        def L2_Regularization():
-            return tf.nn.l2_loss(self.W1) + tf.nn.l2_loss(self.W2) + tf.nn.l2_loss(self.B1) + tf.nn.l2_loss(self.B2)
-
-        self.loss = tf.add(tf.reduce_sum(tf.square(self.Q - self.Q_update)), self.regularization_param / self.n_epoch * L2_Regularization())
+            self.loss = tf.add(tf.reduce_sum(tf.square(self.Q - self.Q_update)), self.regularization_param / self.n_epoch * L2_Regularization())
         
-        # use gradient descent to optimize out model
-        self.trainer = tf.train.GradientDescentOptimizer(self.learning_rate)
-        self.model = self.trainer.minimize(self.loss, global_step=self.global_step)
+            # use gradient descent to optimize out model
+            self.trainer = tf.train.GradientDescentOptimizer(self.learning_rate)
+            self.model = self.trainer.minimize(self.loss, global_step=self.global_step)
     
     def decode_action(self, action_num):
         action = [0, 0]
@@ -458,6 +490,9 @@ class Qlearning(object):
 
         with tf.Session() as sess:
             sess.run(init)
+
+            writer = tf.summary.FileWriter(LOG_DIR)
+            writer.add_graph(sess.graph)
 
             percentage = 0
             win = 0
@@ -518,6 +553,8 @@ class Qlearning(object):
                 graph_x[epoch] = epoch
                 graph_y[epoch] = win / (epoch + 1) * 100.
 
+                self.store_random_permutation()
+
                 if epoch / self.n_epoch > percentage / 100:
                     print("Training complete: {}%, Winning rate: {}%".format(percentage, graph_y[epoch]))   
                     percentage += 1
@@ -560,6 +597,14 @@ class Qlearning(object):
         weight2_f.close()
         bias1_f.close()
         bias2_f.close()
+
+    def store_random_permutation(self):
+        random_f = open("_random.txt", "w")
+        for i in self.MDP.bingo.random_permutation:
+            r, c = i
+            random_f.write(str(r) + ' ' + str(c))
+            random_f.write('\n')
+        random_f.close()
 
 
 if __name__ == '__main__':
