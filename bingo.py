@@ -293,7 +293,7 @@ class MDP(object):
 
 
 
-class Qlearning(object):
+class InforGo(object):
     '''
     A Neural Network model for training 3D-bingo AI
     input-layer: 4 x 4 x 4 board
@@ -301,7 +301,7 @@ class Qlearning(object):
     hidden-layer: relu function
     output-layer: 16 Q-value for corresponding action
     '''
-    def __init__(self, n_epoch, n_node_hidden, learning_rate, gamma, regularization_param, reward_function, decay_step, decay_rate, filter_depth, filter_height, filter_width, out_channel):
+    def __init__(self, n_epoch, n_hidden_layer=1, *n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.01, gamma=0.99, regularization_param=0.0001, reward_function, decay_step=100, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5):
 
         # number of epoches
         self.n_epoch = n_epoch
@@ -317,7 +317,21 @@ class Qlearning(object):
         self.reward_function = reward_function
 
         # Number of nodes in hidden layer
+        self.n_hidden_layer = n_hidden_layer
         self.n_node_hidden = n_node_hidden
+        
+        if activation_function == 'Relu':
+            self.activation_function = lambda k: tf.nn.relu(k, name='Relu')
+        elif activation_function == 'Sigmoid':
+            self.activation_function = lambda k: tf.sigmoid(k, name='Sigmoid')
+        elif activation_function == 'Tanh':
+            self.activation_function = lambda k: tf.tanh(k, name='Tanh')
+
+
+        if output_function is None:
+            self.output_function = lambda k: k
+        elif output_function == 'Softmax':
+            self.output_function = lambda k: tf.nn.softmax(k)
 
         # L2 regularization paramater
         self.regularization_param = regularization_param
@@ -330,7 +344,6 @@ class Qlearning(object):
         with tf.name_scope('Input-Layer'):
             self.inp = tf.placeholder(shape=[4, 4, 4, 1, 1], dtype=tf.float64, name='input')
 
-
         # 3D-Convolution layer
         with tf.name_scope('Convolution-Layer'):
             self.conv_layer_w = tf.cast(tf.Variable(tf.random_uniform(shape=[filter_depth, filter_height, filter_width, 1, out_channel])), tf.float64, name='weight')
@@ -340,99 +353,89 @@ class Qlearning(object):
             self.conv_layer_output = tf.reshape(self.conv_layer, [1, -1], name='Flattend')
             self.conv_layer_length = 4 * 4 * 4 * out_channel
 
-
-        # Hidden Layer
-        with tf.name_scope('Hidden-Layer'):
-            # Weight
-            if os.path.isfile("_weight1.txt"):
-
-                weight1_f = open("_weight1.txt", "r")
-
-                w1 = np.zeros(shape=[self.conv_layer_length, self.n_node_hidden])
-                for i in range(self.conv_layer_length):
-                    for j in range(self.n_node_hidden):
-                        w1[i, j] = float(weight1_f.readline())
-            
-                self.W1 = tf.Variable(tf.cast(w1, tf.float64), name='weight')
-
-                weight1_f.close()
-
-            else:
-                self.W1 = tf.Variable(tf.cast(tf.random_uniform([self.conv_layer_length, self.n_node_hidden], 0, 0.01), dtype=tf.float64), name='weight')
-
-            # Biases
-            if os.path.isfile("_bias1.txt"):
-                bias1_f = open("_bias1.txt", "r")
-
-                b1 = np.zeros(shape=[1, self.n_node_hidden])
-                for i in range(self.n_node_hidden):
-                    b1[0, i] = float(bias1_f.readline())
-
-                self.B1 = tf.Variable(tf.cast(b1, tf.float64), name='baises')
-                bias1_f.close()
-
-            else:
-                self.B1 = tf.Variable(tf.cast(tf.random_uniform([1, self.n_node_hidden], 0, 0.1), dtype=tf.float64), name='biases')
-
-            # Hidden layer with relu activate function
-            self.Y1 = tf.add(tf.matmul(self.conv_layer_output, self.W1), self.B1, name='z')
-            self.activate_Y1 = tf.nn.relu(self.Y1, name='Activated')
-
-
-        # Output Layer
-        with tf.name_scope('Output-Layer'):
-            # Weights
-            if os.path.isfile("_weight2.txt"):
-
-                weight2_f = open("_weight2.txt", "r")
-
-                w2 = np.zeros(shape=[self.n_node_hidden, 1])
-                for i in range(n_node_hidden):
-                    for j in range(1):
-                        w2[i, j] = float(weight2_f.readline())
-
-                self.W2 = tf.Variable(tf.cast(w2, tf.float64), name='weight')
-
-                weight2_f.close()
-
-            else:
-                self.W2 = tf.Variable(tf.cast(tf.random_uniform([self.n_node_hidden, 1], 0, 0.01), dtype=tf.float64), name='weight')
-
         
-            # Biases
-            if os.path.isfile("_bias2.txt"):
-                bias2_f = open("_bias2.txt", "r")
+        self.weight_and_bias = [{} for i in range(self.n_hidden_layer + 1)]
+        
+        with tf.name_scope('Weight_and_Bias'):
+            self.weight_and_bias[0] = {
+                'Weight': get_weight(self.conv_layer_length, self.n_node_hidden[0], 0),
+                'Bias': get_bias(self.n_node_hidden[0], 0)
+            }
+            for i in range(1, self.n_hidden_layer):
+                self.weight_and_bias[i] = {
+                    'Weight': get_weight(self.n_node_hidden[i - 1], self.n_node_hidden[i], i),
+                    'Bias': get_bias(self.n_node_hidden[i], i)
+                }
+            self.weight_and_bias[self.n_hidden_layer] = {
+                'Weight': get_weight(self.n_node_hidden[self.n_hidden_layer - 1], 1, self.n_hidden_layer)
+                'Bias': get_bias(1, self.n_hidden_layer)
+            }
 
-                b2 = np.zeros(shape=[1, 1])
-                for i in range(1):
-                    b2[0, i] = float(bias2_f.readline())
+        self.hidden_layer = [{} for i in range(self.n_hidden_layer)]
 
-                self.B2 = tf.Variable(tf.cast(b2, tf.float64), name='biases')
-                bias2_f.close()
+        with tf.name_scope('Hidden_Layer'):
+            self.hidden_layer[0] = {
+                'Output': tf.add(tf.matmul(self.conv_layer_output, self.weight_and_bias[0]['Weight']), self.weight_and_bias[0]['Bias'])
+                'Activated_Output': self.activation_function(self.hidden_layer[0]['Output'])
+            }
+            for i in range(1, self.n_hidden_layer):
+                self.hidden_layer[i] = {
+                    'Output': tf.add(tf.matmul(self.hidden_layer[i - 1]['Activated_Output'], self.weight_and_bias[i]['Weight']), self.weight_and_bias[i]['Bias']),
+                    'Activated_Output': self.activation_function(self.hidden_layer[i]['Output'])
+                }
 
-            else:
-                self.B2 = tf.Variable(tf.cast(tf.random_uniform([1, 1], 0, 0.1), dtype=tf.float64), name='biases')
+        with tf.name_scope('Output_Layer'):
+            self.output = tf.add(tf.matmul(self.hidden_layer[self.n_hidden_layer - 1]['Activated_Output'], self.weight_and_bias[self.n_hidden_layer]['Weight'], ), self.weight_and_bias[self.n_hidden_layer]['Bias'])
+            self.V = self.output_function(self.output)
 
-            self.Q = tf.add(tf.matmul(self.activate_Y1, self.W2), self.B2, name='output')
-
-        with tf.name_scope('Gradient-Descent'):
+        with tf.name_scope('Training_Model'):
             # Q-value to update the weight
-            self.Q_update = tf.placeholder(shape=[1, 1], dtype=tf.float64)
+            self.V_desired = tf.placeholder(shape=[1, 1], dtype=tf.float64)
 
             # Cost function
             def L2_Regularization():
                 return tf.nn.l2_loss(self.W1) + tf.nn.l2_loss(self.W2) + tf.nn.l2_loss(self.B1) + tf.nn.l2_loss(self.B2)
 
-            self.loss = tf.add(tf.reduce_sum(tf.square(self.Q - self.Q_update)), self.regularization_param / self.n_epoch * L2_Regularization())
+            self.loss = tf.add(tf.reduce_sum(tf.square(self.V_desired - self.V)), self.regularization_param / self.n_epoch * L2_Regularization())
         
             # use gradient descent to optimize out model
             self.trainer = tf.train.GradientDescentOptimizer(self.learning_rate)
             self.model = self.trainer.minimize(self.loss, global_step=self.global_step)
 
         init = tf.initialize_all_variables()
+
         with tf.Session() as sess:
             sess.run(init)
     
+    def get_weight(self, n, m, layer):
+        '''
+        Weight to the layer-th hidden layer, with size n x m
+        '''
+        if os.path.exists('Weight/{}.txt'.format(layer)):
+            f = open('Weight/{}.txt'.format(layer), 'r')
+            w = np.zeros([n, m])
+            for i in range(n):
+                for j in range(m):
+                    w[i, j] = float(f.readline())
+            f.close()
+            return tf.Variable(tf.cast(w), tf.float64)
+        else:
+            return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=1.0, dtype=tf.float64))
+
+    def get_bias(self, n, layer):
+        '''
+        Bias to the layer-th hidden layer, with size 1 x n
+        '''
+        if os.path.exists('Bias/{}.txt'.format(layer)):
+            f = open('Bias/{}.txt'.format(layer), 'r')
+            b = np.zeros([1, n])
+            for i in range(n):
+                b[0, i] = float(f.readline())
+            f.close()
+            return tf.Variable(tf.cast(b, tf.float64))
+        else:
+            return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=1.0, dtype=tf.float64))
+
     def decode_action(self, action_num):
         action = [0, 0]
         for i in range(2):
@@ -445,120 +448,69 @@ class Qlearning(object):
         Main Learning Process
         return final score, graph_x, graph_y
         '''
-
-        reward_list = []
-
-        graph_x = np.zeros(self.n_epoch)
-        graph_y = np.zeros(self.n_epoch)
-
         with tf.Session() as sess:
 
-            writer = tf.summary.FileWriter(LOG_DIR)
-            writer.add_graph(sess.graph)
+            record = self.get_record()
+            for directory in record:
+                for file_name in directory:
+                    for epoch in range(self.n_epoch):
+                        f = open(file_name, 'w')
+                        s = self.MDP.get_initial_state()
 
-            percentage = 0
-            win = 0
+                        while True:
+                            height, row, col = map(int, f.readline().split())
 
-            for epoch in range(self.n_epoch):
+                            if height, row, col == -1, -1, -1:
+                                break
 
-                f.write("New Game")
+                            v = sess.run(self.V, feed_dict={self.inp: s})
+                            flag, new_s, R = self.MDP.take_action(row, col, 1)
 
-                s = self.MDP.get_initial_state()
-                reward = 0
-                game_over = False
+                            new_v = sess.run(self.V, feed_dict={self.inp: new_s})
+                            v_desired = v + self.learning_rate * (R + self.gamma * new_v - v) 
+                            sess.run(model, feed_dict={self.v_desired: v_desired, self.inp: s})
 
-                while game_over is False:
+                            s = new_s
 
-                    # Compute the Q-value of current state
-                    Q_val = sess.run(self.Q, feed_dict={self.inp: s})
-                    Q_slice = Q_val[0, :]
+                            height, row, col = map(int, f.readline().split())
+                            if height, row, col == -1, -1, -1:
+                                break
 
-                    # Sort actions with their Q-value
-                    action = sorted([i for i in range(16)], key=lambda k:Q_slice[k], reverse=True)
+                            v = sess.run(self.V, feed_dict={self.inp: s})
+                            flag, new_s, R = self.MDP.take_action(row, col, 2)
 
-                    flag, new_s, R = 0, 0, 0
-                    valid_action = 0
+                            new_v = sess.run(self.V, feed_dict={self.inp: new_s})
 
-                    for a in action:
-                        flag, new_s, R = self.MDP.take_action(self.decode_action(a))
+                            # TODO: self.learning_rate is decaying, might have bug
+                            v_desired = v + self.learning_rate * (R + self.gamma * new_v - v) 
+                            sess.run(model, feed_dict={self.v_desired: v_desired, self.inp: s})
 
-                        # If valid
-                        if flag != -1:
-                            valid_action = a
-                            break
-                
-                    if flag == 1 or flag == 2 or flag == 3:
+                            s = new_s
 
-                        # if AI wins
-                        if flag == 1:
-                            win += 1
+            self.store_weight_and_bias()
 
-                        game_over = True
+    def get_record(self):
+        directory = [x[0] for x in os.walk('.')]
+        filename = {}
+        for d in directory:
+            filename[d] = []
+            for f in os.walk(d):
+                filename[d].append(f)
+        return filename
 
-                    # Compute the Q-value of the new state
-                    new_Q = sess.run(self.Q, feed_dict={self.inp: new_s})
+    def store_weight_and_bias(self):
+        for i in range(self.n_hidden_layer + 1):
+            f = open('Weight/{}.txt'.format(i), 'w')
+            for j in range(tf.shape(self.weight_and_bias[i]['Weight'])[0]):
+                for k in range(tf.shape(self.weight_and_bias[i]['Weight'])[1]):
+                    f.writeline(''.format(self.weight_and_bias[i]['Weight'][j, k]))
+            f.close()
 
-                    # Use the max Q-value to update the Network
-                    max_Q = np.max(new_Q)
-                    opt_Q = Q_val
-                    opt_Q[0, valid_action] = R + self.gamma * max_Q
-                    
-                    reward += R
-                    s = new_s
-                    
-                    # Run the backpropogation to update the model
-                    _, W1, W2 = sess.run([self.model, self.W1, self.W2], feed_dict={self.inp: s, self.Q_update: opt_Q})
-                
-                reward_list.append(reward)
-                f.write("\n")
+            f = open('Bias/{}.txt'.format(i), 'w')
+            for j in range(tf.shape(self.weight_and_bias[i]['Bias'])[1]):
+                f.writeline(''.format(self.weight_and_bias[i]['Bias'][0, j]))
+            f.close()
 
-                graph_x[epoch] = epoch
-                graph_y[epoch] = win / (epoch + 1) * 100.
-
-                self.store_random_permutation()
-
-                if epoch / self.n_epoch > percentage / 100:
-                    print("Training complete: {}%, Winning rate: {}%".format(percentage, graph_y[epoch]))   
-                    percentage += 1
-    
-            self.store_weight_and_bias(sess.run([self.W1, self.W2, self.B1, self.B2]))
-
-        return reward_list, graph_x, graph_y
-
-    def store_weight_and_bias(self, ctx):
-
-        weight1_f = open("_weight1.txt", "w")
-        weight2_f = open("_weight2.txt", "w")
-        bias1_f = open("_bias1.txt", "w")
-        bias2_f = open("_bias2.txt", "w")
-
-        w1, w2, b1, b2 = ctx        
-
-        def parse(number):
-            return "%.3f" % number
-
-        for i in range(self.conv_layer_length):
-            for j in range(self.n_node_hidden):
-                weight1_f.write(parse(w1[i, j]))
-                weight1_f.write("\n")
-        
-        for i in range(self.n_node_hidden):
-            for j in range(16):
-                weight2_f.write(parse(w2[i, j]))
-                weight2_f.write("\n")
-
-        for i in range(self.n_node_hidden):
-            bias1_f.write(parse(b1[0, i]))
-            bias1_f.write("\n")
-
-        for i in range(16):
-            bias2_f.write(parse(b2[0, i]))
-            bias2_f.write("\n") 
-
-        weight1_f.close()
-        weight2_f.close()
-        bias1_f.close()
-        bias2_f.close()
 
     def store_random_permutation(self):
         random_f = open("_random.txt", "w")
@@ -577,6 +529,7 @@ class Qlearning(object):
 
             while True:
                 action = self.Minimax(s, self.search_depth, 'Max')
+                # TODO: send action to the web server
                 flag, s, _ = self.MDP.take_action(self.decode_action(action), 1)
                 if flag == 1:
                     break
@@ -586,10 +539,11 @@ class Qlearning(object):
                     break
 
     def Minimax(self, state, depth, level):
+        # TODO: alpha-beta pruning
         if depth == 0:
-            return self.evaluate(state)
+            return self.evaluate(state), None
         
-        value = 0
+        value, action = 0
         current_player = 0
         next_level = 'Osas'
         func = lambda a, b: 0
@@ -609,17 +563,20 @@ class Qlearning(object):
         for i in range(16):
             if self.MDP.valid_action(self.decode_action(i)):
                 flag, s, _ = self.MDP.take_action(self.decode_action(i), current_player)
-                rec = Minimax(s, depth - 1, next_level)
-                value = func(value, rec)
+                val, a = Minimax(s, depth - 1, next_level)
+                value = func(value, val)
+                if value == val:
+                    action = i
 
-        return value
+        return value, action
 
     def evaluate(self, state):
         with tf.Session() as sess:
-            Q = sess.run(self.Q, feed_dict={self.inp: state})
-        return Q[0][0]
+            V = sess.run(self.V, feed_dict={self.inp: state})
+        return V[0][0]
     
     def read_opponent_action(self):
+        # TODO: read opponent's action from web server
         return self.generate_move()
 
     def generate_move(self):
@@ -628,11 +585,13 @@ class Qlearning(object):
         2. if player1 is going to win
         3. random
         '''
+        # TODO: for testing pruposes
         
 
 if __name__ == '__main__':
 
     def main():
+        # TODO: more arguments are required, deal with uncertain length of n_node_hidden
         n_epoch = int(argv[2])
         n_node_hidden = int(argv[3])
         lr = float(argv[4])
@@ -645,7 +604,7 @@ if __name__ == '__main__':
         filter_width = int(argv[11])
         out_channel = int(argv[12])
         
-        # Design a reward function
+        # TODO: redesign a reward function
         def reward_function(state, flag):
             if flag == 1:
                 return 1
@@ -653,7 +612,7 @@ if __name__ == '__main__':
                 return -1
             return 0
 
-        Learner = Qlearning(n_epoch, n_node_hidden, lr, gamma, regularization_param, reward_function, decay_step, decay_rate, filter_depth, filter_height, filter_width, out_channel)
+        AI = InforGo(n_epoch, n_node_hidden, lr, gamma, regularization_param, reward_function, decay_step, decay_rate, filter_depth, filter_height, filter_width, out_channel)
         _, graph_x, graph_y = Learner.learn()
 
         plt.plot(graph_x, graph_y)
