@@ -5,6 +5,7 @@ import random
 import sys
 import os.path
 
+
 LOG_DIR = 'log/tensorboard'
 argv = sys.argv
 f = open("record-" + argv[1] + ".txt", "w")
@@ -45,19 +46,13 @@ class Bingo(object):
         '''
         place a cube on position(height, row, col), and return whether the operation is valid
         '''
+
+        if not self.valid_action(row, col):
+            return False
+
         # if the position is already taken
         height = self.height[row][col]
         
-        if height >= 4:
-            return False
-
-        if self.board[height][row][col] != 0:
-            return False
-
-        # if there's no placed cube underneath out position
-        if height > 0 and self.board[height - 1][row][col] == 0:
-            return False
-
         # place the cube
         self.board[height][row][col] = self.player
         self.change_player()
@@ -76,14 +71,28 @@ class Bingo(object):
                     return False
         return True
 
+    def valid_action(self, row, col):
+        '''
+        Return whether the action is valid
+        '''
+        if row < 0 or row > 4 or col < 0 or col > 4:
+            return False
+
+        if self.height[row][col] >= 4:
+            return False
+
+        return True
+
     def play(self, row, col):
         '''
-        Player1 go first, return 1 if player1 win
-        Player2 go second, return 2 if player2 win
-        return -1 if the action is invalid
-        return 3 if it's tie
-        return 0 otherwise
+        Current Player play at (row, col)
+        if Draw: return 3
+        if invalid action: return -1
+        if player win: return current player
+        if nothing happens: return 0
         '''
+        player = self.player
+
         if self.full():
             f.write("Draw")
             return 3
@@ -93,44 +102,16 @@ class Bingo(object):
 
         f.write("[{}, {}, {}]".format(self.height[row][col] - 1, row, col))
 
-        if self.win(1):
-            f.write("Player1 win")
-            return 1
+        if self.win(player):
+            f.write("Player{} win".format(player))
+            return player
         
-        if self.full():
-            f.write("Draw")
-            return 3
-
-        # Simple bot take action
-        r, c = self.generate_move()
-
-        while not self.place(r, c):
-            r, c = self.generate_move()
-
-        f.write("[{}, {}, {}], ".format(self.height[r][c] - 1, r, c))
-
-        if self.win(2):
-            f.write("Player2 win")
-            return 2
-
         if self.full():
             f.write("Draw")
             return 3
 
         return 0
         
-
-    def plot(self):
-        '''
-        Debug: plot the board
-        '''
-        for r in range(4):
-            for h in range(4):
-                print(" | ", end='')
-                for c in range(4):
-                    print(self.board[h][r][c], end='')
-            print()
-
     def change_player(self):
         '''
         switch player
@@ -246,42 +227,14 @@ class Bingo(object):
         '''
         self.__init__()
 
-    def generate_move(self):
+    def undo_action(self, row, col):
         '''
-        1. if player2 can win
-        2. if player1 is going to win
-        3. random
+        Undo the last action at (row, col)
         '''
-        for h in range(4):
-            for r in range(4):
-                for c in range(4):
-                    if self.board[h][r][c] == 0 and (h == 0 or self.board[h - 1][r][c] != 0):
-                        self.board[h][r][c] = 2
-                        move = False
-                        if self.win(2):
-                            move = True
-                        self.board[h][r][c] = 0
-                        if move:
-                            return r, c
-
-        for h in range(4):
-            for r in range(4):
-                for c in range(4):
-                    if self.board[h][r][c] == 0 and (h == 0 or self.board[h - 1][r][c] != 0):
-                        self.board[h][r][c] = 1
-                        move = False
-                        if self.win(1):
-                            move = True
-                        self.board[h][r][c] = 0
-                        if move:
-                            return r, c
-
-        ret = self.random_permutation[self.random_permutation_ind]
-        self.random_permutation_ind += 1
-
-        # return ret
-        return random.randint(0, 3), random.randint(0, 3)
-
+        self.height[row][col] -= 1
+        self.board[height][row][col] = 0
+        
+    
 
 class MDP(object):
     '''
@@ -305,7 +258,6 @@ class MDP(object):
         Return current state, which is a 4x4x4 bingo board, and compress it to a 1D array for the sake of simplicity
         '''
         state = np.zeros(shape=[4, 4, 4, 1, 1])
-        ind = 0
         for h in range(4):
             for r in range(4):
                 for c in range(4):
@@ -319,17 +271,26 @@ class MDP(object):
         '''
         return self.R(s, flag)
 
-    def take_action(self, action):
+    def take_action(self, action, player):
         '''
         Take action and Return whether the action is valid, whether the player win or not, new state and the reward
         '''
         row, col = action
-        flag = self.bingo.play(row, col)
+        flag = self.bingo.play(row, col, player)
 
         new_state = self.get_state()
         reward = self.get_reward(new_state, flag)
 
         return flag, new_state, reward
+
+    def valid_action(self, action):
+        row, col = action
+        return self.bingo.valid_action(row, col)
+
+    def undo_action(self, action):
+        row, col = action
+        self.bingo.undo_action(row, col)
+
 
 
 class Qlearning(object):
@@ -425,9 +386,9 @@ class Qlearning(object):
 
                 weight2_f = open("_weight2.txt", "r")
 
-                w2 = np.zeros(shape=[self.n_node_hidden, 16])
+                w2 = np.zeros(shape=[self.n_node_hidden, 1])
                 for i in range(n_node_hidden):
-                    for j in range(16):
+                    for j in range(1):
                         w2[i, j] = float(weight2_f.readline())
 
                 self.W2 = tf.Variable(tf.cast(w2, tf.float64), name='weight')
@@ -435,28 +396,28 @@ class Qlearning(object):
                 weight2_f.close()
 
             else:
-                self.W2 = tf.Variable(tf.cast(tf.random_uniform([self.n_node_hidden, 16], 0, 0.01), dtype=tf.float64), name='weight')
+                self.W2 = tf.Variable(tf.cast(tf.random_uniform([self.n_node_hidden, 1], 0, 0.01), dtype=tf.float64), name='weight')
 
         
             # Biases
             if os.path.isfile("_bias2.txt"):
                 bias2_f = open("_bias2.txt", "r")
 
-                b2 = np.zeros(shape=[1, 16])
-                for i in range(16):
+                b2 = np.zeros(shape=[1, 1])
+                for i in range(1):
                     b2[0, i] = float(bias2_f.readline())
 
                 self.B2 = tf.Variable(tf.cast(b2, tf.float64), name='biases')
                 bias2_f.close()
 
             else:
-                self.B2 = tf.Variable(tf.cast(tf.random_uniform([1, 16], 0, 0.1), dtype=tf.float64), name='biases')
+                self.B2 = tf.Variable(tf.cast(tf.random_uniform([1, 1], 0, 0.1), dtype=tf.float64), name='biases')
 
             self.Q = tf.add(tf.matmul(self.activate_Y1, self.W2), self.B2, name='output')
 
         with tf.name_scope('Gradient-Descent'):
             # Q-value to update the weight
-            self.Q_update = tf.placeholder(shape=[1, 16], dtype=tf.float64)
+            self.Q_update = tf.placeholder(shape=[1, 1], dtype=tf.float64)
 
             # Cost function
             def L2_Regularization():
@@ -467,6 +428,10 @@ class Qlearning(object):
             # use gradient descent to optimize out model
             self.trainer = tf.train.GradientDescentOptimizer(self.learning_rate)
             self.model = self.trainer.minimize(self.loss, global_step=self.global_step)
+
+        init = tf.initialize_all_variables()
+        with tf.Session() as sess:
+            sess.run(init)
     
     def decode_action(self, action_num):
         action = [0, 0]
@@ -475,13 +440,11 @@ class Qlearning(object):
             action_num //= 4
         return action
 
-    def learn(self):
+    def train(self):
         '''
         Main Learning Process
         return final score, graph_x, graph_y
         '''
-
-        init = tf.initialize_all_variables()
 
         reward_list = []
 
@@ -489,7 +452,6 @@ class Qlearning(object):
         graph_y = np.zeros(self.n_epoch)
 
         with tf.Session() as sess:
-            sess.run(init)
 
             writer = tf.summary.FileWriter(LOG_DIR)
             writer.add_graph(sess.graph)
@@ -606,6 +568,67 @@ class Qlearning(object):
             random_f.write('\n')
         random_f.close()
 
+
+    def play(self):
+        
+        with tf.Session() as sess:
+
+            s = self.MDP.get_initial_state()
+
+            while True:
+                action = self.Minimax(s, self.search_depth, 'Max')
+                flag, s, _ = self.MDP.take_action(self.decode_action(action), 1)
+                if flag == 1:
+                    break
+                opponent = self.read_opponent_action()
+                flag, s, _ = self.MDP.take_action(self.decode_action(action), 2)
+                if flag == 2:
+                    break
+
+    def Minimax(self, state, depth, level):
+        if depth == 0:
+            return self.evaluate(state)
+        
+        value = 0
+        current_player = 0
+        next_level = 'Osas'
+        func = lambda a, b: 0
+
+        if level == 'Max':
+            value = 0
+            current_player = 1
+            next_level = 'Min'
+            func = lambda a, b: max(a, b)
+
+        else:
+            value = 7122
+            current_player = 2
+            next_level = 'Max'
+            func = lambda a, b: min(a, b)
+
+        for i in range(16):
+            if self.MDP.valid_action(self.decode_action(i)):
+                flag, s, _ = self.MDP.take_action(self.decode_action(i), current_player)
+                rec = Minimax(s, depth - 1, next_level)
+                value = func(value, rec)
+
+        return value
+
+    def evaluate(self, state):
+        with tf.Session() as sess:
+            Q = sess.run(self.Q, feed_dict={self.inp: state})
+        return Q[0][0]
+    
+    def read_opponent_action(self):
+        return self.generate_move()
+
+    def generate_move(self):
+        '''
+        1. if player2 can win
+        2. if player1 is going to win
+        3. random
+        '''
+        
 
 if __name__ == '__main__':
 
