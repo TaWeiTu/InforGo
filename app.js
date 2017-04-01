@@ -1,4 +1,3 @@
-//缺coding style  For Bingo
 'use strict'
 
 // require modules
@@ -168,12 +167,12 @@ function downReq (player_id, num) {
 
 function writeRecord (){
 	record += "-1 -1 -1\n"
-	fileNum++;
 	let recordPath = recordRoot + fileNum.toString();
 	fs.writeFile(recordPath, record, function (err) {
 		if(err) throw err;
 		record = "";
 	});
+    fileNum++;
 }
 
 
