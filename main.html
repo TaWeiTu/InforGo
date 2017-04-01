@@ -201,8 +201,6 @@
     })
     socket.on('youare',function( youare ){
         iam = youare;
-        console.log("server says start");
-        console.log(iam);
         if(iam==1){
             alert("藍方先下，請下子");
             renderer.setClearColor( 0xbbbbdd );
@@ -217,7 +215,6 @@
         turn = k;
     })
     socket.on('gameOver',function(gameInfo){
-        console.log(gameInfo.endWay);
         if (gameInfo.endWay == 3){
             alert("此局平手~ 10秒後等候另外兩位參賽者開啟新局");
         }
@@ -228,7 +225,6 @@
         else {
             if(gameInfo.winnerId == 1)alert("藍方 " + gameInfo.winnerName + " 勝利~ 10秒後等候另外兩位參賽者開啟新局");
             if(gameInfo.winnerId == 2)alert("紅方 " + gameInfo.winnerName + " 勝利~ 10秒後等候另外兩位參賽者開啟新局");
-            console.log()
         }
         if(gameInfo.endWay != 3){
             p1Icon1.material = color[gameInfo.winnerId];
@@ -262,7 +258,6 @@
         savedLatitude = latitude;
 
         if( firstVisibleObject && firstVisibleObject.situation == 3){
-            console.log("send downReq")
             socket.emit('downReq', firstVisibleObject.Num );
         }
     }
@@ -289,5 +284,4 @@
             cubes[i].situation = gameStat[i];
         }
     }
-    console.log("finish!");
 </script>

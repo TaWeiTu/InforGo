@@ -18,7 +18,7 @@ var recordRoot = __dirname + "/saves/" + rdmString.generate(16) + '/';
 var fileNum = 0;
 var record = "";
 fs.mkdir(recordRoot, function (err) {
-	if(err) throw console.log(err);
+	if(err) throw err;
 });
 var port = 9003;
 colors.setTheme ({
@@ -171,7 +171,7 @@ function writeRecord (){
 	fileNum++;
 	let recordPath = recordRoot + fileNum.toString();
 	fs.writeFile(recordPath, record, function (err) {
-		if(err) throw console.log(err);
+		if(err) throw err;
 		record = "";
 	});
 }
