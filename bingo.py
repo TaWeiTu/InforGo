@@ -8,14 +8,37 @@ import os.path
 
 LOG_DIR = 'log/tensorboard'
 argv = sys.argv
-f = open("record-" + argv[1] + ".txt", "w")
 
 
 class Bingo(object):
 
-    def __init__(self):
-        self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
-        self.height = [[0 for i in range(4)] for j in range(4)]
+    def __init__(self, board=None):
+
+        if board is None:
+            self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
+            self.height = [[0 for i in range(4)] for j in range(4)]
+            self.player = 1
+
+        else:
+            self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
+            for h in range(4):
+                for r in range(4):
+                    for c in range(4):
+                        self.board[h][r][c] = board[h][r][c][0][0]
+
+            self.height = [[0 for i in range(4)] for j in range(4)]
+            cnt = 0
+            for h in range(4):
+                for r in range(4):
+                    for c in range(4):
+                        if self.board[h][r][c] != 0:
+                            self.height[r][c] = h + 1
+                            cnt += 1
+            if cnt % 2 == 0:
+                self.player = 1
+            else:
+                self.player = 2
+        
 
         # player = 1 for the player who play first and player = 2 for the opposite
         self.player = 1
@@ -94,20 +117,16 @@ class Bingo(object):
         player = self.player
 
         if self.full():
-            f.write("Draw")
             return 3
 
         if not self.place(row, col):
             return -1
 
-        f.write("[{}, {}, {}]".format(self.height[row][col] - 1, row, col))
 
         if self.win(player):
-            f.write("Player{} win".format(player))
             return player
         
         if self.full():
-            f.write("Draw")
             return 3
 
         return 0
@@ -232,9 +251,16 @@ class Bingo(object):
         Undo the last action at (row, col)
         '''
         self.height[row][col] -= 1
-        self.board[height][row][col] = 0
+        self.board[self.height[row][col]][row][col] = 0
         
-    
+    def get_state(self):
+        state = np.zeros([4, 4, 4, 1, 1])
+        for h in range(4):
+            for r in range(4):
+                for c in range(4):
+                    state[h][r][c][0][0] = self.board[h][r][c]
+        return state
+
 
 class MDP(object):
     '''
@@ -257,29 +283,23 @@ class MDP(object):
         '''
         Return current state, which is a 4x4x4 bingo board, and compress it to a 1D array for the sake of simplicity
         '''
-        state = np.zeros(shape=[4, 4, 4, 1, 1])
-        for h in range(4):
-            for r in range(4):
-                for c in range(4):
-                    state[h][r][c][0][0] = self.bingo.board[h][r][c]
+        return self.bingo.get_state()
 
-        return state
-
-    def get_reward(self, s, flag):
+    def get_reward(self, s, flag, player):
         '''
         Return the reward of taking action a at state s
         '''
-        return self.R(s, flag)
+        return self.R(s, flag, player)
 
     def take_action(self, action, player):
         '''
         Take action and Return whether the action is valid, whether the player win or not, new state and the reward
         '''
         row, col = action
-        flag = self.bingo.play(row, col, player)
+        flag = self.bingo.play(row, col)
 
         new_state = self.get_state()
-        reward = self.get_reward(new_state, flag)
+        reward = self.get_reward(new_state, flag, player)
 
         return flag, new_state, reward
 
@@ -299,9 +319,9 @@ class InforGo(object):
     input-layer: 4 x 4 x 4 board
     convolution-layer: stride = 1 x 1 x 1
     hidden-layer: relu function
-    output-layer: 16 Q-value for corresponding action
+    output-layer: value for the input state
     '''
-    def __init__(self, n_epoch, n_hidden_layer=1, *n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.01, gamma=0.99, regularization_param=0.0001, reward_function, decay_step=100, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5):
+    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00001, gamma=0.99, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3):
 
         # number of epoches
         self.n_epoch = n_epoch
@@ -320,6 +340,8 @@ class InforGo(object):
         self.n_hidden_layer = n_hidden_layer
         self.n_node_hidden = n_node_hidden
         
+        self.search_depth = search_depth
+
         if activation_function == 'Relu':
             self.activation_function = lambda k: tf.nn.relu(k, name='Relu')
         elif activation_function == 'Sigmoid':
@@ -358,17 +380,17 @@ class InforGo(object):
         
         with tf.name_scope('Weight_and_Bias'):
             self.weight_and_bias[0] = {
-                'Weight': get_weight(self.conv_layer_length, self.n_node_hidden[0], 0),
-                'Bias': get_bias(self.n_node_hidden[0], 0)
+                'Weight': self.get_weight(self.conv_layer_length, self.n_node_hidden[0], 0),
+                'Bias': self.get_bias(self.n_node_hidden[0], 0)
             }
             for i in range(1, self.n_hidden_layer):
                 self.weight_and_bias[i] = {
-                    'Weight': get_weight(self.n_node_hidden[i - 1], self.n_node_hidden[i], i),
-                    'Bias': get_bias(self.n_node_hidden[i], i)
+                    'Weight': self.get_weight(self.n_node_hidden[i - 1], self.n_node_hidden[i], i),
+                    'Bias': self.get_bias(self.n_node_hidden[i], i)
                 }
             self.weight_and_bias[self.n_hidden_layer] = {
-                'Weight': get_weight(self.n_node_hidden[self.n_hidden_layer - 1], 1, self.n_hidden_layer)
-                'Bias': get_bias(1, self.n_hidden_layer)
+                'Weight': self.get_weight(self.n_node_hidden[self.n_hidden_layer - 1], 1, self.n_hidden_layer),
+                'Bias': self.get_bias(1, self.n_hidden_layer)
             }
 
         self.hidden_layer = [{} for i in range(self.n_hidden_layer)]
@@ -376,13 +398,13 @@ class InforGo(object):
         with tf.name_scope('Hidden_Layer'):
             self.hidden_layer[0] = {
                 'Output': tf.add(tf.matmul(self.conv_layer_output, self.weight_and_bias[0]['Weight']), self.weight_and_bias[0]['Bias'])
-                'Activated_Output': self.activation_function(self.hidden_layer[0]['Output'])
             }
             for i in range(1, self.n_hidden_layer):
                 self.hidden_layer[i] = {
-                    'Output': tf.add(tf.matmul(self.hidden_layer[i - 1]['Activated_Output'], self.weight_and_bias[i]['Weight']), self.weight_and_bias[i]['Bias']),
-                    'Activated_Output': self.activation_function(self.hidden_layer[i]['Output'])
+                    'Output': tf.add(tf.matmul(self.hidden_layer[i - 1]['Activated_Output'], self.weight_and_bias[i]['Weight']), self.weight_and_bias[i]['Bias'])
                 }
+            for i in range(0, self.n_hidden_layer):
+                self.hidden_layer[i]['Activated_Output'] = self.activation_function(self.hidden_layer[i]['Output'])
 
         with tf.name_scope('Output_Layer'):
             self.output = tf.add(tf.matmul(self.hidden_layer[self.n_hidden_layer - 1]['Activated_Output'], self.weight_and_bias[self.n_hidden_layer]['Weight'], ), self.weight_and_bias[self.n_hidden_layer]['Bias'])
@@ -394,18 +416,20 @@ class InforGo(object):
 
             # Cost function
             def L2_Regularization():
-                return tf.nn.l2_loss(self.W1) + tf.nn.l2_loss(self.W2) + tf.nn.l2_loss(self.B1) + tf.nn.l2_loss(self.B2)
+                self.L2_value = 0
+                for i in range(0, self.n_hidden_layer + 1):
+                    self.L2_value += tf.nn.l2_loss(self.weight_and_bias[i]['Weight']) + tf.nn.l2_loss(self.weight_and_bias[i]['Bias'])
+                return self.L2_value
 
             self.loss = tf.add(tf.reduce_sum(tf.square(self.V_desired - self.V)), self.regularization_param / self.n_epoch * L2_Regularization())
         
-            # use gradient descent to optimize out model
+            # use gradient descent to optimize our model
             self.trainer = tf.train.GradientDescentOptimizer(self.learning_rate)
             self.model = self.trainer.minimize(self.loss, global_step=self.global_step)
 
-        init = tf.initialize_all_variables()
-
-        with tf.Session() as sess:
-            sess.run(init)
+        init = tf.global_variables_initializer()
+        self.sess = tf.Session()
+        self.sess.run(init)
     
     def get_weight(self, n, m, layer):
         '''
@@ -418,7 +442,7 @@ class InforGo(object):
                 for j in range(m):
                     w[i, j] = float(f.readline())
             f.close()
-            return tf.Variable(tf.cast(w), tf.float64)
+            return tf.Variable(tf.cast(w, tf.float64))
         else:
             return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=1.0, dtype=tf.float64))
 
@@ -448,67 +472,76 @@ class InforGo(object):
         Main Learning Process
         return final score, graph_x, graph_y
         '''
-        with tf.Session() as sess:
 
-            record = self.get_record()
-            for directory in record:
-                for file_name in directory:
-                    for epoch in range(self.n_epoch):
-                        f = open(file_name, 'w')
-                        s = self.MDP.get_initial_state()
+        percentage = 0
+        record = self.get_record()
 
-                        while True:
-                            height, row, col = map(int, f.readline().split())
+        for epoch in range(self.n_epoch):
 
-                            if height, row, col == -1, -1, -1:
-                                break
+            if percentage < (epoch) / self.n_epoch * 100.:
+                print("Training Complete: {}%".format(percentage))
+                percentage += 1
 
-                            v = sess.run(self.V, feed_dict={self.inp: s})
-                            flag, new_s, R = self.MDP.take_action(row, col, 1)
+            for directory in record.keys():
+                for file_name in record[directory]:
+                    f = open('{}/{}'.format(directory, file_name), 'r')
+                    s = self.MDP.get_initial_state()
 
-                            new_v = sess.run(self.V, feed_dict={self.inp: new_s})
-                            v_desired = v + self.learning_rate * (R + self.gamma * new_v - v) 
-                            sess.run(model, feed_dict={self.v_desired: v_desired, self.inp: s})
+                    while True:
+                        height, row, col = map(int, f.readline().split())
 
-                            s = new_s
+                        if (height, row, col) == (-1, -1, -1):
+                            break
 
-                            height, row, col = map(int, f.readline().split())
-                            if height, row, col == -1, -1, -1:
-                                break
+                        v = self.sess.run(self.V, feed_dict={self.inp: s})
+                        flag, new_s, R = self.MDP.take_action((row, col), 1)
 
-                            v = sess.run(self.V, feed_dict={self.inp: s})
-                            flag, new_s, R = self.MDP.take_action(row, col, 2)
+                        new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
+                        v_desired = np.zeros([1, 1])
+                        v_desired[0][0] = v[0][0] + self.sess.run(self.learning_rate) * (R + self.gamma * new_v[0][0] - v[0][0]) 
+                        self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
 
-                            new_v = sess.run(self.V, feed_dict={self.inp: new_s})
+                        s = new_s
 
-                            # TODO: self.learning_rate is decaying, might have bug
-                            v_desired = v + self.learning_rate * (R + self.gamma * new_v - v) 
-                            sess.run(model, feed_dict={self.v_desired: v_desired, self.inp: s})
+                        height, row, col = map(int, f.readline().split())
+                        if (height, row, col) == (-1, -1, -1):
+                            break
 
-                            s = new_s
+                        v = self.sess.run(self.V, feed_dict={self.inp: s})
+                        flag, new_s, R = self.MDP.take_action((row, col), 2)
 
-            self.store_weight_and_bias()
+                        new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
+
+                        # TODO: self.learning_rate is decaying, might have bug
+                        v_desired[0][0] = v[0][0] + self.sess.run(self.learning_rate) * (R + self.gamma * new_v[0][0] - v[0][0]) 
+                        self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
+
+                        s = new_s
+
+        self.store_weight_and_bias()
 
     def get_record(self):
-        directory = [x[0] for x in os.walk('.')]
+        directory = [x[0] for x in os.walk('./saves')]
+        directory = directory[1:]
         filename = {}
         for d in directory:
-            filename[d] = []
-            for f in os.walk(d):
-                filename[d].append(f)
+            tmp = [x[2] for x in os.walk(d)]
+            filename[d] = [x for x in tmp[0]]
         return filename
 
     def store_weight_and_bias(self):
         for i in range(self.n_hidden_layer + 1):
             f = open('Weight/{}.txt'.format(i), 'w')
-            for j in range(tf.shape(self.weight_and_bias[i]['Weight'])[0]):
-                for k in range(tf.shape(self.weight_and_bias[i]['Weight'])[1]):
-                    f.writeline(''.format(self.weight_and_bias[i]['Weight'][j, k]))
+            w = self.sess.run(self.weight_and_bias[i]['Weight'])
+            for j in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Weight']))[0]):
+                for k in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Weight']))[1]):
+                    f.write('{}\n'.format(w[j, k]))
             f.close()
 
             f = open('Bias/{}.txt'.format(i), 'w')
-            for j in range(tf.shape(self.weight_and_bias[i]['Bias'])[1]):
-                f.writeline(''.format(self.weight_and_bias[i]['Bias'][0, j]))
+            b = self.sess.run(self.weight_and_bias[i]['Bias'])
+            for j in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Bias']))[1]):
+                f.write('{}\n'.format(b[0, j]))
             f.close()
 
 
@@ -523,27 +556,35 @@ class InforGo(object):
 
     def play(self):
         
-        with tf.Session() as sess:
+        s = self.MDP.get_initial_state()
 
-            s = self.MDP.get_initial_state()
+        print("[DEBUG] game started")
 
-            while True:
-                action = self.Minimax(s, self.search_depth, 'Max')
-                # TODO: send action to the web server
-                flag, s, _ = self.MDP.take_action(self.decode_action(action), 1)
-                if flag == 1:
-                    break
-                opponent = self.read_opponent_action()
-                flag, s, _ = self.MDP.take_action(self.decode_action(action), 2)
-                if flag == 2:
-                    break
+        while True:
+            _, action = self.Minimax(Bingo(s), self.search_depth, 'Max')
+            # TODO: send action to the web server
+            row, col = self.decode_action(action)
+            self.emit_action(row, col)
+            action = (row, col)
+            flag, s, _ = self.MDP.take_action(action, 1)
+            if flag == 1:
+                print("[DEBUG] AI win")
+                break
+            opponent = self.read_opponent_action()
+            flag, s, _ = self.MDP.take_action(opponent, 2)
+            if flag == 2:
+                print("[DEBUG] user win")
+                break
 
-    def Minimax(self, state, depth, level):
+    def Minimax(self, bingo, depth, level):
+
+        state = bingo.get_state()
+
         # TODO: alpha-beta pruning
         if depth == 0:
             return self.evaluate(state), None
         
-        value, action = 0
+        value, action = 0, 0
         current_player = 0
         next_level = 'Osas'
         func = lambda a, b: 0
@@ -562,8 +603,13 @@ class InforGo(object):
 
         for i in range(16):
             if self.MDP.valid_action(self.decode_action(i)):
-                flag, s, _ = self.MDP.take_action(self.decode_action(i), current_player)
-                val, a = Minimax(s, depth - 1, next_level)
+
+                r, c = self.decode_action(i)
+                bingo.place(r, c)
+                new_bingo = Bingo(bingo.get_state())
+                bingo.undo_action(r, c)
+
+                val, a = self.Minimax(new_bingo, depth - 1, next_level)
                 value = func(value, val)
                 if value == val:
                     action = i
@@ -571,13 +617,13 @@ class InforGo(object):
         return value, action
 
     def evaluate(self, state):
-        with tf.Session() as sess:
-            V = sess.run(self.V, feed_dict={self.inp: state})
+        V = self.sess.run(self.V, feed_dict={self.inp: state})
         return V[0][0]
     
     def read_opponent_action(self):
         # TODO: read opponent's action from web server
-        return self.generate_move()
+        r, c = map(int, input().split())
+        return r, c
 
     def generate_move(self):
         '''
@@ -587,11 +633,16 @@ class InforGo(object):
         '''
         # TODO: for testing pruposes
         
+        
+    def emit_action(self, row, col):
+        # TODO: emit action to web server
+        print("{}, {}".format(row, col))
 
 if __name__ == '__main__':
 
     def main():
         # TODO: more arguments are required, deal with uncertain length of n_node_hidden
+        '''
         n_epoch = int(argv[2])
         n_node_hidden = int(argv[3])
         lr = float(argv[4])
@@ -603,21 +654,25 @@ if __name__ == '__main__':
         filter_height = int(argv[10])
         filter_width = int(argv[11])
         out_channel = int(argv[12])
+        '''
+
+        cmd = argv[1]
         
         # TODO: redesign a reward function
-        def reward_function(state, flag):
-            if flag == 1:
+        def reward_function(state, flag, player):
+            if flag == 3 or flag == 0:
+                return 0
+            if flag == player:
                 return 1
-            if flag == 2:
+            if flag != player:
                 return -1
             return 0
 
-        AI = InforGo(n_epoch, n_node_hidden, lr, gamma, regularization_param, reward_function, decay_step, decay_rate, filter_depth, filter_height, filter_width, out_channel)
-        _, graph_x, graph_y = Learner.learn()
-
-        plt.plot(graph_x, graph_y)
-        plt.show()
-
-        f.close()
+        # AI = InforGo(n_epoch, n_node_hidden, lr, gamma, regularization_param, reward_function, decay_step, decay_rate, filter_depth, filter_height, filter_width, out_channel)
+        AI = InforGo(reward_function=reward_function)
+        if cmd == 'train':
+            AI.train()
+        if cmd == 'play':
+            AI.play()
 
     main()
