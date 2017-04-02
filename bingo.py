@@ -400,11 +400,11 @@ class InforGo(object):
                 'Output': tf.add(tf.matmul(self.conv_layer_output, self.weight_and_bias[0]['Weight']), self.weight_and_bias[0]['Bias'])
             }
             for i in range(1, self.n_hidden_layer):
+                self.hidden_layer[i - 1]['Activated_Output'] = self.activation_function(self.hidden_layer[i - 1]['Output'])
                 self.hidden_layer[i] = {
                     'Output': tf.add(tf.matmul(self.hidden_layer[i - 1]['Activated_Output'], self.weight_and_bias[i]['Weight']), self.weight_and_bias[i]['Bias'])
                 }
-            for i in range(0, self.n_hidden_layer):
-                self.hidden_layer[i]['Activated_Output'] = self.activation_function(self.hidden_layer[i]['Output'])
+            self.hidden_layer[self.n_hidden_layer - 1]['Activated_Output'] = self.hidden_layer[self.n_hidden_layer - 1]['Output']
 
         with tf.name_scope('Output_Layer'):
             self.output = tf.add(tf.matmul(self.hidden_layer[self.n_hidden_layer - 1]['Activated_Output'], self.weight_and_bias[self.n_hidden_layer]['Weight'], ), self.weight_and_bias[self.n_hidden_layer]['Bias'])
@@ -642,20 +642,7 @@ if __name__ == '__main__':
 
     def main():
         # TODO: more arguments are required, deal with uncertain length of n_node_hidden
-        '''
-        n_epoch = int(argv[2])
-        n_node_hidden = int(argv[3])
-        lr = float(argv[4])
-        gamma = float(argv[5])
-        regularization_param = float(argv[6])
-        decay_step = int(argv[7])
-        decay_rate = float(argv[8])
-        filter_depth = int(argv[9])
-        filter_height = int(argv[10])
-        filter_width = int(argv[11])
-        out_channel = int(argv[12])
-        '''
-
+        
         cmd = argv[1]
         
         # TODO: redesign a reward function
@@ -668,8 +655,31 @@ if __name__ == '__main__':
                 return -1
             return 0
 
-        # AI = InforGo(n_epoch, n_node_hidden, lr, gamma, regularization_param, reward_function, decay_step, decay_rate, filter_depth, filter_height, filter_width, out_channel)
-        AI = InforGo(reward_function=reward_function)
+        argv_len = len(argv)
+        ind = 2
+        parameter = {'reward_function': reward_function}
+
+        float_parameter = ['learning_rate', 'decay_rate', 'regularization_param', 'gamma']
+        string_parameter = ['activation_function', 'output_function']
+
+        while ind < argv_len:
+            if argv[ind] == 'n_node_hidden':
+                parameter['n_node_hidden'] = []
+                for i in range(parameter['n_hidden_layer']):
+                    parameter['n_node_hidden'].append(int(argv[ind + i + 1]))
+                ind += parameter['n_hidden_layer'] + 1
+            elif argv[ind] in float_parameter:
+                parameter[argv[ind]] = float(argv[ind + 1])
+                ind += 2
+            elif argv[ind] in string_parameter:
+                parameter[argv[ind]] = argv[ind + 1]
+                ind += 2
+            else:
+                parameter[argv[ind]] = int(argv[ind + 1])
+                ind += 2
+
+
+        AI = InforGo(**parameter)
         if cmd == 'train':
             AI.train()
         if cmd == 'play':
