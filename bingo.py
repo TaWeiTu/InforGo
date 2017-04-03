@@ -487,50 +487,61 @@ class InforGo(object):
         print("[Train] Start training")
         percentage = 0
         record = self.get_record()
+        print("[Train] Training Complete 0%")
 
         for epoch in range(self.n_epoch):
 
-            if percentage < epoch / self.n_epoch * 100.:
+            if percentage < (epoch + 1) / self.n_epoch * 100.:
+                percentage = int(((epoch + 1) / self.n_epoch) * 100.)
                 print("[Train] Training Complete: {}%".format(percentage))
-                percentage += 1
 
             for directory in record.keys():
                 for file_name in record[directory]:
-                    f = open('{}/{}'.format(directory, file_name), 'r')
-                    s = self.MDP.get_initial_state()
+                    for rotate_time in range(4):
+                        f = open('{}/{}'.format(directory, file_name), 'r')
+                        s = self.MDP.get_initial_state()
 
-                    while True:
-                        height, row, col = map(int, f.readline().split())
+                        while True:
+                            height, row, col = map(int, f.readline().split())
+                            if (height, row, col) == (-1, -1, -1):
+                                break
 
-                        if (height, row, col) == (-1, -1, -1):
-                            break
+                            height, row, col = self.rotate(height, row, col, rotate_time)
 
-                        v = self.sess.run(self.V, feed_dict={self.inp: s})
-                        flag, new_s, R = self.MDP.take_action((row, col), 1)
+                            v = self.sess.run(self.V, feed_dict={self.inp: s})
+                            flag, new_s, R = self.MDP.take_action((row, col), 1)
 
-                        new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
-                        v_desired = np.zeros([1, 1])
-                        v_desired[0][0] = new_v[0][0] * self.td_lambda + self.sess.run(self.learning_rate) * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
-                        self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
+                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
+                            v_desired = np.zeros([1, 1])
+                            v_desired[0][0] = new_v[0][0] * self.td_lambda + self.sess.run(self.learning_rate) * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
+                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
 
-                        s = new_s
+                            s = new_s
 
-                        height, row, col = map(int, f.readline().split())
-                        if (height, row, col) == (-1, -1, -1):
-                            break
+                            height, row, col = map(int, f.readline().split())
+                            if (height, row, col) == (-1, -1, -1):
+                                break
 
-                        v = self.sess.run(self.V, feed_dict={self.inp: s})
-                        flag, new_s, R = self.MDP.take_action((row, col), 2)
+                            height, row, col = self.rotate(height, row, col, rotate_time)
 
-                        new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
+                            v = self.sess.run(self.V, feed_dict={self.inp: s})
+                            flag, new_s, R = self.MDP.take_action((row, col), 2)
 
-                        # TODO: self.learning_rate is decaying, might have bug
-                        v_desired[0][0] = new_v[0][0] * self.td_lambda + self.sess.run(self.learning_rate) * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
-                        self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
+                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
 
-                        s = new_s
+                            # TODO: self.learning_rate is decaying, might have bug
+                            v_desired[0][0] = new_v[0][0] * self.td_lambda + self.sess.run(self.learning_rate) * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
+                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
+
+                            s = new_s
 
         self.store_weight_and_bias()
+
+    def rotate(self, height, row, col, t):
+        for i in range(t):
+            row, col = col, row
+            col = 3 - col
+        return height, row, col
 
     def get_record(self):
         directory = [x[0] for x in os.walk('./saves')]
