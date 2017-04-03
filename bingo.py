@@ -479,13 +479,17 @@ class InforGo(object):
         return final score, graph_x, graph_y
         '''
 
+        writer = tf.summary.FileWriter(LOG_DIR)
+        writer.add_graph(self.sess.graph)
+
+        print("[Train] Done Tensorboard setup")
         print("[Train] Start training")
         percentage = 0
         record = self.get_record()
 
         for epoch in range(self.n_epoch):
 
-            if percentage < (epoch) / self.n_epoch * 100.:
+            if percentage < epoch / self.n_epoch * 100.:
                 print("[Train] Training Complete: {}%".format(percentage))
                 percentage += 1
 
@@ -584,11 +588,13 @@ class InforGo(object):
                 print("[Play] User win")
                 break
 
-    def Minimax(self, bingo, depth, level):
+    def Minimax(self, bingo, depth, level, alpha=-np.inf, beta=np.inf):
 
         state = bingo.get_state()
 
-        # TODO: alpha-beta pruning
+        if bingo.win(1) or bingo.win(2):
+            return self.evaluate(state), None
+
         if depth == 0:
             return self.evaluate(state), None
         
@@ -604,23 +610,38 @@ class InforGo(object):
             func = lambda a, b: max(a, b)
 
         else:
-            value = 7122
+            value = np.inf
             current_player = 2
             next_level = 'Max'
             func = lambda a, b: min(a, b)
 
+        move = False
+
         for i in range(16):
             if self.MDP.valid_action(self.decode_action(i)):
-
+                move = True
                 r, c = self.decode_action(i)
                 bingo.place(r, c)
                 new_bingo = Bingo(bingo.get_state())
                 bingo.undo_action(r, c)
 
-                val, a = self.Minimax(new_bingo, depth - 1, next_level)
+                val, a = self.Minimax(new_bingo, depth - 1, next_level, alpha, beta)
+
+                if level == 'Min':
+                    beta = min(beta, val)
+                else:
+                    alpha = max(alpha, val)
+
                 value = func(value, val)
+
+                if alpha > beta:
+                    return value, action
+
                 if value == val:
                     action = i
+
+        if not move:
+            return 0, None
 
         return value, action
 
