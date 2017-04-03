@@ -487,7 +487,6 @@ class InforGo(object):
         print("[Train] Start training")
         percentage = 0
         record = self.get_record()
-        print("[Train] Training Complete 0%")
 
         for epoch in range(self.n_epoch):
 
@@ -645,9 +644,9 @@ class InforGo(object):
         move = False
 
         for i in range(16):
-            if self.MDP.valid_action(self.decode_action(i)):
+            r, c = self.decode_action(i)
+            if bingo.valid_action(r, c):
                 move = True
-                r, c = self.decode_action(i)
                 bingo.place(r, c)
                 new_bingo = Bingo(bingo.get_state())
                 bingo.undo_action(r, c)
