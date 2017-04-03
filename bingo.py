@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import random
 import sys
 import os.path
+import tempfile
 
 
 LOG_DIR = 'log/tensorboard'
@@ -568,8 +569,10 @@ class InforGo(object):
 
 
     def play(self):
-        
+        tmp = tempfile.NamedTemporaryFile(dir='./saves/selfrecord', delete=False)
+        f = open(tmp.name, 'w')
         s = self.MDP.get_initial_state()
+        record = ''
         print("[Play] Start playing")
 
         while True:
@@ -577,16 +580,29 @@ class InforGo(object):
             # TODO: Epsilon greedy
             row, col = self.decode_action(action)
             self.emit_action(row, col)
+
+            height = self.MDP.bingo.height[row][col]
+            record += '{} {} {}\n'.format(height, row, col)
+
             action = (row, col)
             flag, s, _ = self.MDP.take_action(action, 1)
             if flag == 1:
+                record += '-1 -1 -1'
                 print("[Play] AI win")
                 break
+
             opponent = self.read_opponent_action()
+            row, col = opponent
+            height = self.MDP.bingo.height[row][col]
+            record += '{} {} {}\n'.format(height, row, col)
+
             flag, s, _ = self.MDP.take_action(opponent, 2)
             if flag == 2:
+                record += '-1 -1 -1'
                 print("[Play] User win")
                 break
+        f.write(record)
+        f.close()
 
     def Minimax(self, bingo, depth, level, alpha=-np.inf, beta=np.inf):
 
