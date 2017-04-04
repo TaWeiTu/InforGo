@@ -8,7 +8,7 @@ import tempfile
 
 
 LOG_DIR = 'log/tensorboard'
-DEBUG = True
+DEBUG = False
 argv = sys.argv
 
 
@@ -303,10 +303,11 @@ class InforGo(object):
     hidden-layer: relu function
     output-layer: value for the input state
     '''
-    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3):
+    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False):
 
         print("[Init] Start setting training parameter")
         # number of epoches
+        self.DEBUG = DEBUG
         self.n_epoch = n_epoch
 
         # Learning rate decay
@@ -690,9 +691,11 @@ class InforGo(object):
         return r, c
         
     def emit_action(self, height, row, col):
-        if DEBUG:
+        if self.DEBUG is True:
             print("[DEBUG] ", end='')
-        print("{} {} {}".format(height, row, col))
+            print("{} {} {}".format(height, row, col))
+        else:
+            print(height + row * 4 + col * 16)
 
 
 if __name__ == '__main__':
@@ -719,7 +722,10 @@ if __name__ == '__main__':
         string_parameter = ['activation_function', 'output_function']
 
         while ind < argv_len:
-            if argv[ind] == 'n_node_hidden':
+            if argv[ind] == 'DEBUG':
+                parameter['DEBUG'] = True
+                ind += 1
+            elif argv[ind] == 'n_node_hidden':
                 parameter['n_node_hidden'] = []
                 for i in range(parameter['n_hidden_layer']):
                     parameter['n_node_hidden'].append(int(argv[ind + i + 1]))
@@ -734,8 +740,8 @@ if __name__ == '__main__':
                 parameter[argv[ind]] = int(argv[ind + 1])
                 ind += 2
 
-
         print("[INFO] Done collecting execution parameter")
+
         AI = InforGo(**parameter)
         if cmd == 'train':
             AI.train()
