@@ -303,13 +303,14 @@ class InforGo(object):
     hidden-layer: relu function
     output-layer: value for the input state
     '''
-    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False):
+    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False, first=True):
 
         if DEBUG:
             print("[Init] Start setting training parameter")
 
         # number of epoches
         self.DEBUG = DEBUG
+        self.first = first
         self.n_epoch = n_epoch
 
         # Learning rate decay
@@ -458,8 +459,8 @@ class InforGo(object):
         '''
         Weight to the layer-th hidden layer, with size n x m
         '''
-        if os.path.exists('Weight/{}.txt'.format(layer)):
-            f = open('Weight/{}.txt'.format(layer), 'r')
+        if os.path.exists('./Data/Weight/{}.txt'.format(layer)):
+            f = open('./Data/Weight/{}.txt'.format(layer), 'r')
             w = np.zeros([n, m])
             for i in range(n):
                 for j in range(m):
@@ -473,8 +474,8 @@ class InforGo(object):
         '''
         Bias to the layer-th hidden layer, with size 1 x n
         '''
-        if os.path.exists('Bias/{}.txt'.format(layer)):
-            f = open('Bias/{}.txt'.format(layer), 'r')
+        if os.path.exists('./Data/Bias/{}.txt'.format(layer)):
+            f = open('./Data/Bias/{}.txt'.format(layer), 'r')
             b = np.zeros([1, n])
             for i in range(n):
                 b[0, i] = float(f.readline())
@@ -562,9 +563,9 @@ class InforGo(object):
 
     def get_record(self):
         '''
-        Return every record file under ./save/*
+        Return every record file under ./Data/record/*
         '''
-        directory = [x[0] for x in os.walk('./saves')]
+        directory = [x[0] for x in os.walk('./Data/record')]
         directory = directory[1:]
         filename = {}
         for d in directory:
@@ -574,10 +575,10 @@ class InforGo(object):
 
     def store_weight_and_bias(self):
         '''
-        Store weights under ./Weight, biases under ./Bias
+        Store weights under ./Data/Weight, biases under ./Data/Bias
         '''
         for i in range(self.n_hidden_layer + 1):
-            f = open('Weight/{}.txt'.format(i), 'w')
+            f = open('./Data/Weight/{}.txt'.format(i), 'w')
             w = self.sess.run(self.weight_and_bias[i]['Weight'])
             for j in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Weight']))[0]):
                 for k in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Weight']))[1]):
@@ -586,7 +587,7 @@ class InforGo(object):
             if self.DEBUG:
                 print("[Train] Done storing weight {}".format(i))
 
-            f = open('Bias/{}.txt'.format(i), 'w')
+            f = open('./Data/Bias/{}.txt'.format(i), 'w')
             b = self.sess.run(self.weight_and_bias[i]['Bias'])
             for j in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Bias']))[1]):
                 f.write('{}\n'.format(b[0, j]))
@@ -595,12 +596,25 @@ class InforGo(object):
                 print("[Train] Done storing bias {}".format(i))
 
     def play(self):
-        tmp = tempfile.NamedTemporaryFile(dir='./saves/selfrecord', delete=False)
+        tmp = tempfile.NamedTemporaryFile(dir='./Data/record/selfrecord', delete=False)
         f = open(tmp.name, 'w')
         s = self.MDP.get_initial_state()
         record = ''
         if self.DEBUG:
             print("[Play] Start playing")
+
+        if self.first is False:
+            opponent = self.read_opponent_action()
+            while self.MDP.valid_action(opponent):
+                opponent = self.read_opponent_action()
+            row, col = opponent
+            record += '{} {} {}\n'.format(height, row, col)
+
+            flag, s, _ = self.MDP.take_action(opponent, 2)
+            if flag == 2:
+                record += '-1 -1 -1\n'
+                if self.DEBUG:
+                    print("[Play] User win")
 
         while True:
             # Choose the best action using Minimax Tree Search
@@ -744,6 +758,12 @@ if __name__ == '__main__':
         while ind < argv_len:
             if argv[ind] == 'DEBUG':
                 parameter['DEBUG'] = True
+                ind += 1
+            elif argv[ind] == 'first':
+                parameter['first'] = True
+                ind += 1
+            elif argv[ind] == 'second':
+                parameter['first'] = False
                 ind += 1
             elif argv[ind] == 'n_node_hidden':
                 parameter['n_node_hidden'] = []
