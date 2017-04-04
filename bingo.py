@@ -597,7 +597,7 @@ class InforGo(object):
             action = (row, col)
             flag, s, _ = self.MDP.take_action(action, 1)
             if flag == 1:
-                record += '-1 -1 -1'
+                record += '-1 -1 -1\n'
                 print("[Play] AI win")
                 break
 
@@ -608,7 +608,7 @@ class InforGo(object):
 
             flag, s, _ = self.MDP.take_action(opponent, 2)
             if flag == 2:
-                record += '-1 -1 -1'
+                record += '-1 -1 -1\n'
                 print("[Play] User win")
                 break
         f.write(record)
@@ -630,7 +630,7 @@ class InforGo(object):
         func = lambda a, b: 0
 
         if level == 'Max':
-            value = 0
+            value = -np.inf
             current_player = 1
             next_level = 'Min'
             func = lambda a, b: max(a, b)
