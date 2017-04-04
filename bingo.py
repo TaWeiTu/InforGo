@@ -8,6 +8,7 @@ import tempfile
 
 
 LOG_DIR = 'log/tensorboard'
+DEBUG = True
 argv = sys.argv
 
 
@@ -392,7 +393,7 @@ class InforGo(object):
                 'Weight': self.get_weight(self.n_node_hidden[self.n_hidden_layer - 1], 1, self.n_hidden_layer),
                 'Bias': self.get_bias(1, self.n_hidden_layer)
             }
-            print("[Init] Done initializing weight and bias from hidden layer {} to output layer".format(self.n_hidden_layer))
+            print("[Init] Done initializing weight and bias from hidden layer {} to output layer".format(self.n_hidden_layer - 1))
 
         # Store value of every node in each hidden layer
         self.hidden_layer = [{} for i in range(self.n_hidden_layer)]
@@ -512,9 +513,9 @@ class InforGo(object):
 
                             new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
                             v_desired = np.zeros([1, 1])
+                            # TD-lambda update
                             v_desired[0][0] = new_v[0][0] * self.td_lambda + self.sess.run(self.learning_rate) * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
-
                             s = new_s
 
                             height, row, col = map(int, f.readline().split())
@@ -527,22 +528,26 @@ class InforGo(object):
                             flag, new_s, R = self.MDP.take_action((row, col), 2)
 
                             new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
-
-                            # TODO: self.learning_rate is decaying, might have bug
+                            # TD-lambda update
                             v_desired[0][0] = new_v[0][0] * self.td_lambda + self.sess.run(self.learning_rate) * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
-
                             s = new_s
 
         self.store_weight_and_bias()
 
     def rotate(self, height, row, col, t):
+        '''
+        Rotate the board 90 x t degree clockwise
+        '''
         for i in range(t):
             row, col = col, row
             col = 3 - col
         return height, row, col
 
     def get_record(self):
+        '''
+        Return every record file under ./save/*
+        '''
         directory = [x[0] for x in os.walk('./saves')]
         directory = directory[1:]
         filename = {}
@@ -552,6 +557,9 @@ class InforGo(object):
         return filename
 
     def store_weight_and_bias(self):
+        '''
+        Store weights under ./Weight, biases under ./Bias
+        '''
         for i in range(self.n_hidden_layer + 1):
             f = open('Weight/{}.txt'.format(i), 'w')
             w = self.sess.run(self.weight_and_bias[i]['Weight'])
@@ -568,16 +576,6 @@ class InforGo(object):
             f.close()
             print("[Train] Done storing bias {}".format(i))
 
-
-    def store_random_permutation(self):
-        random_f = open("_random.txt", "w")
-        for i in self.MDP.bingo.random_permutation:
-            r, c = i
-            random_f.write(str(r) + ' ' + str(c))
-            random_f.write('\n')
-        random_f.close()
-
-
     def play(self):
         tmp = tempfile.NamedTemporaryFile(dir='./saves/selfrecord', delete=False)
         f = open(tmp.name, 'w')
@@ -586,12 +584,12 @@ class InforGo(object):
         print("[Play] Start playing")
 
         while True:
+            # Choose the best action using Minimax Tree Search
             _, action = self.Minimax(Bingo(s), self.search_depth, 'Max')
-            # TODO: Epsilon greedy
             row, col = self.decode_action(action)
-            self.emit_action(row, col)
-
+            
             height = self.MDP.bingo.height[row][col]
+            self.emit_action(height, row, col)
             record += '{} {} {}\n'.format(height, row, col)
 
             action = (row, col)
@@ -602,6 +600,10 @@ class InforGo(object):
                 break
 
             opponent = self.read_opponent_action()
+            while self.MDP.valid_action(opponent) is False:
+                print("[Play] Invalid input action")
+                opponent = self.read_opponent_action()
+
             row, col = opponent
             height = self.MDP.bingo.height[row][col]
             record += '{} {} {}\n'.format(height, row, col)
@@ -611,11 +613,15 @@ class InforGo(object):
                 record += '-1 -1 -1\n'
                 print("[Play] User win")
                 break
+        # Record the game for future training
         f.write(record)
         f.close()
 
     def Minimax(self, bingo, depth, level, alpha=-np.inf, beta=np.inf):
-
+        '''
+        recursively search every possible action with maximum depth = self.search_depth
+        use alpha-beta pruning to reduce time complexity
+        '''
         state = bingo.get_state()
 
         if bingo.win(1) or bingo.win(2):
@@ -659,7 +665,8 @@ class InforGo(object):
                     alpha = max(alpha, val)
 
                 value = func(value, val)
-
+                
+                # Lowerbound is greater than the upperbound, stop further searching
                 if alpha > beta:
                     return value, action
 
@@ -672,26 +679,21 @@ class InforGo(object):
         return value, action
 
     def evaluate(self, state):
+        '''
+        Evaluate the value of input state with neural network as an approximater
+        '''
         V = self.sess.run(self.V, feed_dict={self.inp: state})
         return V[0][0]
     
     def read_opponent_action(self):
-        # TODO: read opponent's action from web server
-        r, c = map(int, input().split())
+        h, r, c = map(int, input().split())
         return r, c
+        
+    def emit_action(self, height, row, col):
+        if DEBUG:
+            print("[DEBUG] ", end='')
+        print("{} {} {}".format(height, row, col))
 
-    def generate_move(self):
-        '''
-        1. if player2 can win
-        2. if player1 is going to win
-        3. random
-        '''
-        # TODO: for testing pruposes
-        
-        
-    def emit_action(self, row, col):
-        # TODO: emit action to web server
-        print("{}, {}".format(row, col))
 
 if __name__ == '__main__':
 
