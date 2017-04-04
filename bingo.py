@@ -305,7 +305,9 @@ class InforGo(object):
     '''
     def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False):
 
-        print("[Init] Start setting training parameter")
+        if DEBUG:
+            print("[Init] Start setting training parameter")
+
         # number of epoches
         self.DEBUG = DEBUG
         self.n_epoch = n_epoch
@@ -351,7 +353,8 @@ class InforGo(object):
         self.regularization_param = regularization_param
         
         self.MDP = MDP(reward_function)
-        print("[Init] Done setting training parameter")
+        if self.DEBUG:
+            print("[Init] Done setting training parameter")
 
         # Neural Network Setup
 
@@ -360,7 +363,8 @@ class InforGo(object):
         with tf.name_scope('Input-Layer'):
             self.inp = tf.placeholder(shape=[4, 4, 4, 1, 1], dtype=tf.float64, name='input')
 
-        print("[Init] Done consturcting input layer")
+        if self.DEBUG:
+            print("[Init] Done consturcting input layer")
 
         # 3D-Convolution layer
         with tf.name_scope('Convolution-Layer'):
@@ -373,7 +377,8 @@ class InforGo(object):
             # Caculate the length of flattened layer
             self.conv_layer_length = 4 * 4 * 4 * out_channel
 
-        print("[Init] Done constructing convolution layer with out_channel = {}".format(out_channel))
+        if self.DEBUG:
+            print("[Init] Done constructing convolution layer with out_channel = {}".format(out_channel))
         
         # Store all the weight and bias between each layer
         self.weight_and_bias = [{} for i in range(self.n_hidden_layer + 1)]
@@ -383,18 +388,21 @@ class InforGo(object):
                 'Weight': self.get_weight(self.conv_layer_length, self.n_node_hidden[0], 0),
                 'Bias': self.get_bias(self.n_node_hidden[0], 0)
             }
-            print("[Init] Done initializing weight and bias from convolution layer to hidden layer 0")
+            if self.DEBUG:
+                print("[Init] Done initializing weight and bias from convolution layer to hidden layer 0")
             for i in range(1, self.n_hidden_layer):
                 self.weight_and_bias[i] = {
                     'Weight': self.get_weight(self.n_node_hidden[i - 1], self.n_node_hidden[i], i),
                     'Bias': self.get_bias(self.n_node_hidden[i], i)
                 }
-                print("[Init] Done initializing weight and bias from hidden layer {} to hidden layer {}".format(i - 1, i))
+                if self.DEBUG:
+                    print("[Init] Done initializing weight and bias from hidden layer {} to hidden layer {}".format(i - 1, i))
             self.weight_and_bias[self.n_hidden_layer] = {
                 'Weight': self.get_weight(self.n_node_hidden[self.n_hidden_layer - 1], 1, self.n_hidden_layer),
                 'Bias': self.get_bias(1, self.n_hidden_layer)
             }
-            print("[Init] Done initializing weight and bias from hidden layer {} to output layer".format(self.n_hidden_layer - 1))
+            if self.DEBUG:
+                print("[Init] Done initializing weight and bias from hidden layer {} to output layer".format(self.n_hidden_layer - 1))
 
         # Store value of every node in each hidden layer
         self.hidden_layer = [{} for i in range(self.n_hidden_layer)]
@@ -405,17 +413,20 @@ class InforGo(object):
             }
             for i in range(1, self.n_hidden_layer):
                 self.hidden_layer[i - 1]['Activated_Output'] = self.activation_function(self.hidden_layer[i - 1]['Output'])
-                print("[Init] Done activating output of hidden layer {}".format(i - 1))
+                if self.DEBUG:
+                    print("[Init] Done activating output of hidden layer {}".format(i - 1))
                 self.hidden_layer[i] = {
                     'Output': tf.add(tf.matmul(self.hidden_layer[i - 1]['Activated_Output'], self.weight_and_bias[i]['Weight']), self.weight_and_bias[i]['Bias'])
                 }
             self.hidden_layer[self.n_hidden_layer - 1]['Activated_Output'] = self.hidden_layer[self.n_hidden_layer - 1]['Output']
-            print("[Init] Done activating output of hidden layer {}".format(self.n_hidden_layer - 1))
+            if self.DEBUG:
+                print("[Init] Done activating output of hidden layer {}".format(self.n_hidden_layer - 1))
 
         with tf.name_scope('Output_Layer'):
             self.output = tf.add(tf.matmul(self.hidden_layer[self.n_hidden_layer - 1]['Activated_Output'], self.weight_and_bias[self.n_hidden_layer]['Weight'], ), self.weight_and_bias[self.n_hidden_layer]['Bias'])
             self.V = self.output_function(self.output)
-            print("[Init] Done constructing output layer")
+            if self.DEBUG:
+                print("[Init] Done constructing output layer")
 
         with tf.name_scope('Training_Model'):
             # Q-value to update the weight
@@ -429,16 +440,19 @@ class InforGo(object):
                 return self.L2_value
 
             self.loss = tf.add(tf.reduce_sum(tf.square(self.V_desired - self.V)), self.regularization_param / self.n_epoch * L2_Regularization())
-            print("[Init] Done caculating cost function")
+            if self.DEBUG:
+                print("[Init] Done caculating cost function")
             # use gradient descent to optimize our model
             self.trainer = tf.train.GradientDescentOptimizer(self.learning_rate)
             self.model = self.trainer.minimize(self.loss, global_step=self.global_step)
-            print("[Init] Done setting up trainer")
+            if self.DEBUG:
+                print("[Init] Done setting up trainer")
 
         init = tf.global_variables_initializer()
         self.sess = tf.Session()
         self.sess.run(init)
-        print("[Init] Done initializing all variables")
+        if self.DEBUG:
+            print("[Init] Done initializing all variables")
     
     def get_weight(self, n, m, layer):
         '''
@@ -484,9 +498,9 @@ class InforGo(object):
 
         writer = tf.summary.FileWriter(LOG_DIR)
         writer.add_graph(self.sess.graph)
-
-        print("[Train] Done Tensorboard setup")
-        print("[Train] Start training")
+        if self.DEBUG:
+            print("[Train] Done Tensorboard setup")
+            print("[Train] Start training")
         percentage = 0
         record = self.get_record()
 
@@ -494,7 +508,8 @@ class InforGo(object):
 
             if percentage < (epoch + 1) / self.n_epoch * 100.:
                 percentage = int(((epoch + 1) / self.n_epoch) * 100.)
-                print("[Train] Training Complete: {}%".format(percentage))
+                if self.DEBUG:
+                    print("[Train] Training Complete: {}%".format(percentage))
 
             for directory in record.keys():
                 for file_name in record[directory]:
@@ -568,21 +583,24 @@ class InforGo(object):
                 for k in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Weight']))[1]):
                     f.write('{}\n'.format(w[j, k]))
             f.close()
-            print("[Train] Done storing weight {}".format(i))
+            if self.DEBUG:
+                print("[Train] Done storing weight {}".format(i))
 
             f = open('Bias/{}.txt'.format(i), 'w')
             b = self.sess.run(self.weight_and_bias[i]['Bias'])
             for j in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Bias']))[1]):
                 f.write('{}\n'.format(b[0, j]))
             f.close()
-            print("[Train] Done storing bias {}".format(i))
+            if self.DEBUG:
+                print("[Train] Done storing bias {}".format(i))
 
     def play(self):
         tmp = tempfile.NamedTemporaryFile(dir='./saves/selfrecord', delete=False)
         f = open(tmp.name, 'w')
         s = self.MDP.get_initial_state()
         record = ''
-        print("[Play] Start playing")
+        if self.DEBUG:
+            print("[Play] Start playing")
 
         while True:
             # Choose the best action using Minimax Tree Search
@@ -597,7 +615,8 @@ class InforGo(object):
             flag, s, _ = self.MDP.take_action(action, 1)
             if flag == 1:
                 record += '-1 -1 -1\n'
-                print("[Play] AI win")
+                if self.DEBUG:
+                    print("[Play] AI win")
                 break
 
             opponent = self.read_opponent_action()
@@ -612,7 +631,8 @@ class InforGo(object):
             flag, s, _ = self.MDP.take_action(opponent, 2)
             if flag == 2:
                 record += '-1 -1 -1\n'
-                print("[Play] User win")
+                if self.DEBUG:
+                    print("[Play] User win")
                 break
         # Record the game for future training
         f.write(record)
@@ -740,7 +760,8 @@ if __name__ == '__main__':
                 parameter[argv[ind]] = int(argv[ind + 1])
                 ind += 2
 
-        print("[INFO] Done collecting execution parameter")
+        if 'DEBUG' in parameter.keys():
+            print("[INFO] Done collecting execution parameter")
 
         AI = InforGo(**parameter)
         if cmd == 'train':
