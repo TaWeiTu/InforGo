@@ -374,10 +374,13 @@ class InforGo(object):
             self.conv_layer = tf.nn.conv3d(input=self.inp, filter=self.conv_layer_w, strides=[1, 1, 1, 1, 1], padding='SAME', name='Conv-Layer')
 
             # Flatten the convolution layer
-            self.conv_layer_output = tf.reshape(self.conv_layer, [1, -1], name='Flattend')
+            self.conv_layer_output = tf.cast(tf.reshape(self.conv_layer, [1, -1], name='Flattend'), dtype=tf.float64)
 
             # Caculate the length of flattened layer
             self.conv_layer_length = 4 * 4 * 4 * out_channel
+
+        with tf.name_scope('Player-Node'):
+            self.player_node = tf.placeholder(shape=[1, 1], dtype=tf.float64, name='Player-Node')
 
         if self.DEBUG:
             print("[Init] Done constructing convolution layer with out_channel = {}".format(out_channel))
@@ -387,7 +390,7 @@ class InforGo(object):
         
         with tf.name_scope('Weight_and_Bias'):
             self.weight_and_bias[0] = {
-                'Weight': self.get_weight(self.conv_layer_length, self.n_node_hidden[0], 0),
+                'Weight': self.get_weight(self.conv_layer_length + 1, self.n_node_hidden[0], 0),
                 'Bias': self.get_bias(self.n_node_hidden[0], 0)
             }
             if self.DEBUG:
@@ -411,7 +414,7 @@ class InforGo(object):
 
         with tf.name_scope('Hidden_Layer'):
             self.hidden_layer[0] = {
-                'Output': tf.add(tf.matmul(self.conv_layer_output, self.weight_and_bias[0]['Weight']), self.weight_and_bias[0]['Bias'])
+                'Output': tf.add(tf.matmul(tf.concat([self.conv_layer_output, self.player_node], 1), self.weight_and_bias[0]['Weight']), self.weight_and_bias[0]['Bias'])
             }
             for i in range(1, self.n_hidden_layer):
                 self.hidden_layer[i - 1]['Activated_Output'] = self.activation_function(self.hidden_layer[i - 1]['Output'])
@@ -526,14 +529,14 @@ class InforGo(object):
 
                             height, row, col = self.rotate(height, row, col, rotate_time)
 
-                            v = self.sess.run(self.V, feed_dict={self.inp: s})
+                            v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(1)})
                             flag, new_s, R = self.MDP.take_action((row, col), 1)
 
-                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
+                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1)})
                             v_desired = np.zeros([1, 1])
                             # TD-lambda update
                             v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
-                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
+                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)})
                             s = new_s
 
                             height, row, col = map(int, f.readline().split())
@@ -542,13 +545,13 @@ class InforGo(object):
 
                             height, row, col = self.rotate(height, row, col, rotate_time)
 
-                            v = self.sess.run(self.V, feed_dict={self.inp: s})
+                            v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(2)})
                             flag, new_s, R = self.MDP.take_action((row, col), 2)
 
-                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
+                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(2)})
                             # TD-lambda update
                             v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
-                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
+                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2)})
                             s = new_s
 
         self.store_weight_and_bias()
@@ -604,8 +607,8 @@ class InforGo(object):
         if self.DEBUG:
             print("[Play] Start playing")
 
+        player = 1
         if self.first is False:
-            self.MDP.bingo.change_player()
             if self.DEBUG:
                 print("[Play] User")
             opponent = self.read_opponent_action()
@@ -618,7 +621,11 @@ class InforGo(object):
             height = self.MDP.bingo.height[row][col]
             record += '{} {} {}\n'.format(height, row, col)
 
-            flag, s, _ = self.MDP.take_action(opponent, 2)
+            flag, s, _ = self.MDP.take_action(opponent, player)
+            if player == 1:
+                player = 2
+            else:
+                player = 1
             if flag == 2:
                 record += '-1 -1 -1\n'
                 if self.DEBUG:
@@ -634,13 +641,16 @@ class InforGo(object):
             record += '{} {} {}\n'.format(height, row, col)
 
             action = (row, col)
-            flag, s, _ = self.MDP.take_action(action, 1)
-            if flag == 1:
+            flag, s, _ = self.MDP.take_action(action, player)
+            if flag == player:
                 record += '-1 -1 -1\n'
                 if self.DEBUG:
                     print("[Play] AI win")
                 break
-
+            if player == 1:
+                player = 2
+            else:
+                player = 1
             opponent = self.read_opponent_action()
             while self.MDP.valid_action(opponent) is False:
                 print("[Play] Invalid input action")
@@ -650,8 +660,8 @@ class InforGo(object):
             height = self.MDP.bingo.height[row][col]
             record += '{} {} {}\n'.format(height, row, col)
 
-            flag, s, _ = self.MDP.take_action(opponent, 2)
-            if flag == 2:
+            flag, s, _ = self.MDP.take_action(opponent, player)
+            if flag == player:
                 record += '-1 -1 -1\n'
                 if self.DEBUG:
                     print("[Play] User win")
@@ -660,7 +670,7 @@ class InforGo(object):
         f.write(record)
         f.close()
 
-    def Minimax(self, bingo, depth, level, alpha=-np.inf, beta=np.inf):
+    def Minimax(self, bingo, depth, level, player, alpha=-np.inf, beta=np.inf):
         '''
         recursively search every possible action with maximum depth = self.search_depth
         use alpha-beta pruning to reduce time complexity
@@ -668,27 +678,30 @@ class InforGo(object):
         state = bingo.get_state()
 
         if bingo.win(1) or bingo.win(2):
-            return self.evaluate(state), None
+            return self.evaluate(state, player), None
 
         if depth == 0:
-            return self.evaluate(state), None
+            return self.evaluate(state, player), None
         
         value, action = 0, 0
-        current_player = 0
+        next_player = 0
         next_level = 'Osas'
         func = lambda a, b: 0
 
         if level == 'Max':
             value = -np.inf
-            current_player = 1
             next_level = 'Min'
             func = lambda a, b: max(a, b)
 
         else:
             value = np.inf
-            current_player = 2
             next_level = 'Max'
             func = lambda a, b: min(a, b)
+
+        if player == 1:
+            next_player = 2
+        else:
+            next_player = 1
 
         move = False
 
@@ -700,7 +713,7 @@ class InforGo(object):
                 new_bingo = Bingo(bingo.get_state())
                 bingo.undo_action(r, c)
 
-                val, a = self.Minimax(new_bingo, depth - 1, next_level, alpha, beta)
+                val, a = self.Minimax(new_bingo, depth - 1, next_level, next_player, alpha, beta)
 
                 if level == 'Min':
                     beta = min(beta, val)
@@ -721,13 +734,18 @@ class InforGo(object):
 
         return value, action
 
-    def evaluate(self, state):
+    def evaluate(self, state, player):
         '''
         Evaluate the value of input state with neural network as an approximater
         '''
-        V = self.sess.run(self.V, feed_dict={self.inp: state})
+        V = self.sess.run(self.V, feed_dict={self.inp: state, self.player_node: self.cast_player(player)})
         return V[0][0]
     
+    def cast_player(self, player):
+        tmp = np.zeros([1, 1])
+        tmp[0, 0] = player
+        return tmp
+
     def read_opponent_action(self):
         h, r, c = map(int, input().split())
         return r, c
