@@ -614,6 +614,7 @@ class InforGo(object):
                     print("[Play] User")
                 opponent = self.read_opponent_action()
             row, col = opponent
+            height = self.MDP.bingo.height(row, col)
             record += '{} {} {}\n'.format(height, row, col)
 
             flag, s, _ = self.MDP.take_action(opponent, 2)
