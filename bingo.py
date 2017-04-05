@@ -634,7 +634,7 @@ class InforGo(object):
 
         while True:
             # Choose the best action using Minimax Tree Search
-            _, action = self.Minimax(Bingo(s), self.search_depth, 'Max')
+            _, action = self.Minimax(Bingo(s), self.search_depth, 'Max', player)
             row, col = self.decode_action(action)
             
             height = self.MDP.bingo.height[row][col]
@@ -667,6 +667,10 @@ class InforGo(object):
                 if self.DEBUG:
                     print("[Play] User win")
                 break
+            if player == 1:
+                player = 2
+            else:
+                player = 1
         # Record the game for future training
         f = open(tmp.name, 'w')
         f.write(record)
