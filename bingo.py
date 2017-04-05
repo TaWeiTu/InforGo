@@ -601,7 +601,6 @@ class InforGo(object):
 
     def play(self):
         tmp = tempfile.NamedTemporaryFile(dir='./Data/record/selfrecord', delete=False)
-        f = open(tmp.name, 'w')
         s = self.MDP.get_initial_state()
         record = ''
         if self.DEBUG:
@@ -667,6 +666,7 @@ class InforGo(object):
                     print("[Play] User win")
                 break
         # Record the game for future training
+        f = open(tmp.name, 'w')
         f.write(record)
         f.close()
 

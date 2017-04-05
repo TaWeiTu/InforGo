@@ -7,7 +7,8 @@ InforGo is a 3D-Bingo AI developed by [INFOR 29th](https://infor.org)
 Download the repository
 ```bash
 git clone https://github.com/TaWeiTu/ML_Bingo.git
-cd ML_Bingo && mkdir saves
+cd ML_Bingo
+./build.sh
 ```
 InforGo is developed in [Python3](https://www.python.org/), and uses [Tensorflow](https://www.tensorflow.org/) as its machine learning library.
 To download Python3, visit the officail website [https://www.python.org/downloads/](https://www.python.org/downloads/)
