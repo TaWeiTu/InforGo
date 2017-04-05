@@ -303,7 +303,7 @@ class InforGo(object):
     hidden-layer: relu function
     output-layer: value for the input state
     '''
-    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False, first=True):
+    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00001, alpha=0.3, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False, first=True):
 
         if DEBUG:
             print("[Init] Start setting training parameter")
@@ -312,6 +312,7 @@ class InforGo(object):
         self.DEBUG = DEBUG
         self.first = first
         self.n_epoch = n_epoch
+        self.alpha = alpha
 
         # Learning rate decay
         self.global_step = tf.Variable(0, trainable=False)
@@ -531,7 +532,7 @@ class InforGo(object):
                             new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
                             v_desired = np.zeros([1, 1])
                             # TD-lambda update
-                            v_desired[0][0] = new_v[0][0] * self.td_lambda + self.sess.run(self.learning_rate) * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
+                            v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
                             s = new_s
 
@@ -546,7 +547,7 @@ class InforGo(object):
 
                             new_v = self.sess.run(self.V, feed_dict={self.inp: new_s})
                             # TD-lambda update
-                            v_desired[0][0] = new_v[0][0] * self.td_lambda + self.sess.run(self.learning_rate) * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
+                            v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s})
                             s = new_s
 
@@ -604,8 +605,13 @@ class InforGo(object):
             print("[Play] Start playing")
 
         if self.first is False:
+            if self.DEBUG:
+                print("[Play] User")
             opponent = self.read_opponent_action()
-            while self.MDP.valid_action(opponent):
+            while not self.MDP.valid_action(opponent):
+                if self.DEBUG:
+                    print("[Play] Invalid")
+                    print("[Play] User")
                 opponent = self.read_opponent_action()
             row, col = opponent
             record += '{} {} {}\n'.format(height, row, col)
@@ -752,7 +758,7 @@ if __name__ == '__main__':
         ind = 2
         parameter = {'reward_function': reward_function}
 
-        float_parameter = ['learning_rate', 'decay_rate', 'regularization_param', 'gamma', 'td_lambda']
+        float_parameter = ['learning_rate', 'decay_rate', 'regularization_param', 'gamma', 'td_lambda', 'alpha']
         string_parameter = ['activation_function', 'output_function']
 
         while ind < argv_len:
