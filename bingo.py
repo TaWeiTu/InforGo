@@ -634,7 +634,7 @@ class InforGo(object):
 
         while True:
             # Choose the best action using Minimax Tree Search
-            _, action = self.Minimax(Bingo(s), self.search_depth, 'Max')
+            _, action = self.Minimax(Bingo(s), self.search_depth, 'Max', player)
             row, col = self.decode_action(action)
             
             height = self.MDP.bingo.height[row][col]
