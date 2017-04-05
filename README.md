@@ -6,25 +6,25 @@ InforGo is a 3D-Bingo AI developed by [INFOR 29th](https://infor.org)
 ## Installation
 Download the repository
 ```bash
-git clone https://github.com/TaWeiTu/ML_Bingo.git
-cd ML_Bingo
-./build.sh
+$ git clone https://github.com/TaWeiTu/ML_Bingo.git
+$ cd ML_Bingo
+$ ./build.sh
 ```
 InforGo is developed in [Python3](https://www.python.org/), and uses [Tensorflow](https://www.tensorflow.org/) as its machine learning library.
 To download Python3, visit the officail website [https://www.python.org/downloads/](https://www.python.org/downloads/)
 To download Tensorflow and other required packages, run the following commands:
 ```bash
-pip install tensorflow
-pip install matplotlib
+$ pip install tensorflow
+$ pip install matplotlib
 ```
 ## Examples
 To play with InforGo on command line
 ```bash
-python bingo.py play
+$ python bingo.py play
 ```
 To train InforGo, first store the data in ./save/*, the format of the file should contains 3 numbers per line, indicating the (height, row, col) of the corresponding position, with "-1 -1 -1" at the last line(without quote).
 ```bash
-python bingo.py train [parameter value]
+$ python bingo.py train [parameter value]
 ```
 Valid parameters are the following:
 * **n_epoch:** number of epoches to every training data
@@ -42,3 +42,6 @@ Valid parameters are the following:
 * **filter_width:** width of filter of Convolution layer
 * **out_channel:** the number of output of Convolution layer
 * **search_depth:** maximum search depth of Minimax Tree Search
+* **DEBUG:** if specified DEBUG, debug log will appear
+* **first:** if specified first, AI play first
+* **second:** if specified second, AI play second
