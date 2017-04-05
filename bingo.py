@@ -534,8 +534,9 @@ class InforGo(object):
 
                             new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1)})
                             v_desired = np.zeros([1, 1])
-                            # TD-lambda update
-                            v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
+                            # TD-0 update
+                            # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
+                            v_desired[0][0] = v[0][0] + self.alpha * (R + self.gamma * new_v[0][0] - v[0][0])
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)})
                             s = new_s
 
@@ -549,8 +550,9 @@ class InforGo(object):
                             flag, new_s, R = self.MDP.take_action((row, col), 2)
 
                             new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(2)})
-                            # TD-lambda update
-                            v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
+                            # TD-0 update
+                            # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
+                            v_desired[0][0] = v[0][0] + self.alpha * (R + self.gamma * new_v[0][0] - v[0][0])
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2)})
                             s = new_s
 
