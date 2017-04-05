@@ -605,10 +605,11 @@ class InforGo(object):
             print("[Play] Start playing")
 
         if self.first is False:
+            self.MDP.bingo.change_player()
             if self.DEBUG:
                 print("[Play] User")
             opponent = self.read_opponent_action()
-            while not self.MDP.valid_action(opponent):
+            while self.MDP.valid_action(opponent) is False:
                 if self.DEBUG:
                     print("[Play] Invalid")
                     print("[Play] User")
