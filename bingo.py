@@ -5,6 +5,7 @@ import random
 import sys
 import os.path
 import tempfile
+import math
 
 
 LOG_DIR = 'log/tensorboard'
@@ -508,14 +509,10 @@ class InforGo(object):
             print("[Train] Start training")
         percentage = 0
         record = self.get_record()
-
+        if self.DEBUG:
+            print("[Train] Done Collecting record")
+            print("Training Complete: {}%".format(percentage))
         for epoch in range(self.n_epoch):
-
-            if percentage < (epoch + 1) / self.n_epoch * 100.:
-                percentage = int(((epoch + 1) / self.n_epoch) * 100.)
-                if self.DEBUG:
-                    print("[Train] Training Complete: {}%".format(percentage))
-
             for directory in record.keys():
                 for file_name in record[directory]:
                     for rotate_time in range(4):
@@ -556,6 +553,13 @@ class InforGo(object):
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2)})
                             s = new_s
 
+            if epoch / self.n_epoch > percentage / 100:
+                percentage = math.ceil(epoch / self.n_epoch * 100)    
+                if self.DEBUG:
+                    print("Training Complete: {}%".format(percentage))
+                
+        if self.DEBUG:
+            print("Training Complete: {}%".format(100))
         self.store_weight_and_bias()
 
     def rotate(self, height, row, col, t):

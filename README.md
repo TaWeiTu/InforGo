@@ -20,7 +20,7 @@ $ pip install matplotlib
 ## Examples
 To play with InforGo on command line
 ```bash
-$ python bingo.py play
+$ python bingo.py play [parameter value]
 ```
 To train InforGo, first store the data in ./save/*, the format of the file should contains 3 numbers per line, indicating the (height, row, col) of the corresponding position, with "-1 -1 -1" at the last line(without quote).
 ```bash
