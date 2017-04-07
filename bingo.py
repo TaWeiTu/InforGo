@@ -9,7 +9,6 @@ import math
 
 
 LOG_DIR = 'log/tensorboard'
-DEBUG = False
 argv = sys.argv
 
 
@@ -469,7 +468,13 @@ class InforGo(object):
             w = np.zeros([n, m])
             for i in range(n):
                 for j in range(m):
-                    w[i, j] = float(f.readline())
+                    try:
+                        w[i, j] = float(f.readline())
+                    except:
+                        if self.DEBUG:
+                            print("[ERROR] NaN or unstored weight")
+                        os.remove('./Data/Weight/{}.txt'.format(layer))
+                        return tf.truncated_normal(shape=[n, m], mean=0.0, stddev=1.0, dtype=tf.float64)
             f.close()
             return tf.Variable(tf.cast(w, tf.float64))
         else:
@@ -483,7 +488,13 @@ class InforGo(object):
             f = open('./Data/Bias/{}.txt'.format(layer), 'r')
             b = np.zeros([1, n])
             for i in range(n):
-                b[0, i] = float(f.readline())
+                try:
+                    b[0, i] = float(f.readline())
+                except:
+                    if self.DEBUG:
+                        print("[ERROR] NaN or unstored bias")
+                    os.remove('./Data/Bias/{}.txt'.format(layer))
+                    return tf.Variable(tf.truncated_normal([1, n], mean=0.0, stddev=1.0, dtype=tf.float64))
             f.close()
             return tf.Variable(tf.cast(b, tf.float64))
         else:
@@ -501,7 +512,6 @@ class InforGo(object):
         Main Learning Process
         return final score, graph_x, graph_y
         '''
-
         writer = tf.summary.FileWriter(LOG_DIR)
         writer.add_graph(self.sess.graph)
         if self.DEBUG:
@@ -511,7 +521,7 @@ class InforGo(object):
         record = self.get_record()
         if self.DEBUG:
             print("[Train] Done Collecting record")
-            print("Training Complete: {}%".format(percentage))
+            print("[Train] Training Complete: {}%".format(percentage))
         for epoch in range(self.n_epoch):
             for directory in record.keys():
                 for file_name in record[directory]:
@@ -556,10 +566,10 @@ class InforGo(object):
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)    
                 if self.DEBUG:
-                    print("Training Complete: {}%".format(percentage))
+                    print("[Train] Training Complete: {}%".format(percentage))
                 
         if self.DEBUG:
-            print("Training Complete: {}%".format(100))
+            print("[Train] Training Complete: {}%".format(100))
         self.store_weight_and_bias()
 
     def rotate(self, height, row, col, t):
@@ -615,13 +625,22 @@ class InforGo(object):
         player = 1
         if self.first is False:
             if self.DEBUG:
-                print("[Play] User")
-            opponent = self.read_opponent_action()
+                print("[Play] Enter position")
+            try:
+                opponent = self.read_opponent_action()
+            except:
+                if self.DEBUG:
+                    print("[ERROR] Fail to read opponent action")
+                os.remove(tmp.name)
+                return
             while self.MDP.valid_action(opponent) is False:
                 if self.DEBUG:
-                    print("[Play] Invalid")
-                    print("[Play] User")
-                opponent = self.read_opponent_action()
+                    print("[FATAL] Invalid")
+                    print("[FATAL] Re-enter position")
+                try:
+                    opponent = self.read_opponent_action()
+                except:
+                    print("[ERROR] Fail to read opponent action")
             row, col = opponent
             height = self.MDP.bingo.height[row][col]
             record += '{} {} {}\n'.format(height, row, col)
@@ -647,30 +666,57 @@ class InforGo(object):
 
             action = (row, col)
             flag, s, _ = self.MDP.take_action(action, player)
+
             if flag == player:
                 record += '-1 -1 -1\n'
                 if self.DEBUG:
                     print("[Play] AI win")
                 break
+
             if player == 1:
                 player = 2
             else:
                 player = 1
-            opponent = self.read_opponent_action()
-            while self.MDP.valid_action(opponent) is False:
-                print("[Play] Invalid input action")
-                opponent = self.read_opponent_action()
 
+            if self.DEBUG:
+                print("[Play] Enter position")
+
+            try:
+                opponent = self.read_opponent_action()
+            except:
+                if self.DEBUG:
+                    print("[ERROR] Invalid Opponent Move")
+                os.remove(tmp.name)
+                break
+            
+            success = True
+            while self.MDP.valid_action(opponent) is False:
+                if self.DEBUG:
+                    print("[FATAL] Invalid input action")
+                    print("[FATAL] Re-enter position")
+                try:
+                    opponent = self.read_opponent_action()
+                except:
+                    if self.DEBUG:
+                        print("[ERROR] Invalid Opponent Move")
+                    os.remove(tmp.name)
+                    success = False
+                    break
+            
+            if not success:
+                break
             row, col = opponent
             height = self.MDP.bingo.height[row][col]
             record += '{} {} {}\n'.format(height, row, col)
 
             flag, s, _ = self.MDP.take_action(opponent, player)
+
             if flag == player:
                 record += '-1 -1 -1\n'
                 if self.DEBUG:
                     print("[Play] User win")
                 break
+
             if player == 1:
                 player = 2
             else:
@@ -757,7 +803,10 @@ class InforGo(object):
         return tmp
 
     def read_opponent_action(self):
-        h, r, c = map(int, input().split())
+        try:
+            h, r, c = map(int, input().split())
+        except:
+            raise
         return r, c
         
     def emit_action(self, height, row, col):
@@ -771,7 +820,10 @@ class InforGo(object):
 if __name__ == '__main__':
 
     def main():
-        
+       
+        if len(argv) < 2:
+            print("[ERROR] Please specify train/play")
+
         cmd = argv[1]
         
         # TODO: redesign a reward function
@@ -801,6 +853,9 @@ if __name__ == '__main__':
             elif argv[ind] == 'second':
                 parameter['first'] = False
                 ind += 1
+            elif argv[ind] == 'LOG_DIR':
+                LOG_DIR = argv[ind + 1]
+                ind += 2
             elif argv[ind] == 'n_node_hidden':
                 parameter['n_node_hidden'] = []
                 for i in range(parameter['n_hidden_layer']):
