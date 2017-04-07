@@ -317,7 +317,7 @@ class InforGo(object):
     hidden-layer: relu function
     output-layer: value for the input state
     '''
-    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00000001, alpha=0.00000001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False, first=True):
+    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='relu', output_function=None, learning_rate=0.00000001, alpha=0.00000001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False, first=True):
 
         if DEBUG:
             print("[Init] Start setting training parameter")
@@ -349,20 +349,20 @@ class InforGo(object):
         self.search_depth = search_depth
 
         # Activation function at hidden layer
-        if activation_function == 'Relu':
-            self.activation_function = lambda k: tf.nn.relu(k, name='Relu')
+        if activation_function == 'relu':
+            self.activation_function = lambda k: tf.nn.relu(k, name='relu')
 
-        elif activation_function == 'Sigmoid':
-            self.activation_function = lambda k: tf.sigmoid(k, name='Sigmoid')
+        elif activation_function == 'sigmoid':
+            self.activation_function = lambda k: tf.sigmoid(k, name='sigmoid')
 
-        elif activation_function == 'Tanh':
-            self.activation_function = lambda k: tf.tanh(k, name='Tanh')
+        elif activation_function == 'tanh':
+            self.activation_function = lambda k: tf.tanh(k, name='tanh')
 
         # Output function 
         if output_function is None:
             self.output_function = lambda k: k
 
-        elif output_function == 'Softmax':
+        elif output_function == 'softmax':
             self.output_function = lambda k: tf.nn.softmax(k)
 
         # L2 regularization paramater
@@ -458,7 +458,7 @@ class InforGo(object):
                     self.L2_value += tf.nn.l2_loss(self.weight_and_bias[i]['Weight']) + tf.nn.l2_loss(self.weight_and_bias[i]['Bias'])
                 return self.L2_value
 
-            self.loss = tf.add(tf.reduce_sum(tf.square(self.V_desired - self.V)), self.regularization_param / self.n_epoch * L2_Regularization())
+            self.loss = tf.reduce_sum(tf.square(self.V_desired - self.V))
             if self.DEBUG:
                 print("[Init] Done caculating cost function")
             # use gradient descent to optimize our model
@@ -488,11 +488,11 @@ class InforGo(object):
                         if self.DEBUG:
                             print("[ERROR] NaN or unstored weight")
                         os.remove('./Data/Weight/{}.txt'.format(layer))
-                        return tf.truncated_normal(shape=[n, m], mean=0.0, stddev=1.0, dtype=tf.float64)
+                        return tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.001, dtype=tf.float64)
             f.close()
             return tf.Variable(tf.cast(w, tf.float64))
         else:
-            return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=1.0, dtype=tf.float64))
+            return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.001, dtype=tf.float64))
 
     def get_bias(self, n, layer):
         '''
@@ -508,11 +508,11 @@ class InforGo(object):
                     if self.DEBUG:
                         print("[ERROR] NaN or unstored bias")
                     os.remove('./Data/Bias/{}.txt'.format(layer))
-                    return tf.Variable(tf.truncated_normal([1, n], mean=0.0, stddev=1.0, dtype=tf.float64))
+                    return tf.Variable(tf.truncated_normal([1, n], mean=0.0, stddev=0.001, dtype=tf.float64))
             f.close()
             return tf.Variable(tf.cast(b, tf.float64))
         else:
-            return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=1.0, dtype=tf.float64))
+            return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.001, dtype=tf.float64))
 
     def decode_action(self, action_num):
         action = [0, 0]
@@ -536,7 +536,11 @@ class InforGo(object):
         if self.DEBUG:
             print("[Train] Done Collecting record")
             print("[Train] Training Complete: {}%".format(percentage))
+
+        loss = []
         for epoch in range(self.n_epoch):
+            loss_sum = 0
+            update = 0
             for directory in record.keys():
                 for file_name in record[directory]:
                     for rotate_time in range(4):
@@ -558,10 +562,19 @@ class InforGo(object):
                             # TD-0 update
                             # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
                             v_desired[0][0] = v[0][0] + self.alpha * (R + self.gamma * new_v[0][0] - v[0][0])
+                            # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
+                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)})
+                            update += 1
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)})
                             s = new_s
 
-                            height, row, col = map(int, f.readline().split())
+                            try:
+                                height, row, col = map(int, f.readline().split())
+                            except:
+                                if self.DEBUG:
+                                    print("[ERROR] Invalid file format or context {}".format(file_name))
+                                break
+
                             if (height, row, col) == (-1, -1, -1):
                                 break
 
@@ -574,9 +587,13 @@ class InforGo(object):
                             # TD-0 update
                             # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
                             v_desired[0][0] = v[0][0] + self.alpha * (R + self.gamma * new_v[0][0] - v[0][0])
+                            # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
+                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2)})
+                            update += 1
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2)})
                             s = new_s
 
+            loss.append(loss_sum / update)
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)    
                 if self.DEBUG:
@@ -585,6 +602,7 @@ class InforGo(object):
         if self.DEBUG:
             print("[Train] Training Complete: {}%".format(100))
         self.store_weight_and_bias()
+        return loss
 
     def rotate(self, height, row, col, t):
         '''
@@ -857,7 +875,7 @@ if __name__ == '__main__':
         parser.add_argument('--n_node_hidden', default=[32], type=int, nargs='+', help='nodes in each hidden layers')
         
         # Neuron
-        parser.add_argument('--activation_function', default='Relu', type=str, help='activation function')
+        parser.add_argument('--activation_function', default='relu', type=str, help='activation function')
         parser.add_argument('--output_function', default=None, type=str, help='output function')
 
         # Convolution Layer
@@ -909,7 +927,13 @@ if __name__ == '__main__':
             output_function=args.output_function)
 
         if args.method == 'train':
-            AI.train()
+            loss = AI.train()
+            f = open('./tmp')
+            for i in loss:
+                f.write('{}\n'.format(i))
+            f.close()
+            plt.plot([i for i in range(len(loss))], loss)
+            plt.show()
         if args.method == 'play':
             AI.play()
 
