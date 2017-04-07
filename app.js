@@ -27,24 +27,53 @@ var roomList = []
 //start.js
 
 io.sockets.on('connection', function(socket){
+	let player = new bingo.Player(socket)
 	console.log("someone in")
 	socket.emit('refreshRoomInfo', getSimpleRoomList(roomList))
-	socket.on('createRoomReq', function(name, mode){
-		console.log("get createRoomReq with mode",mode)
-		if (!name)return
-		if (mode != 'pvp' && mode != 'com') return
-		// escape
-		name = name.toString()
-		name = name.replace(/&/g, "&amp")
-		name = name.replace(/</g, "&lt")
-		name = name.replace(/>/g, "&gt")
-		roomList.push(new bingo.Room(name, mode))
-		socket.emit('message',{'message':'Room create sucess.', 'msgId': bingo.randomString(8)})
+	socket.on('createRoomReq', (name, mode) => {
+		if(mode != 'pvp' && mode != 'com')return
+		console.log('get createRoomReq with mode',mode)
+		console.log(name)
+		if(!name)return
+		else name = escape(name.toString())
+		console.log(name)
+		if(typeof player.name === 'undefined')player.name = name
+		else name = player.name
+		let newRoom = new bingo.Room(name, mode)
+		roomList.push(newRoom)
+		newRoom.playerList.push(player);
+		socket.emit('message', {'message':'Room create sucess.', 'msgId':bingo.randomString(8)})
 
 		io.emit('refreshRoomInfo',getSimpleRoomList(roomList))
 	})
-	socket.on('removeRoom',function(rid){
-		console.log('Get remove room req')
+	socket.on('joinRoomReq', (name, rid) => {
+		if(!name)return
+		else name = escape(name.toString())
+		if(typeof player.name === 'undefined')player.name = name
+		else name = player.name
+		let room = getRoomByRid(rid)
+		room.audList.push(player)
+		socket.emit('message', {'message':'successful join room.'})
+	})
+	socket.on('audBecomePlayer', rid => {
+		if(!player.name)return
+		let room = getRoomByRid(rid)
+		if(room.playerList.length == 2){
+			socket.emit('message', {'message':'failed', 'detail':'player already full.', 'msgId': bingo.randomString(8)})
+			return
+		}
+		for(let i=0;i<room.audList.length;++i){
+			if(room.audList[i] == player){
+				room.audList.splice(i,1)
+				room.playerList.push(player)
+				socket.emit('message', {'message':'success become player', 'msgId':bingo.randomString(8)})
+				return
+			}
+		}
+		socket.emit('message',{'message':'failed become player', 'detail':'can\'t find such player in list.', 'msgId': bingo.randomString(8)})
+	})
+	socket.on('removeRoom', rid => {
+		console.log('Get remove room request')
 		getRoomByRid(rid).removeRoom(roomList,io)
 		console.log('Remove sucess.')
 		console.log('Room list',roomList)
@@ -78,6 +107,11 @@ function getSimpleRoomList(list){
 		})
 	}
 	return simpleList
+}
+
+function escape(str){
+	return str
+	// return str.replace(/&/g, "&amp").replace(/</g, "&lt").replace(/>/g, "&gt")
 }
 
 server.listen(port, function(){
