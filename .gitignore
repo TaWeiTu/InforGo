@@ -1,7 +1,5 @@
 node_modules/
 *.swp
 .*.swp
-saves/*
-weights/*
-biases/*
-tensorboard/*
+Data/*
+log/*
