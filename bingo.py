@@ -1,3 +1,15 @@
+# -*- coding: utf-8 -*-
+'''
+InforGo: 3D-Bingo AI developed by INFOR 29th
+* Game: 3D-Bingo board game, designed by MiccWan.
+* MDP: Markov-Decision-Process
+    An enviroment which take action as input and generate resulting state and reward, based on the initial state probability distribution and state-action probability distribution, which in 3D-Bingo game, are all deterministic.
+* AI: An artificial intelligence train by Reinforcement Learning
+    play:
+        Use Minimax Tree Search to find the best action, state evaluation is done by neural network approximator.
+    train:
+        We automatically record the game, and loop through every game while simulating the process, update the neural network base on TD(0) learning.
+'''
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -5,9 +17,11 @@ import random
 import sys
 import os.path
 import tempfile
+import argparse
 import math
 
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 LOG_DIR = 'log/tensorboard'
 argv = sys.argv
 
@@ -303,7 +317,7 @@ class InforGo(object):
     hidden-layer: relu function
     output-layer: value for the input state
     '''
-    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00001, alpha=0.3, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False, first=True):
+    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='Relu', output_function=None, learning_rate=0.00000001, alpha=0.00000001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False, first=True):
 
         if DEBUG:
             print("[Init] Start setting training parameter")
@@ -810,7 +824,7 @@ class InforGo(object):
         return r, c
         
     def emit_action(self, height, row, col):
-        if self.DEBUG is True:
+        if self.DEBUG:
             print("[DEBUG] ", end='')
             print("{} {} {}".format(height, row, col))
         else:
@@ -821,11 +835,46 @@ if __name__ == '__main__':
 
     def main():
        
-        if len(argv) < 2:
-            print("[ERROR] Please specify train/play")
-
-        cmd = argv[1]
+        parser = argparse.ArgumentParser(description='')
         
+        # Method
+        parser.add_argument('method', help='play/train')
+
+        # Log
+        parser.add_argument('--logdir', default='./tensorboard', help='Tensorboard log directory')
+
+        # Training parameter
+        parser.add_argument('--learning_rate', default=0.00000001, type=float, help='learning rate for the neural network')
+        parser.add_argument('--gamma', default=0.99, type=float, help='discount factor')
+        parser.add_argument('--alpha', default=0.00000001, type=float, help='learning rate for TD(0)-learning')
+        parser.add_argument('--regularization_param', default=0.001, type=float, help='L2 regularization')
+        parser.add_argument('--decay_rate', default=0.96, type=float, help='Decay rate')
+        parser.add_argument('--decay_step', default=100, type=int, help='Decay step')
+
+        # Model parameter
+        parser.add_argument('--n_epoch', default=100, type=int, help='number of epochs')
+        parser.add_argument('--n_hidden_layer', default=1, type=int, help='number of hidden layers')
+        parser.add_argument('--n_node_hidden', default=[32], type=int, nargs='+', help='nodes in each hidden layers')
+        
+        # Neuron
+        parser.add_argument('--activation_function', default='Relu', type=str, help='activation function')
+        parser.add_argument('--output_function', default=None, type=str, help='output function')
+
+        # Convolution Layer
+        parser.add_argument('--filter_depth', default=1, type=int, help='filter depth')
+        parser.add_argument('--filter_height', default=1, type=int, help='filter height')
+        parser.add_argument('--filter_width', default=1, type=int, help='filter width')
+        parser.add_argument('--out_channel', default=5, type=int, help='out channel')
+
+        # DEBUG
+        parser.add_argument('--DEBUG', default=False, type=bool, help='Debug mode')
+        
+        # Play
+        parser.add_argument('--first', default=True, type=bool, help='Play first')
+        parser.add_argument('--search_depth', default=3, type=int, help='maximum search depth')
+
+        args = parser.parse_args()
+
         # TODO: redesign a reward function
         def reward_function(state, flag, player):
             if flag == 3 or flag == 0:
@@ -835,49 +884,33 @@ if __name__ == '__main__':
             if flag != player:
                 return -1
             return 0
+        
+        LOG_DIR = './log' + args.logdir
 
-        argv_len = len(argv)
-        ind = 2
-        parameter = {'reward_function': reward_function}
+        AI = InforGo(
+            reward_function=reward_function, 
+            n_epoch=args.n_epoch, 
+            n_hidden_layer=args.n_hidden_layer,
+            n_node_hidden=args.n_node_hidden,
+            learning_rate=args.learning_rate,
+            gamma=args.gamma,
+            alpha=args.alpha,
+            regularization_param=args.regularization_param,
+            decay_step=args.decay_step,
+            decay_rate=args.decay_rate,
+            filter_depth=args.filter_depth,
+            filter_height=args.filter_height,
+            filter_width=args.filter_width,
+            out_channel=args.out_channel,
+            DEBUG=args.DEBUG,
+            first=args.first,
+            search_depth=args.search_depth,
+            activation_function=args.activation_function,
+            output_function=args.output_function)
 
-        float_parameter = ['learning_rate', 'decay_rate', 'regularization_param', 'gamma', 'td_lambda', 'alpha']
-        string_parameter = ['activation_function', 'output_function']
-
-        while ind < argv_len:
-            if argv[ind] == 'DEBUG':
-                parameter['DEBUG'] = True
-                ind += 1
-            elif argv[ind] == 'first':
-                parameter['first'] = True
-                ind += 1
-            elif argv[ind] == 'second':
-                parameter['first'] = False
-                ind += 1
-            elif argv[ind] == 'LOG_DIR':
-                LOG_DIR = argv[ind + 1]
-                ind += 2
-            elif argv[ind] == 'n_node_hidden':
-                parameter['n_node_hidden'] = []
-                for i in range(parameter['n_hidden_layer']):
-                    parameter['n_node_hidden'].append(int(argv[ind + i + 1]))
-                ind += parameter['n_hidden_layer'] + 1
-            elif argv[ind] in float_parameter:
-                parameter[argv[ind]] = float(argv[ind + 1])
-                ind += 2
-            elif argv[ind] in string_parameter:
-                parameter[argv[ind]] = argv[ind + 1]
-                ind += 2
-            else:
-                parameter[argv[ind]] = int(argv[ind + 1])
-                ind += 2
-
-        if 'DEBUG' in parameter.keys():
-            print("[INFO] Done collecting execution parameter")
-
-        AI = InforGo(**parameter)
-        if cmd == 'train':
+        if args.method == 'train':
             AI.train()
-        if cmd == 'play':
+        if args.method == 'play':
             AI.play()
 
     main()
