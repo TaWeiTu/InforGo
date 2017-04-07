@@ -20,27 +20,34 @@ $ pip install matplotlib
 ## Examples
 To play with InforGo on command line
 ```bash
-$ python bingo.py play [parameter value]
+$ python bingo.py play [--argument=<value>]
 ```
-To train InforGo, first store the data in ```./save/*```, the format of the file should contains 3 numbers per line, indicating the (height, row, col) of the corresponding position, with "-1 -1 -1" at the last line(without quote).
+For example, play with AI that has a maximum search depth 3.
+```base
+$ python bingo.py play --search_depth=3
+```
+To train InforGo, first store the data in ```./Data/record/*```, the format of the file should contains 3 numbers per line, indicating the (height, row, col) of the corresponding position, with "-1 -1 -1" at the last line(without quote).
 ```bash
-$ python bingo.py train [parameter value]
+$ python bingo.py train [--argument=<value>]
+```
+For example, train AI with 3 hidden layers, each layer is constructed with 32, 16, 8 nodes, respectively.
+```base
+$ python bingo.py train --n_hidden_layer=3 --n_node_hidden 32 16 8
 ```
 Valid parameters are the following:
-* **n_epoch:** number of epoches to every training data
-* **n_hidden_layer:** number of hidden layers
-* **n_node_hidden:** an array of length n_hidden_layer, representing the number of nodes in corresponding hidden layer
-* **activation_function:** activation function of hidden layers, "Relu", "Sigmoid", "Tanh" are currently available
-* **learning_rate:** learning rate of the neural network
-* **gamma:** discount factor of the value funciton
-* **regularization_param:** regularization parameter of L2-Regularization
-* **decay_step:** step of learning rate decay
-* **decay_rate:** rate of learning rate decay
-* **filter_depth:** depth of filter of Convolution layer
-* **filter_height:** height of filter of Convolution layer
-* **filter_width:** width of filter of Convolution layer
-* **out_channel:** the number of output of Convolution layer
-* **search_depth:** maximum search depth of Minimax Tree Search
-* **DEBUG:** if specified DEBUG, debug log will appear
-* **first:** if specified first, AI play first
-* **second:** if specified second, AI play second
+* **n_epoch:** number of epoches to every training data, default is 1
+* **n_hidden_layer:** number of hidden layers, default is 1
+* **n_node_hidden:** an array of length n_hidden_layer, representing the number of nodes in corresponding hidden layer, default is [32]
+* **activation_function:** activation function of hidden layers, "Relu", "Sigmoid", "Tanh" are currently available, default is "Relu"
+* **learning_rate:** learning rate of the neural network, default is 0.00000001
+* **gamma:** discount factor of the value funciton, default is 0.99
+* **regularization_param:** regularization parameter of L2-Regularization, default is 0.001
+* **decay_step:** step of learning rate decay, default is 0.96
+* **decay_rate:** rate of learning rate decay, default is 100
+* **filter_depth:** depth of filter of Convolution layer, default is 1
+* **filter_height:** height of filter of Convolution layer, default is 1
+* **filter_width:** width of filter of Convolution layer, default is 1
+* **out_channel:** the number of output of Convolution layer, default is 5
+* **search_depth:** maximum search depth of Minimax Tree Search, default is 3
+* **DEBUG:** Debug mode, default is False
+* **first:** AI go first or second, default is True
