@@ -928,10 +928,14 @@ if __name__ == '__main__':
 
         if args.method == 'train':
             loss = AI.train()
-            f = open('./tmp')
-            for i in loss:
-                f.write('{}\n'.format(i))
-            f.close()
+            try:
+                f = open('./tmp', 'w')
+                for i in loss:
+                    f.write('{}\n'.format(i))
+                f.close()
+            except:
+                for i in loss:
+                    print(i, end=' ')
             plt.plot([i for i in range(len(loss))], loss)
             plt.show()
         if args.method == 'play':
