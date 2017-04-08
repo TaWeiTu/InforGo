@@ -33,6 +33,7 @@
 
     // set up the renderer
     var scene = new THREE.Scene();
+    var scale = 60;
     var camera = new THREE.PerspectiveCamera( 70, window.innerWidth/window.innerHeight, 1, 1000 );
     var renderer = new THREE.WebGLRenderer();
     renderer.setSize( window.innerWidth, window.innerHeight );
@@ -123,7 +124,7 @@
 
     function render(){
 
-        renderer.setSize( window.innerWidth,window.innerHeight);
+        renderer.setSize( window.innerWidth, window.innerHeight);
         requestAnimationFrame(render);
         // limiting latitude from 0 to 85
         latitude = Math.max(-85, Math.min(0, latitude));
@@ -133,9 +134,9 @@
         camera.target.y = 500 * Math.cos(THREE.Math.degToRad(90 - latitude));
         camera.target.z = 500 * Math.sin(THREE.Math.degToRad(90 - latitude)) * Math.sin(THREE.Math.degToRad(longitude));
         camera.lookAt(camera.target);
-        camera.position.x = -camera.target.x/60 +2.5;
-        camera.position.y = -camera.target.y/60 + 1;
-        camera.position.z = -camera.target.z/60 +2.5;
+        camera.position.x = -camera.target.x/scale +2.5;
+        camera.position.y = -camera.target.y/scale + 1;
+        camera.position.z = -camera.target.z/scale +2.5;
 
         //set raycaster
         raycaster.setFromCamera( mouse, camera );
@@ -247,7 +248,13 @@
     document.addEventListener("mousedown", onDocumentMouseDown, false);
     document.addEventListener("mousemove", onDocumentMouseMove, false);
     document.addEventListener("mouseup", onDocumentMouseUp, false);
+    document.addEventListener("wheel", onWheel, false);
 
+    function onWheel(event){
+        scale += event.deltaY/25;
+        scale = Math.max(scale,20);
+        scale = Math.min(scale,100);
+    }
     function onDocumentMouseDown(event){
 
         manualControl = true;
