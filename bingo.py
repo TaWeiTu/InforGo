@@ -60,7 +60,6 @@ class Bingo(object):
         '''
         place a cube on position(height, row, col), and return whether the operation is valid
         '''
-
         if not self.valid_action(row, col):
             return False
 
@@ -314,15 +313,14 @@ class InforGo(object):
     A Neural Network model for training 3D-bingo AI
     input-layer: 4 x 4 x 4 board
     convolution-layer: stride = 1 x 1 x 1
-    hidden-layer: relu function
-    output-layer: value for the input state
+    hidden-layer: relu/sigmoid/tanh function
+    output-layer: approximate value for the input state
     '''
-    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='relu', output_function=None, learning_rate=0.00000001, alpha=0.00000001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False, first=True):
+    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='relu', output_function=None, learning_rate=0.00000001, alpha=0.00000001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, convolution=True, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False, first=True):
 
         if DEBUG:
             print("[Init] Start setting training parameter")
 
-        # number of epoches
         self.DEBUG = DEBUG
         self.first = first
         self.n_epoch = n_epoch
@@ -375,7 +373,6 @@ class InforGo(object):
         # Neural Network Setup
 
         # input layer: 4 x 4 x 4 Tensor representing the state
-        
         with tf.name_scope('Input-Layer'):
             self.inp = tf.placeholder(shape=[4, 4, 4, 1, 1], dtype=tf.float64, name='input')
 
@@ -383,22 +380,26 @@ class InforGo(object):
             print("[Init] Done consturcting input layer")
 
         # 3D-Convolution layer
-        with tf.name_scope('Convolution-Layer'):
-            self.conv_layer_w = tf.cast(tf.Variable(tf.truncated_normal(shape=[filter_depth, filter_height, filter_width, 1, out_channel], mean=0.0, stddev=1.0)), tf.float64, name='weight')
-            self.conv_layer = tf.nn.conv3d(input=self.inp, filter=self.conv_layer_w, strides=[1, 1, 1, 1, 1], padding='SAME', name='Conv-Layer')
+        if convolution:
+            with tf.name_scope('Convolution-Layer'):
+                self.conv_layer_w = tf.cast(tf.Variable(tf.truncated_normal(shape=[filter_depth, filter_height, filter_width, 1, out_channel], mean=0.0, stddev=1.0)), tf.float64, name='weight')
+                self.conv_layer = tf.nn.conv3d(input=self.inp, filter=self.conv_layer_w, strides=[1, 1, 1, 1, 1], padding='SAME', name='Conv-Layer')
 
-            # Flatten the convolution layer
-            self.conv_layer_output = tf.cast(tf.reshape(self.conv_layer, [1, -1], name='Flattend'), dtype=tf.float64)
+                # Flatten the convolution layer
+                self.conv_layer_output = tf.cast(tf.reshape(self.conv_layer, [1, -1], name='Flattend'), dtype=tf.float64)
 
-            # Caculate the length of flattened layer
-            self.conv_layer_length = 4 * 4 * 4 * out_channel
-
-        with tf.name_scope('Player-Node'):
-            self.player_node = tf.placeholder(shape=[1, 1], dtype=tf.float64, name='Player-Node')
+                # Caculate the length of flattened layer
+                self.conv_layer_length = 4 * 4 * 4 * out_channel
+        else:
+            self.conv_layer_output = tf.reshape(self.inp, [1, -1], name='Flattened')
+            self.conv_layer_length = 4 * 4 * 4
 
         if self.DEBUG:
             print("[Init] Done constructing convolution layer with out_channel = {}".format(out_channel))
         
+        with tf.name_scope('Player-Node'):
+            self.player_node = tf.placeholder(shape=[1, 1], dtype=tf.float64, name='Player-Node')
+
         # Store all the weight and bias between each layer
         self.weight_and_bias = [{} for i in range(self.n_hidden_layer + 1)]
         
@@ -548,7 +549,13 @@ class InforGo(object):
                         s = self.MDP.get_initial_state()
 
                         while True:
-                            height, row, col = map(int, f.readline().split())
+                            try:
+                                height, row, col = map(int, f.readline().split())
+                            except:
+                                if self.DEBUG:
+                                    print("[ERROR] Invalid file format or context {}".format(file_name))
+                                break
+
                             if (height, row, col) == (-1, -1, -1):
                                 break
 
@@ -647,32 +654,34 @@ class InforGo(object):
             if self.DEBUG:
                 print("[Train] Done storing bias {}".format(i))
 
-    def play(self):
+    def play(self, test_flag=False, bot=None):
         tmp = tempfile.NamedTemporaryFile(dir='./Data/record/selfrecord', delete=False)
+        winner = 0
         s = self.MDP.get_initial_state()
         record = ''
-        if self.DEBUG:
+        if self.DEBUG and not test_flag:
             print("[Play] Start playing")
 
         player = 1
         if self.first is False:
-            if self.DEBUG:
+            if self.DEBUG and not self.test_flag:
                 print("[Play] Enter position")
             try:
-                opponent = self.read_opponent_action()
+                opponent = self.read_opponent_action(test_flag, bot)
             except:
-                if self.DEBUG:
+                if self.DEBUG and not self.test_flag:
                     print("[ERROR] Fail to read opponent action")
                 os.remove(tmp.name)
                 return
             while self.MDP.valid_action(opponent) is False:
-                if self.DEBUG:
+                if self.DEBUG and not self.test_flag:
                     print("[FATAL] Invalid")
                     print("[FATAL] Re-enter position")
                 try:
-                    opponent = self.read_opponent_action()
+                    opponent = self.read_opponent_action(test_flag, bot)
                 except:
-                    print("[ERROR] Fail to read opponent action")
+                    if not self.test_flag:
+                        print("[ERROR] Fail to read opponent action")
             row, col = opponent
             height = self.MDP.bingo.height[row][col]
             record += '{} {} {}\n'.format(height, row, col)
@@ -682,10 +691,11 @@ class InforGo(object):
                 player = 2
             else:
                 player = 1
-            if flag == 2:
+            if flag == 1:
                 record += '-1 -1 -1\n'
-                if self.DEBUG:
+                if self.DEBUG and not test_flag:
                     print("[Play] User win")
+                winner = 1
 
         while True:
             # Choose the best action using Minimax Tree Search
@@ -693,7 +703,7 @@ class InforGo(object):
             row, col = self.decode_action(action)
             
             height = self.MDP.bingo.height[row][col]
-            self.emit_action(height, row, col)
+            self.emit_action(height, row, col, test_flag)
             record += '{} {} {}\n'.format(height, row, col)
 
             action = (row, col)
@@ -701,8 +711,9 @@ class InforGo(object):
 
             if flag == player:
                 record += '-1 -1 -1\n'
-                if self.DEBUG:
+                if self.DEBUG and not test_flag:
                     print("[Play] AI win")
+                winner = player
                 break
 
             if player == 1:
@@ -710,26 +721,26 @@ class InforGo(object):
             else:
                 player = 1
 
-            if self.DEBUG:
+            if self.DEBUG and not test_flag:
                 print("[Play] Enter position")
 
             try:
-                opponent = self.read_opponent_action()
+                opponent = self.read_opponent_action(test_flag, bot)
             except:
-                if self.DEBUG:
+                if self.DEBUG and not test_flag:
                     print("[ERROR] Invalid Opponent Move")
                 os.remove(tmp.name)
                 break
             
             success = True
             while self.MDP.valid_action(opponent) is False:
-                if self.DEBUG:
+                if self.DEBUG and not test_flag:
                     print("[FATAL] Invalid input action")
                     print("[FATAL] Re-enter position")
                 try:
-                    opponent = self.read_opponent_action()
+                    opponent = self.read_opponent_action(test_flag, bot)
                 except:
-                    if self.DEBUG:
+                    if self.DEBUG and not test_flag:
                         print("[ERROR] Invalid Opponent Move")
                     os.remove(tmp.name)
                     success = False
@@ -745,8 +756,9 @@ class InforGo(object):
 
             if flag == player:
                 record += '-1 -1 -1\n'
-                if self.DEBUG:
+                if self.DEBUG and not test_flag:
                     print("[Play] User win")
+                winner = player
                 break
 
             if player == 1:
@@ -757,6 +769,7 @@ class InforGo(object):
         f = open(tmp.name, 'w')
         f.write(record)
         f.close()
+        return winner
 
     def Minimax(self, bingo, depth, level, player, alpha=-np.inf, beta=np.inf):
         '''
@@ -834,19 +847,81 @@ class InforGo(object):
         tmp[0, 0] = player
         return tmp
 
-    def read_opponent_action(self):
+    def read_opponent_action(self, test_flag, bot):
+        if test_flag:
+            return bot.generate_action(self.MDP.get_state())
+
         try:
             h, r, c = map(int, input().split())
         except:
             raise
         return r, c
         
-    def emit_action(self, height, row, col):
+    def emit_action(self, height, row, col, test_flag):
+        if test_flag:
+            return
         if self.DEBUG:
             print("[DEBUG] ", end='')
             print("{} {} {}".format(height, row, col))
         else:
             print(height + row * 4 + col * 16)
+
+    def test(self):
+        bot = None
+        win = 0
+        player = 0
+        percentage = 0
+        if self.first:
+            player = 1
+            bot = Bot(2)
+        else:
+            player = 2
+            bot = Bot(1)
+        if self.DEBUG:
+            print("[Test] Test Complete: {}%".format(0))
+        for epoch in range(self.n_epoch):
+            winner = self.play(test_flag=True, bot=bot)
+            if winner == player:
+                win += 1
+
+            if epoch / self.n_epoch > percentage / 100:
+                percentage = math.ceil(epoch / self.n_epoch * 100)    
+                if self.DEBUG:
+                    print("[Test] Test Complete: {}%".format(percentage))
+        if self.DEBUG:
+            print("[Test] Test Complete: {}%".format(100))
+        print("[Test] Winning Percentage: {}%".format(win / self.n_epoch * 100.))
+        return win / self.n_epoch * 100.
+
+
+class Bot:
+
+    def __init__(self, player):
+        self.player = player
+        self.opponent = 0
+        if self.player == 1:
+            self.opponent = 2
+        else:
+            self.opponent = 1
+    
+    def generate_action(self, state):
+        bingo = Bingo(state)
+        for i in range(4):
+            for j in range(4):
+                if bingo.valid_action(i, j):
+                    bingo.place(i, j)
+                    if bingo.win(self.player):
+                        return i, j
+                    bingo.undo_action(i, j)
+        bingo.change_player()
+        for i in range(4):
+            for j in range(4):
+                if bingo.valid_action(i, j):
+                    bingo.place(i, j)
+                    if bingo.win(self.opponent):
+                        return i, j
+                    bingo.undo_action(i, j)
+        return random.randint(0, 3), random.randint(0, 3)
 
 
 if __name__ == '__main__':
@@ -879,6 +954,7 @@ if __name__ == '__main__':
         parser.add_argument('--output_function', default=None, type=str, help='output function')
 
         # Convolution Layer
+        parser.add_argument('--convolution', default=True, type=bool, help='With/Without convolution layer')
         parser.add_argument('--filter_depth', default=1, type=int, help='filter depth')
         parser.add_argument('--filter_height', default=1, type=int, help='filter height')
         parser.add_argument('--filter_width', default=1, type=int, help='filter width')
@@ -893,7 +969,6 @@ if __name__ == '__main__':
 
         args = parser.parse_args()
 
-        # TODO: redesign a reward function
         def reward_function(state, flag, player):
             if flag == 3 or flag == 0:
                 return 0
@@ -916,6 +991,7 @@ if __name__ == '__main__':
             regularization_param=args.regularization_param,
             decay_step=args.decay_step,
             decay_rate=args.decay_rate,
+            convolution=args.convolution,
             filter_depth=args.filter_depth,
             filter_height=args.filter_height,
             filter_width=args.filter_width,
@@ -938,7 +1014,11 @@ if __name__ == '__main__':
                     print(i, end=' ')
             plt.plot([i for i in range(len(loss))], loss)
             plt.show()
-        if args.method == 'play':
+            
+        elif args.method == 'play':
             AI.play()
+
+        elif args.method == 'test':
+            AI.test()
 
     main()

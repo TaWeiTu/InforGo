@@ -34,7 +34,13 @@ For example, train AI with 3 hidden layers, each layer is constructed with 32, 1
 ```base
 $ python bingo.py train --n_hidden_layer=3 --n_node_hidden 32 16 8
 ```
-Valid parameters are the following:
+To test how good InforGo is trained
+```base
+python bingo.py test [--argument=<value>]
+```
+InforGo will be playing with a random bot which win if it can and prevent loss from opponent  
+
+Valid argument are the following:
 * **n_epoch:** number of epoches to every training data, default is 1
 * **n_hidden_layer:** number of hidden layers, default is 1
 * **n_node_hidden:** an array of length n_hidden_layer, representing the number of nodes in corresponding hidden layer, default is [32]
