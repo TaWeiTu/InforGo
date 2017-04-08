@@ -13,7 +13,7 @@ var rdmString  = require('randomstring');
 
 // variables
 var fs = require('fs');
-var recordRoot = __dirname + "/saves/" + rdmString.generate(16) + '/';
+var recordRoot = __dirname + "/Data/record/" + rdmString.generate(16) + '/';
 var fileNum = 0;
 var record = "";
 fs.mkdir(recordRoot, function (err) {
