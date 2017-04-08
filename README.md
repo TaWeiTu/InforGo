@@ -38,7 +38,7 @@ Valid parameters are the following:
 * **n_epoch:** number of epoches to every training data, default is 1
 * **n_hidden_layer:** number of hidden layers, default is 1
 * **n_node_hidden:** an array of length n_hidden_layer, representing the number of nodes in corresponding hidden layer, default is [32]
-* **activation_function:** activation function of hidden layers, "Relu", "Sigmoid", "Tanh" are currently available, default is "Relu"
+* **activation_function:** activation function of hidden layers, "relu", "sigmoid", "tanh" are currently available, default is "relu"
 * **learning_rate:** learning rate of the neural network, default is 0.00000001
 * **gamma:** discount factor of the value funciton, default is 0.99
 * **regularization_param:** regularization parameter of L2-Regularization, default is 0.001
