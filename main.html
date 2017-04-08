@@ -29,7 +29,7 @@
     var name;
     while(!name) name = prompt("請輸入你的名字","name");
     var join = confirm("請問是否遊玩遊戲?(旁觀模式請選擇取消)");
-    if(name&&join)socket.emit("loginreq",name,join);
+    if (name && join) socket.emit("loginreq", name, join);
 
     // set up the renderer
     var scene = new THREE.Scene();
@@ -83,10 +83,10 @@
         scene.add(cubes[k]);
         cubes[k].situation = 0;
         cubes[k].Num = k;
-        cubes[k].position.x += ((k-k%16)/16) + 1;
-        cubes[k].position.y += k%4 + 0.4;
-        cubes[k].position.z += (k%16-k%4)/4 + 1;
-        if(k%4==0){
+        cubes[k].position.x += ((k - k % 16) / 16) + 1;
+        cubes[k].position.y += k % 4 + 0.4;
+        cubes[k].position.z += (k % 16 - k % 4) / 4 + 1;
+        if (k % 4 == 0) {
             cubes[k].material = colorClickable;
             cubes[k].situation = 3;
         }
@@ -96,7 +96,7 @@
     var ambientLight = new THREE.AmbientLight( 0x888888 ,0.5 );
     scene.add( ambientLight );
     var directionalLight = new THREE.DirectionalLight( 0xcccccc );
-    directionalLight.position.set( 1,2,2 ).normalize();
+    directionalLight.position.set( 1, 2, 2 ).normalize();
     scene.add( directionalLight );
 
     // camera controll
@@ -143,8 +143,8 @@
 
         //check firstVisibleObject
         firstVisibleObject=null;
-        for(var k = 0; k < intersects.length; k++){
-            if( intersects[k].object.material != colorInvis && intersects[k].object.geometry != basicGeometry ){
+        for (var k = 0; k < intersects.length; k++) {
+            if ( intersects[k].object.material != colorInvis && intersects[k].object.geometry != basicGeometry ) {
                 firstVisibleObject = intersects[k].object;
                 break;
             }
