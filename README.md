@@ -57,3 +57,4 @@ Valid argument are the following:
 * **search_depth:** maximum search depth of Minimax Tree Search, default is 3
 * **DEBUG:** Debug mode, default is False
 * **first:** AI go first or second, default is True
+* **run_test:** Train the model with testing data, default is True

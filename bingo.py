@@ -522,7 +522,7 @@ class InforGo(object):
             action_num //= 4
         return action
 
-    def train(self):
+    def train(self, run_test=True):
         '''
         Main Learning Process
         return final score, graph_x, graph_y
@@ -533,7 +533,7 @@ class InforGo(object):
             print("[Train] Done Tensorboard setup")
             print("[Train] Start training")
         percentage = 0
-        record = self.get_record()
+        record = self.get_record(run_test)
         if self.DEBUG:
             print("[Train] Done Collecting record")
             print("[Train] Training Complete: {}%".format(percentage))
@@ -620,7 +620,7 @@ class InforGo(object):
             col = 3 - col
         return height, row, col
 
-    def get_record(self):
+    def get_record(self, run_test=True):
         '''
         Return every record file under ./Data/record/*
         '''
@@ -628,6 +628,8 @@ class InforGo(object):
         directory = directory[1:]
         filename = {}
         for d in directory:
+            if d == 'test_record' and not run_test:
+                continue
             tmp = [x[2] for x in os.walk(d)]
             filename[d] = [x for x in tmp[0]]
         return filename
@@ -655,7 +657,10 @@ class InforGo(object):
                 print("[Train] Done storing bias {}".format(i))
 
     def play(self, test_flag=False, bot=None):
-        tmp = tempfile.NamedTemporaryFile(dir='./Data/record/selfrecord', delete=False)
+        if test_flag:
+            tmp = tempfile.NamedTemporaryFile(dir='./Data/record/test_record', delete=False)
+        else:
+            tmp = tempfile.NamedTemporaryFile(dir='./Data/record/selfrecord', delete=False)
         winner = 0
         s = self.MDP.get_initial_state()
         record = ''
@@ -966,6 +971,7 @@ if __name__ == '__main__':
         # Play
         parser.add_argument('--first', default=True, type=bool, help='Play first')
         parser.add_argument('--search_depth', default=3, type=int, help='maximum search depth')
+        parser.add_argument('--run_test', default=True, type=bool, help='Train the model with testing data')
 
         args = parser.parse_args()
 
@@ -1003,7 +1009,7 @@ if __name__ == '__main__':
             output_function=args.output_function)
 
         if args.method == 'train':
-            loss = AI.train()
+            loss = AI.train(args.run_test)
             try:
                 f = open('./tmp', 'w')
                 for i in loss:
