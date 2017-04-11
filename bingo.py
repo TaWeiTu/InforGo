@@ -605,6 +605,8 @@ class InforGo(object):
                 percentage = math.ceil(epoch / self.n_epoch * 100)    
                 if self.DEBUG:
                     print("[Train] Training Complete: {}%".format(percentage))
+            if percentage % 10 == 0:
+                self.store_weight_and_bias()
                 
         if self.DEBUG:
             print("[Train] Training Complete: {}%".format(100))
@@ -929,102 +931,109 @@ class Bot:
         return random.randint(0, 3), random.randint(0, 3)
 
 
-if __name__ == '__main__':
+def self_play(args):
+    pass
 
-    def main():
+
+def main():
        
-        parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description='')
         
-        # Method
-        parser.add_argument('method', help='play/train')
+    # Method
+    parser.add_argument('method', help='play/train')
 
-        # Log
-        parser.add_argument('--logdir', default='./tensorboard', help='Tensorboard log directory')
+    # Log
+    parser.add_argument('--logdir', default='./tensorboard', help='Tensorboard log directory')
 
-        # Training parameter
-        parser.add_argument('--learning_rate', default=0.00000001, type=float, help='learning rate for the neural network')
-        parser.add_argument('--gamma', default=0.99, type=float, help='discount factor')
-        parser.add_argument('--alpha', default=0.00000001, type=float, help='learning rate for TD(0)-learning')
-        parser.add_argument('--regularization_param', default=0.001, type=float, help='L2 regularization')
-        parser.add_argument('--decay_rate', default=0.96, type=float, help='Decay rate')
-        parser.add_argument('--decay_step', default=100, type=int, help='Decay step')
+    # Training parameter
+    parser.add_argument('--learning_rate', default=0.00000001, type=float, help='learning rate for the neural network')
+    parser.add_argument('--gamma', default=0.99, type=float, help='discount factor')
+    parser.add_argument('--alpha', default=0.00000001, type=float, help='learning rate for TD(0)-learning')
+    parser.add_argument('--regularization_param', default=0.001, type=float, help='L2 regularization')
+    parser.add_argument('--decay_rate', default=0.96, type=float, help='Decay rate')
+    parser.add_argument('--decay_step', default=100, type=int, help='Decay step')
 
-        # Model parameter
-        parser.add_argument('--n_epoch', default=100, type=int, help='number of epochs')
-        parser.add_argument('--n_hidden_layer', default=1, type=int, help='number of hidden layers')
-        parser.add_argument('--n_node_hidden', default=[32], type=int, nargs='+', help='nodes in each hidden layers')
+    # Model parameter
+    parser.add_argument('--n_epoch', default=100, type=int, help='number of epochs')
+    parser.add_argument('--n_hidden_layer', default=1, type=int, help='number of hidden layers')
+    parser.add_argument('--n_node_hidden', default=[32], type=int, nargs='+', help='nodes in each hidden layers')
         
-        # Neuron
-        parser.add_argument('--activation_function', default='relu', type=str, help='activation function')
-        parser.add_argument('--output_function', default=None, type=str, help='output function')
+    # Neuron
+    parser.add_argument('--activation_function', default='relu', type=str, help='activation function')
+    parser.add_argument('--output_function', default=None, type=str, help='output function')
 
-        # Convolution Layer
-        parser.add_argument('--convolution', default=True, type=bool, help='With/Without convolution layer')
-        parser.add_argument('--filter_depth', default=1, type=int, help='filter depth')
-        parser.add_argument('--filter_height', default=1, type=int, help='filter height')
-        parser.add_argument('--filter_width', default=1, type=int, help='filter width')
-        parser.add_argument('--out_channel', default=5, type=int, help='out channel')
+    # Convolution Layer
+    parser.add_argument('--convolution', default=True, type=bool, help='With/Without convolution layer')
+    parser.add_argument('--filter_depth', default=1, type=int, help='filter depth')
+    parser.add_argument('--filter_height', default=1, type=int, help='filter height')
+    parser.add_argument('--filter_width', default=1, type=int, help='filter width')
+    parser.add_argument('--out_channel', default=5, type=int, help='out channel')
 
-        # DEBUG
-        parser.add_argument('--DEBUG', default=False, type=bool, help='Debug mode')
+    # DEBUG
+    parser.add_argument('--DEBUG', default=False, type=bool, help='Debug mode')
         
-        # Play
-        parser.add_argument('--first', default=True, type=bool, help='Play first')
-        parser.add_argument('--search_depth', default=3, type=int, help='maximum search depth')
-        parser.add_argument('--run_test', default=True, type=bool, help='Train the model with testing data')
+    # Play
+    parser.add_argument('--first', default=True, type=bool, help='Play first')
+    parser.add_argument('--search_depth', default=3, type=int, help='maximum search depth')
+    parser.add_argument('--run_test', default=True, type=bool, help='Train the model with testing data')
 
-        args = parser.parse_args()
+    args = parser.parse_args()
 
-        def reward_function(state, flag, player):
-            if flag == 3 or flag == 0:
-                return 0
-            if flag == player:
-                return 1
-            if flag != player:
-                return -1
+    def reward_function(state, flag, player):
+        if flag == 3 or flag == 0:
             return 0
+        if flag == player:
+            return 1
+        if flag != player:
+            return -1
+        return 0
         
-        LOG_DIR = './log' + args.logdir
+    LOG_DIR = './log' + args.logdir
 
-        AI = InforGo(
-            reward_function=reward_function, 
-            n_epoch=args.n_epoch, 
-            n_hidden_layer=args.n_hidden_layer,
-            n_node_hidden=args.n_node_hidden,
-            learning_rate=args.learning_rate,
-            gamma=args.gamma,
-            alpha=args.alpha,
-            regularization_param=args.regularization_param,
-            decay_step=args.decay_step,
-            decay_rate=args.decay_rate,
-            convolution=args.convolution,
-            filter_depth=args.filter_depth,
-            filter_height=args.filter_height,
-            filter_width=args.filter_width,
-            out_channel=args.out_channel,
-            DEBUG=args.DEBUG,
-            first=args.first,
-            search_depth=args.search_depth,
-            activation_function=args.activation_function,
-            output_function=args.output_function)
+    AI = InforGo(
+        reward_function=reward_function, 
+        n_epoch=args.n_epoch, 
+        n_hidden_layer=args.n_hidden_layer,
+        n_node_hidden=args.n_node_hidden,
+        learning_rate=args.learning_rate,
+        gamma=args.gamma,
+        alpha=args.alpha,
+        regularization_param=args.regularization_param,
+        decay_step=args.decay_step,
+        decay_rate=args.decay_rate,
+        convolution=args.convolution,
+        filter_depth=args.filter_depth,
+        filter_height=args.filter_height,
+        filter_width=args.filter_width,
+        out_channel=args.out_channel,
+        DEBUG=args.DEBUG,
+        first=args.first,
+        search_depth=args.search_depth,
+        activation_function=args.activation_function,
+        output_function=args.output_function)
 
-        if args.method == 'train':
-            loss = AI.train(args.run_test)
-            try:
-                f = open('./tmp', 'w')
-                for i in loss:
-                    f.write('{}\n'.format(i))
-                f.close()
-            except:
-                for i in loss:
-                    print(i, end=' ')
-            plt.plot([i for i in range(len(loss))], loss)
-            plt.show()
+    if args.method == 'train':
+        loss = AI.train(args.run_test)
+        try:
+            f = open('./tmp', 'w')
+            for i in loss:
+                f.write('{}\n'.format(i))
+            f.close()
+        except:
+            for i in loss:
+                print(i, end=' ')
+        plt.plot([i for i in range(len(loss))], loss)
+        plt.show()
             
-        elif args.method == 'play':
-            AI.play()
+    elif args.method == 'play':
+        AI.play()
 
-        elif args.method == 'test':
-            AI.test()
+    elif args.method == 'test':
+        AI.test()
 
+    elif args.method == 'self-play':
+        self_play(args)
+
+
+if __name__ == '__main__':
     main()
