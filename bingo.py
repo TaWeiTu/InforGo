@@ -522,7 +522,7 @@ class InforGo(object):
             action_num //= 4
         return action
 
-    def train(self, run_test=True):
+    def train(self, run_test=True, run_self_play=True):
         '''
         Main Learning Process
         return final score, graph_x, graph_y
@@ -533,7 +533,7 @@ class InforGo(object):
             print("[Train] Done Tensorboard setup")
             print("[Train] Start training")
         percentage = 0
-        record = self.get_record(run_test)
+        record = self.get_record(run_test, run_self_play)
         if self.DEBUG:
             print("[Train] Done Collecting record")
             print("[Train] Training Complete: {}%".format(percentage))
@@ -622,7 +622,7 @@ class InforGo(object):
             col = 3 - col
         return height, row, col
 
-    def get_record(self, run_test=True):
+    def get_record(self, run_test=True, run_self_play=True):
         '''
         Return every record file under ./Data/record/*
         '''
@@ -631,6 +631,8 @@ class InforGo(object):
         filename = {}
         for d in directory:
             if d == 'test_record' and not run_test:
+                continue
+            if d == 'self_play' and not run_self_play:
                 continue
             tmp = [x[2] for x in os.walk(d)]
             filename[d] = [x for x in tmp[0]]
@@ -1027,7 +1029,10 @@ def main():
     # Play
     parser.add_argument('--first', default=True, type=bool, help='Play first')
     parser.add_argument('--search_depth', default=3, type=int, help='maximum search depth')
+
+    # Train
     parser.add_argument('--run_test', default=True, type=bool, help='Train the model with testing data')
+    parser.add_argument('--run_self_play', default=True, type=bool, help='Train the model with self-play data')
 
     args = parser.parse_args()
 
@@ -1065,7 +1070,7 @@ def main():
         output_function=args.output_function)
 
     if args.method == 'train':
-        loss = AI.train(args.run_test)
+        loss = AI.train(args.run_test, args.run_self_play)
         try:
             f = open('./tmp', 'w')
             for i in loss:

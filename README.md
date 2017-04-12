@@ -35,8 +35,12 @@ For example, train AI with 3 hidden layers, each layer is constructed with 32, 1
 $ python bingo.py train --n_hidden_layer=3 --n_node_hidden 32 16 8
 ```
 To test how good InforGo is trained
-```base
+```bash
 python bingo.py test [--argument=<value>]
+```
+To make InforGo play against itself
+```bash
+python bingo.py self-play [--argument=<value>]
 ```
 InforGo will be playing with a random bot which win if it can and prevent loss from opponent  
 
