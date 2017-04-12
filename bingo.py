@@ -658,36 +658,38 @@ class InforGo(object):
             if self.DEBUG:
                 print("[Train] Done storing bias {}".format(i))
 
-    def play(self, test_flag=False, bot=None):
+    def play(self, test_flag=False, bot=None, AI=None):
         if test_flag:
             tmp = tempfile.NamedTemporaryFile(dir='./Data/record/test_record', delete=False)
+        elif AI is not None:
+            tmp = tempfile.NamedTemporaryFile(dir='./Data/record/self_play', delete=False)
         else:
             tmp = tempfile.NamedTemporaryFile(dir='./Data/record/selfrecord', delete=False)
         winner = 0
         s = self.MDP.get_initial_state()
         record = ''
-        if self.DEBUG and not test_flag:
+        if self.DEBUG and not test_flag and AI is None:
             print("[Play] Start playing")
 
         player = 1
         if self.first is False:
-            if self.DEBUG and not self.test_flag:
+            if self.DEBUG and not self.test_flag and AI is None:
                 print("[Play] Enter position")
             try:
-                opponent = self.read_opponent_action(test_flag, bot)
+                opponent = self.read_opponent_action(test_flag, bot, AI=AI)
             except:
-                if self.DEBUG and not self.test_flag:
+                if self.DEBUG and not self.test_flag and AI is None:
                     print("[ERROR] Fail to read opponent action")
                 os.remove(tmp.name)
                 return
             while self.MDP.valid_action(opponent) is False:
-                if self.DEBUG and not self.test_flag:
+                if self.DEBUG and not self.test_flag and AI is None:
                     print("[FATAL] Invalid")
                     print("[FATAL] Re-enter position")
                 try:
-                    opponent = self.read_opponent_action(test_flag, bot)
+                    opponent = self.read_opponent_action(test_flag, bot, AI=AI)
                 except:
-                    if not self.test_flag:
+                    if not self.test_flag and AI is None:
                         print("[ERROR] Fail to read opponent action")
             row, col = opponent
             height = self.MDP.bingo.height[row][col]
@@ -700,7 +702,7 @@ class InforGo(object):
                 player = 1
             if flag == 1:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag:
+                if self.DEBUG and not test_flag and AI is None:
                     print("[Play] User win")
                 winner = 1
 
@@ -710,7 +712,7 @@ class InforGo(object):
             row, col = self.decode_action(action)
             
             height = self.MDP.bingo.height[row][col]
-            self.emit_action(height, row, col, test_flag)
+            self.emit_action(height, row, col, test_flag, AI)
             record += '{} {} {}\n'.format(height, row, col)
 
             action = (row, col)
@@ -718,7 +720,7 @@ class InforGo(object):
 
             if flag == player:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag:
+                if self.DEBUG and not test_flag and AI is None:
                     print("[Play] AI win")
                 winner = player
                 break
@@ -728,26 +730,26 @@ class InforGo(object):
             else:
                 player = 1
 
-            if self.DEBUG and not test_flag:
+            if self.DEBUG and not test_flag and AI is None:
                 print("[Play] Enter position")
 
             try:
-                opponent = self.read_opponent_action(test_flag, bot)
+                opponent = self.read_opponent_action(test_flag, bot, AI=AI)
             except:
-                if self.DEBUG and not test_flag:
+                if self.DEBUG and not test_flag and AI is None:
                     print("[ERROR] Invalid Opponent Move")
                 os.remove(tmp.name)
                 break
             
             success = True
             while self.MDP.valid_action(opponent) is False:
-                if self.DEBUG and not test_flag:
+                if self.DEBUG and not test_flag and AI is None:
                     print("[FATAL] Invalid input action")
                     print("[FATAL] Re-enter position")
                 try:
-                    opponent = self.read_opponent_action(test_flag, bot)
+                    opponent = self.read_opponent_action(test_flag, bot, AI=AI)
                 except:
-                    if self.DEBUG and not test_flag:
+                    if self.DEBUG and not test_flag and AI is None:
                         print("[ERROR] Invalid Opponent Move")
                     os.remove(tmp.name)
                     success = False
@@ -854,7 +856,17 @@ class InforGo(object):
         tmp[0, 0] = player
         return tmp
 
-    def read_opponent_action(self, test_flag, bot):
+    def read_opponent_action(self, test_flag, bot, AI=None):
+        if AI is not None:
+            state = self.MDP.get_state()
+            player = 0
+            if AI.first:
+                player = 1
+            else:
+                player = 2
+            value, action = AI.Minimax(Bingo(state), AI.search_depth, 'Max', 2)
+            return self.decode_action(action)
+
         if test_flag:
             return bot.generate_action(self.MDP.get_state())
 
@@ -864,8 +876,8 @@ class InforGo(object):
             raise
         return r, c
         
-    def emit_action(self, height, row, col, test_flag):
-        if test_flag:
+    def emit_action(self, height, row, col, test_flag, AI=None):
+        if test_flag or AI is not None:
             return
         if self.DEBUG:
             print("[DEBUG] ", end='')
@@ -920,6 +932,7 @@ class Bot:
                     if bingo.win(self.player):
                         return i, j
                     bingo.undo_action(i, j)
+
         bingo.change_player()
         for i in range(4):
             for j in range(4):
@@ -931,9 +944,48 @@ class Bot:
         return random.randint(0, 3), random.randint(0, 3)
 
 
-def self_play(args):
-    pass
+def self_play(AI, args):
+    opponent = InforGo(
+        reward_function=AI.reward_function, 
+        n_epoch=args.n_epoch, 
+        n_hidden_layer=args.n_hidden_layer,
+        n_node_hidden=args.n_node_hidden,
+        learning_rate=args.learning_rate,
+        gamma=args.gamma,
+        alpha=args.alpha,
+        regularization_param=args.regularization_param,
+        decay_step=args.decay_step,
+        decay_rate=args.decay_rate,
+        convolution=args.convolution,
+        filter_depth=args.filter_depth,
+        filter_height=args.filter_height,
+        filter_width=args.filter_width,
+        out_channel=args.out_channel,
+        DEBUG=args.DEBUG,
+        first=not args.first,
+        search_depth=args.search_depth,
+        activation_function=args.activation_function,
+        output_function=args.output_function)
 
+    percentage = 0
+    first_win = 0
+    second_win = 0
+
+    if args.DEBUG:
+        print("[Self-Play] Self-Play Complete: {}%".format(0))
+    for epoch in range(args.n_epoch):
+        winner = AI.play(AI=opponent)
+        if winner == 1:
+            first_win += 1
+        else:
+            second_win += 1
+        if epoch / args.n_epoch > percentage / 100:
+                percentage = math.ceil(epoch / args.n_epoch * 100)    
+                if args.DEBUG:
+                    print("[Self-Play] Self-Play Complete: {}%".format(percentage))
+    if args.DEBUG:
+        print("[Self-Play] Self-Play Complete: {}%".format(100))
+    return first_win, second_win
 
 def main():
        
@@ -1032,7 +1084,8 @@ def main():
         AI.test()
 
     elif args.method == 'self-play':
-        self_play(args)
+        a, b = self_play(AI, args)
+        print("{} {}".format(a, b))
 
 
 if __name__ == '__main__':
