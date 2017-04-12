@@ -989,6 +989,7 @@ def self_play(AI, args):
         print("[Self-Play] Self-Play Complete: {}%".format(100))
     return first_win, second_win
 
+
 def main():
        
     parser = argparse.ArgumentParser(description='')
