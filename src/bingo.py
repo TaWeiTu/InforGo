@@ -22,7 +22,7 @@ import math
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-LOG_DIR = 'log/tensorboard'
+LOG_DIR = '../log/tensorboard'
 argv = sys.argv
 
 
@@ -269,9 +269,6 @@ class MDP(object):
         return np.zeros(shape=[4, 4, 4, 1, 1])
 
     def get_state(self):
-        '''
-        Return current state, which is a 4x4x4 bingo board, and compress it to a 1D array for the sake of simplicity
-        '''
         return self.bingo.get_state()
 
     def get_reward(self, s, flag, player):
@@ -478,8 +475,8 @@ class InforGo(object):
         '''
         Weight to the layer-th hidden layer, with size n x m
         '''
-        if os.path.exists('./Data/Weight/{}.txt'.format(layer)):
-            f = open('./Data/Weight/{}.txt'.format(layer), 'r')
+        if os.path.exists('../Data/Weight/{}.txt'.format(layer)):
+            f = open('../Data/Weight/{}.txt'.format(layer), 'r')
             w = np.zeros([n, m])
             for i in range(n):
                 for j in range(m):
@@ -488,7 +485,7 @@ class InforGo(object):
                     except:
                         if self.DEBUG:
                             print("[ERROR] NaN or unstored weight")
-                        os.remove('./Data/Weight/{}.txt'.format(layer))
+                        os.remove('../Data/Weight/{}.txt'.format(layer))
                         return tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.001, dtype=tf.float64)
             f.close()
             return tf.Variable(tf.cast(w, tf.float64))
@@ -499,8 +496,8 @@ class InforGo(object):
         '''
         Bias to the layer-th hidden layer, with size 1 x n
         '''
-        if os.path.exists('./Data/Bias/{}.txt'.format(layer)):
-            f = open('./Data/Bias/{}.txt'.format(layer), 'r')
+        if os.path.exists('../Data/Bias/{}.txt'.format(layer)):
+            f = open('../Data/Bias/{}.txt'.format(layer), 'r')
             b = np.zeros([1, n])
             for i in range(n):
                 try:
@@ -508,7 +505,7 @@ class InforGo(object):
                 except:
                     if self.DEBUG:
                         print("[ERROR] NaN or unstored bias")
-                    os.remove('./Data/Bias/{}.txt'.format(layer))
+                    os.remove('../Data/Bias/{}.txt'.format(layer))
                     return tf.Variable(tf.truncated_normal([1, n], mean=0.0, stddev=0.001, dtype=tf.float64))
             f.close()
             return tf.Variable(tf.cast(b, tf.float64))
@@ -597,7 +594,8 @@ class InforGo(object):
                             # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
                             loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2)})
                             update += 1
-                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2)})
+                             _ = self.sess.run([self.model], feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2)})
+
                             s = new_s
 
             loss.append(loss_sum / update)
@@ -626,13 +624,13 @@ class InforGo(object):
         '''
         Return every record file under ./Data/record/*
         '''
-        directory = [x[0] for x in os.walk('./Data/record')]
+        directory = [x[0] for x in os.walk('../Data/record')]
         directory = directory[1:]
         filename = {}
         for d in directory:
-            if d == 'test_record' and not run_test:
+            if d == '../Data/record/test_record' and not run_test:
                 continue
-            if d == 'self_play' and not run_self_play:
+            if d == '../Data/record/self_play' and not run_self_play:
                 continue
             tmp = [x[2] for x in os.walk(d)]
             filename[d] = [x for x in tmp[0]]
@@ -643,7 +641,7 @@ class InforGo(object):
         Store weights under ./Data/Weight, biases under ./Data/Bias
         '''
         for i in range(self.n_hidden_layer + 1):
-            f = open('./Data/Weight/{}.txt'.format(i), 'w')
+            f = open('../Data/Weight/{}.txt'.format(i), 'w')
             w = self.sess.run(self.weight_and_bias[i]['Weight'])
             for j in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Weight']))[0]):
                 for k in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Weight']))[1]):
@@ -652,7 +650,7 @@ class InforGo(object):
             if self.DEBUG:
                 print("[Train] Done storing weight {}".format(i))
 
-            f = open('./Data/Bias/{}.txt'.format(i), 'w')
+            f = open('../Data/Bias/{}.txt'.format(i), 'w')
             b = self.sess.run(self.weight_and_bias[i]['Bias'])
             for j in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Bias']))[1]):
                 f.write('{}\n'.format(b[0, j]))
@@ -662,11 +660,11 @@ class InforGo(object):
 
     def play(self, test_flag=False, bot=None, AI=None):
         if test_flag:
-            tmp = tempfile.NamedTemporaryFile(dir='./Data/record/test_record', delete=False)
+            tmp = tempfile.NamedTemporaryFile(dir='../Data/record/test_record', delete=False)
         elif AI is not None:
-            tmp = tempfile.NamedTemporaryFile(dir='./Data/record/self_play', delete=False)
+            tmp = tempfile.NamedTemporaryFile(dir='../Data/record/self_play', delete=False)
         else:
-            tmp = tempfile.NamedTemporaryFile(dir='./Data/record/selfrecord', delete=False)
+            tmp = tempfile.NamedTemporaryFile(dir='../Data/record/selfrecord', delete=False)
         winner = 0
         s = self.MDP.get_initial_state()
         record = ''
@@ -817,7 +815,7 @@ class InforGo(object):
 
         move = False
 
-        for i in range(16):
+        for i in random.shuffle(range(16)):
             r, c = self.decode_action(i)
             if bingo.valid_action(r, c):
                 move = True
@@ -1073,7 +1071,7 @@ def main():
     if args.method == 'train':
         loss = AI.train(args.run_test, args.run_self_play)
         try:
-            f = open('./tmp', 'w')
+            f = open('../tmp', 'w')
             for i in loss:
                 f.write('{}\n'.format(i))
             f.close()
