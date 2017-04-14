@@ -397,12 +397,15 @@ class InforGo(object):
         with tf.name_scope('Player-Node'):
             self.player_node = tf.placeholder(shape=[1, 1], dtype=tf.float64, name='Player-Node')
 
+        with tf.name_scope('Pattern'):
+            self.pattern = tf.placeholder(shape=[1, 6], dtype=tf.float64, name='Pattern')
+
         # Store all the weight and bias between each layer
         self.weight_and_bias = [{} for i in range(self.n_hidden_layer + 1)]
         
         with tf.name_scope('Weight_and_Bias'):
             self.weight_and_bias[0] = {
-                'Weight': self.get_weight(self.conv_layer_length + 1, self.n_node_hidden[0], 0),
+                'Weight': self.get_weight(self.conv_layer_length + 1 + 6, self.n_node_hidden[0], 0),
                 'Bias': self.get_bias(self.n_node_hidden[0], 0)
             }
             if self.DEBUG:
@@ -426,7 +429,7 @@ class InforGo(object):
 
         with tf.name_scope('Hidden_Layer'):
             self.hidden_layer[0] = {
-                'Output': tf.add(tf.matmul(tf.concat([self.conv_layer_output, self.player_node], 1), self.weight_and_bias[0]['Weight']), self.weight_and_bias[0]['Bias'])
+                'Output': tf.add(tf.matmul(tf.concat([self.conv_layer_output, self.player_node, self.pattern], 1), self.weight_and_bias[0]['Weight']), self.weight_and_bias[0]['Bias'])
             }
             for i in range(1, self.n_hidden_layer):
                 self.hidden_layer[i - 1]['Activated_Output'] = self.activation_function(self.hidden_layer[i - 1]['Output'])
@@ -512,6 +515,199 @@ class InforGo(object):
         else:
             return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.001, dtype=tf.float64))
 
+    def get_pattern(self, state, player):
+        opponent = 0
+        if player == 1:
+            opponent = 2
+        else:
+            opponent = 1
+        corner = [0, 0]
+        two = [0, 0]
+        three = [0, 0]
+        for i in range(4):
+            if state[i][i][i][0][0] == player:
+                corner[0] += 1
+            elif state[i][i][i][0][0] == opponent:
+                corner[1] += 1
+            if state[i][3 - i][3 - i][0][0] == player:
+                corner[0] += 1
+            elif state[i][3 - i][3 - i][0][0] == opponent:
+                corner[1] += 1
+            if state[i][3 - i][i][0][0] == player:
+                corner[0] += 1
+            elif state[i][3 - i][i][0][0] == opponent:
+                corner[1] += 1
+            if state[i][i][3 - i][0][0] == player:
+                corner[0] += 1
+            elif state[i][i][3 - i][0][0] == opponent:
+                corner[1] += 1
+
+        for h in range(4):
+            for r in range(4):
+                cnt = [0, 0]
+                for c in range(4):
+                    if state[h][r][c][0][0]:
+                        cnt[state[h][r][c][0][0] - 1] += 1
+                if cnt[0] == 2 and cnt[1] == 0:
+                    two[0] += 1
+                if cnt[1] == 2 and cnt[0] == 0:
+                    two[1] += 1
+                if cnt[0] == 3 and cnt[1] == 0:
+                    three[0] += 1
+                if cnt[1] == 3 and cnt[0] == 0:
+                    three[1] += 1
+            for c in range(4):
+                cnt = [0, 0]
+                for r in range(4):
+                    if state[h][r][c][0][0]:
+                        cnt[state[h][r][c][0][0] - 1] += 1
+                if cnt[0] == 2 and cnt[1] == 0:
+                    two[0] += 1
+                if cnt[1] == 2 and cnt[0] == 0:
+                    two[1] += 1
+                if cnt[0] == 3 and cnt[1] == 0:
+                    three[0] += 1
+                if cnt[1] == 3 and cnt[0] == 0:
+                    three[1] += 1
+            cnt = [0, 0]
+            for i in range(4):
+                if state[h][i][i][0][0]:
+                    cnt[state[h][i][i][0][0] - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0:
+                two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0:
+                two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0:
+                three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0:
+                three[1] += 1        
+            cnt = [0, 0]
+            for i in range(4):
+                if state[h][i][3 - i][0][0]:
+                    cnt[state[h][i][3 - i][0][0] - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0:
+                two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0:
+                two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0:
+                three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0:
+                three[1] += 1
+
+        for r in range(4):
+            for c in range(4):
+                cnt = [0, 0]
+                for h in range(4):
+                    if state[h][r][c][0][0]:
+                        cnt[state[h][r][c][0][0] - 1] += 1
+                if cnt[0] == 2 and cnt[1] == 0:
+                    two[0] += 1
+                if cnt[1] == 2 and cnt[0] == 0:
+                    two[1] += 1
+                if cnt[0] == 3 and cnt[1] == 0:
+                    three[0] += 1
+                if cnt[1] == 3 and cnt[0] == 0:
+                    three[1] += 1
+            cnt = [0, 0]
+            for i in range(4):
+                if state[i][r][i][0][0]:
+                    cnt[state[i][r][i][0][0] - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0:
+                two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0:
+                two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0:
+                three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0:
+                three[1] += 1
+            cnt = [0, 0]
+            for i in range(4):
+                if state[i][r][3 - i][0][0]:
+                    cnt[state[i][r][3 - i][0][0] - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0:
+                two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0:
+                two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0:
+                three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0:
+                three[1] += 1
+        for c in range(4):
+            cnt = [0, 0]
+            for i in range(4):
+                if state[i][i][c][0][0]:
+                    cnt[state[i][i][c][0][0] - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0:
+                two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0:
+                two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0:
+                three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0:
+                three[1] += 1
+            cnt = [0, 0]
+            for i in range(4):
+                if state[i][3 - i][c][0][0]:
+                    cnt[state[i][3 - i][c][0][0]] += 1
+            if cnt[0] == 2 and cnt[1] == 0:
+                two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0:
+                two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0:
+                three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0:
+                three[1] += 1
+        cnt = [0, 0]
+        for i in range(4):
+            if state[i][i][i][0][0]:
+                cnt[state[i][i][i][0][0] - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0:
+            two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0:
+            two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0:
+            three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0:
+            three[1] += 1
+        cnt = [0, 0]
+        for i in range(4):
+            if state[i][i][3 - i][0][0]:
+                cnt[state[i][i][3 - i][0][0] - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0:
+            two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0:
+            two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0:
+            three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0:
+            three[1] += 1
+        cnt = [0, 0]
+        for i in range(4):
+            if state[3 - i][i][i][0][0]:
+                cnt[state[3 - i][i][i][0][0] - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0:
+            two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0:
+            two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0:
+            three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0:
+            three[1] += 1
+        cnt = [0, 0]
+        for i in range(4):
+            if state[i][3 - i][i][0][0]:
+                cnt[state[i][3 - i][i][0][0] - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0:
+            two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0:
+            two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0:
+            three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0:
+            three[1] += 1
+        pattern = [corner[0], corner[1], two[0], two[1], three[0], three[1]]
+        return np.reshape(np.array(pattern), [1, -1])
+
     def decode_action(self, action_num):
         action = [0, 0]
         for i in range(2):
@@ -519,7 +715,7 @@ class InforGo(object):
             action_num //= 4
         return action
 
-    def train(self, run_test=True, run_self_play=True):
+    def train(self, run_test=True, run_self_play=True, run_generator=True, n_generator=1000, MAX=0):
         '''
         Main Learning Process
         return final score, graph_x, graph_y
@@ -530,7 +726,7 @@ class InforGo(object):
             print("[Train] Done Tensorboard setup")
             print("[Train] Start training")
         percentage = 0
-        record = self.get_record(run_test, run_self_play)
+        record = self.get_record(run_test, run_self_play, run_generator, n_generator, MAX)
         if self.DEBUG:
             print("[Train] Done Collecting record")
             print("[Train] Training Complete: {}%".format(percentage))
@@ -558,18 +754,18 @@ class InforGo(object):
 
                             height, row, col = self.rotate(height, row, col, rotate_time)
 
-                            v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(1)})
+                            v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(1), self.pattern: self.get_pattern(s, 1)})
                             flag, new_s, R = self.MDP.take_action((row, col), 1)
 
-                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1)})
+                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1), self.pattern: self.get_pattern(new_s, 1)})
                             v_desired = np.zeros([1, 1])
                             # TD-0 update
                             # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
                             v_desired[0][0] = v[0][0] + self.alpha * (R + self.gamma * new_v[0][0] - v[0][0])
                             # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
-                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)})
+                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: self.get_pattern(s, 1)})
                             update += 1
-                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)})
+                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: self.get_pattern(s, 1)})
                             s = new_s
 
                             try:
@@ -584,18 +780,17 @@ class InforGo(object):
 
                             height, row, col = self.rotate(height, row, col, rotate_time)
 
-                            v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(2)})
+                            v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(2), self.pattern: self.get_pattern(s, 2)})
                             flag, new_s, R = self.MDP.take_action((row, col), 2)
 
-                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(2)})
+                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(2), self.pattern: self.get_pattern(new_s, 2)})
                             # TD-0 update
                             # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
                             v_desired[0][0] = v[0][0] + self.alpha * (R + self.gamma * new_v[0][0] - v[0][0])
                             # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
-                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2)})
+                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2), self.pattern: self.get_pattern(s, 2)})
                             update += 1
-                             _ = self.sess.run([self.model], feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2)})
-
+                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: self.get_pattern(s, 1)})
                             s = new_s
 
             loss.append(loss_sum / update)
@@ -620,21 +815,35 @@ class InforGo(object):
             col = 3 - col
         return height, row, col
 
-    def get_record(self, run_test=True, run_self_play=True):
+    def get_record(self, run_test=True, run_self_play=True, run_generator=True, n_generator=1000, MAX=0):
         '''
-        Return every record file under ./Data/record/*
+        Return every record file under ../Data/record/*
         '''
         directory = [x[0] for x in os.walk('../Data/record')]
         directory = directory[1:]
         filename = {}
         for d in directory:
+            print("[DEBUG] Directory: {}".format(d))
             if d == '../Data/record/test_record' and not run_test:
                 continue
             if d == '../Data/record/self_play' and not run_self_play:
                 continue
+            if d == '../Data/record/generator':
+                continue
             tmp = [x[2] for x in os.walk(d)]
             filename[d] = [x for x in tmp[0]]
-        return filename
+        if not run_generator:
+            print("[DEBUG] don't run generator")
+            return filename
+        s = set([])
+        filename['../Data/record/generator'] = []
+        for i in range(n_generator):
+            game_id = random.randint(0, MAX)
+            while game_id in s or not os.path.exists('../Data/record/generator/{}'.format(game_id)):
+                game_id = random.randint(0, MAX)
+            s.add(game_id)
+            filename['../Data/record/generator'].append('{}'.format(game_id))
+        return filename           
 
     def store_weight_and_bias(self):
         '''
@@ -853,7 +1062,12 @@ class InforGo(object):
     
     def cast_player(self, player):
         tmp = np.zeros([1, 1])
-        tmp[0, 0] = player
+        node = 0
+        if player == 1:
+            node = 1
+        else:
+            node = -1
+        tmp[0, 0] = node
         return tmp
 
     def read_opponent_action(self, test_flag, bot, AI=None):
@@ -1032,6 +1246,9 @@ def main():
     # Train
     parser.add_argument('--run_test', default=True, type=bool, help='Train the model with testing data')
     parser.add_argument('--run_self_play', default=True, type=bool, help='Train the model with self-play data')
+    parser.add_argument('--run_generator', default=True, type=bool, help='Train the model with auto-generated game')
+    parser.add_argument('--n_generator', default=1000, type=int, help='Train the model with n_generator auto-generated game')
+    parser.add_argument('--MAX', default=0, type=int, help='Maximum generated game id')
 
     args = parser.parse_args()
 
@@ -1067,9 +1284,10 @@ def main():
         search_depth=args.search_depth,
         activation_function=args.activation_function,
         output_function=args.output_function)
-
+    
+    # TODO: run_generator is True even if specified False
     if args.method == 'train':
-        loss = AI.train(args.run_test, args.run_self_play)
+        loss = AI.train(run_test=args.run_test, run_self_play=args.run_self_play, run_generator=args.run_generator, n_generator=args.n_generator, MAX=args.MAX)
         try:
             f = open('../tmp', 'w')
             for i in loss:
