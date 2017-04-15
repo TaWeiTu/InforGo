@@ -1022,7 +1022,9 @@ class InforGo(object):
             next_player = 1
 
         move = False
-        for i in random.shuffle(list(range(16))):
+        permutation = [i for i in range(16)]
+        random.shuffle(permutation)
+        for i in permutation:
             r, c = self.decode_action(i)
             if bingo.valid_action(r, c):
                 move = True
