@@ -18,6 +18,7 @@ import sys
 import os.path
 import tempfile
 import argparse
+import distutils.util
 import math
 
 
@@ -547,7 +548,7 @@ class InforGo(object):
                 cnt = [0, 0]
                 for c in range(4):
                     if state[h][r][c][0][0]:
-                        cnt[state[h][r][c][0][0] - 1] += 1
+                        cnt[int(state[h][r][c][0][0]) - 1] += 1
                 if cnt[0] == 2 and cnt[1] == 0:
                     two[0] += 1
                 if cnt[1] == 2 and cnt[0] == 0:
@@ -560,7 +561,7 @@ class InforGo(object):
                 cnt = [0, 0]
                 for r in range(4):
                     if state[h][r][c][0][0]:
-                        cnt[state[h][r][c][0][0] - 1] += 1
+                        cnt[int(state[h][r][c][0][0]) - 1] += 1
                 if cnt[0] == 2 and cnt[1] == 0:
                     two[0] += 1
                 if cnt[1] == 2 and cnt[0] == 0:
@@ -572,7 +573,7 @@ class InforGo(object):
             cnt = [0, 0]
             for i in range(4):
                 if state[h][i][i][0][0]:
-                    cnt[state[h][i][i][0][0] - 1] += 1
+                    cnt[int(state[h][i][i][0][0]) - 1] += 1
             if cnt[0] == 2 and cnt[1] == 0:
                 two[0] += 1
             if cnt[1] == 2 and cnt[0] == 0:
@@ -584,7 +585,7 @@ class InforGo(object):
             cnt = [0, 0]
             for i in range(4):
                 if state[h][i][3 - i][0][0]:
-                    cnt[state[h][i][3 - i][0][0] - 1] += 1
+                    cnt[int(state[h][i][3 - i][0][0]) - 1] += 1
             if cnt[0] == 2 and cnt[1] == 0:
                 two[0] += 1
             if cnt[1] == 2 and cnt[0] == 0:
@@ -599,7 +600,7 @@ class InforGo(object):
                 cnt = [0, 0]
                 for h in range(4):
                     if state[h][r][c][0][0]:
-                        cnt[state[h][r][c][0][0] - 1] += 1
+                        cnt[int(state[h][r][c][0][0]) - 1] += 1
                 if cnt[0] == 2 and cnt[1] == 0:
                     two[0] += 1
                 if cnt[1] == 2 and cnt[0] == 0:
@@ -611,7 +612,7 @@ class InforGo(object):
             cnt = [0, 0]
             for i in range(4):
                 if state[i][r][i][0][0]:
-                    cnt[state[i][r][i][0][0] - 1] += 1
+                    cnt[int(state[i][r][i][0][0]) - 1] += 1
             if cnt[0] == 2 and cnt[1] == 0:
                 two[0] += 1
             if cnt[1] == 2 and cnt[0] == 0:
@@ -623,7 +624,7 @@ class InforGo(object):
             cnt = [0, 0]
             for i in range(4):
                 if state[i][r][3 - i][0][0]:
-                    cnt[state[i][r][3 - i][0][0] - 1] += 1
+                    cnt[int(state[i][r][3 - i][0][0]) - 1] += 1
             if cnt[0] == 2 and cnt[1] == 0:
                 two[0] += 1
             if cnt[1] == 2 and cnt[0] == 0:
@@ -636,7 +637,7 @@ class InforGo(object):
             cnt = [0, 0]
             for i in range(4):
                 if state[i][i][c][0][0]:
-                    cnt[state[i][i][c][0][0] - 1] += 1
+                    cnt[int(state[i][i][c][0][0]) - 1] += 1
             if cnt[0] == 2 and cnt[1] == 0:
                 two[0] += 1
             if cnt[1] == 2 and cnt[0] == 0:
@@ -648,7 +649,7 @@ class InforGo(object):
             cnt = [0, 0]
             for i in range(4):
                 if state[i][3 - i][c][0][0]:
-                    cnt[state[i][3 - i][c][0][0]] += 1
+                    cnt[int(state[i][3 - i][c][0][0]) - 1] += 1
             if cnt[0] == 2 and cnt[1] == 0:
                 two[0] += 1
             if cnt[1] == 2 and cnt[0] == 0:
@@ -660,7 +661,7 @@ class InforGo(object):
         cnt = [0, 0]
         for i in range(4):
             if state[i][i][i][0][0]:
-                cnt[state[i][i][i][0][0] - 1] += 1
+                cnt[int(state[i][i][i][0][0]) - 1] += 1
         if cnt[0] == 2 and cnt[1] == 0:
             two[0] += 1
         if cnt[1] == 2 and cnt[0] == 0:
@@ -672,7 +673,7 @@ class InforGo(object):
         cnt = [0, 0]
         for i in range(4):
             if state[i][i][3 - i][0][0]:
-                cnt[state[i][i][3 - i][0][0] - 1] += 1
+                cnt[int(state[i][i][3 - i][0][0]) - 1] += 1
         if cnt[0] == 2 and cnt[1] == 0:
             two[0] += 1
         if cnt[1] == 2 and cnt[0] == 0:
@@ -684,7 +685,7 @@ class InforGo(object):
         cnt = [0, 0]
         for i in range(4):
             if state[3 - i][i][i][0][0]:
-                cnt[state[3 - i][i][i][0][0] - 1] += 1
+                cnt[int(state[3 - i][i][i][0][0]) - 1] += 1
         if cnt[0] == 2 and cnt[1] == 0:
             two[0] += 1
         if cnt[1] == 2 and cnt[0] == 0:
@@ -696,7 +697,7 @@ class InforGo(object):
         cnt = [0, 0]
         for i in range(4):
             if state[i][3 - i][i][0][0]:
-                cnt[state[i][3 - i][i][0][0] - 1] += 1
+                cnt[int(state[i][3 - i][i][0][0]) - 1] += 1
         if cnt[0] == 2 and cnt[1] == 0:
             two[0] += 1
         if cnt[1] == 2 and cnt[0] == 0:
@@ -823,7 +824,6 @@ class InforGo(object):
         directory = directory[1:]
         filename = {}
         for d in directory:
-            print("[DEBUG] Directory: {}".format(d))
             if d == '../Data/record/test_record' and not run_test:
                 continue
             if d == '../Data/record/self_play' and not run_self_play:
@@ -833,7 +833,6 @@ class InforGo(object):
             tmp = [x[2] for x in os.walk(d)]
             filename[d] = [x for x in tmp[0]]
         if not run_generator:
-            print("[DEBUG] don't run generator")
             return filename
         s = set([])
         filename['../Data/record/generator'] = []
@@ -1204,10 +1203,10 @@ def self_play(AI, args):
 
 def main():
        
-    parser = argparse.ArgumentParser(description='')
+    parser = argparse.ArgumentParser(description='Execution argument')
         
     # Method
-    parser.add_argument('method', help='play/train')
+    parser.add_argument('method', help='play/train/self-play/test')
 
     # Log
     parser.add_argument('--logdir', default='./tensorboard', help='Tensorboard log directory')
@@ -1230,25 +1229,25 @@ def main():
     parser.add_argument('--output_function', default=None, type=str, help='output function')
 
     # Convolution Layer
-    parser.add_argument('--convolution', default=True, type=bool, help='With/Without convolution layer')
+    parser.add_argument('--convolution', default=True, type=distutils.util.strtobool, help='With/Without convolution layer')
     parser.add_argument('--filter_depth', default=1, type=int, help='filter depth')
     parser.add_argument('--filter_height', default=1, type=int, help='filter height')
     parser.add_argument('--filter_width', default=1, type=int, help='filter width')
     parser.add_argument('--out_channel', default=5, type=int, help='out channel')
 
     # DEBUG
-    parser.add_argument('--DEBUG', default=False, type=bool, help='Debug mode')
+    parser.add_argument('--DEBUG', default=False, type=distutils.util.strtobool, help='Debug mode')
         
     # Play
-    parser.add_argument('--first', default=True, type=bool, help='Play first')
+    parser.add_argument('--first', default=True, type=distutils.util.strtobool, help='Play first')
     parser.add_argument('--search_depth', default=3, type=int, help='maximum search depth')
 
     # Train
-    parser.add_argument('--run_test', default=True, type=bool, help='Train the model with testing data')
-    parser.add_argument('--run_self_play', default=True, type=bool, help='Train the model with self-play data')
-    parser.add_argument('--run_generator', default=True, type=bool, help='Train the model with auto-generated game')
+    parser.add_argument('--run_test', default=True, type=distutils.util.strtobool, help='Train the model with testing data')
+    parser.add_argument('--run_self_play', default=True, type=distutils.util.strtobool, help='Train the model with self-play data')
+    parser.add_argument('--run_generator', default=True, type=distutils.util.strtobool, help='Train the model with auto-generated game')
     parser.add_argument('--n_generator', default=1000, type=int, help='Train the model with n_generator auto-generated game')
-    parser.add_argument('--MAX', default=0, type=int, help='Maximum generated game id')
+    parser.add_argument('--MAX', default=12877521, type=int, help='Maximum generated game id')
 
     args = parser.parse_args()
 
