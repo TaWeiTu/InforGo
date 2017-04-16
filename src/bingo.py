@@ -706,8 +706,8 @@ class InforGo(object):
             three[0] += 1
         if cnt[1] == 3 and cnt[0] == 0:
             three[1] += 1
-        pattern = [corner[0], corner[1], two[0], two[1], three[0], three[1]]
-        return np.reshape(np.array(pattern), [1, -1])
+        pattern = np.reshape(np.array([corner[0], corner[1], two[0], two[1], three[0], three[1]]), [1, 6])
+        return pattern
 
     def decode_action(self, action_num):
         action = [0, 0]
@@ -791,7 +791,7 @@ class InforGo(object):
                             # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
                             loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2), self.pattern: self.get_pattern(s, 2)})
                             update += 1
-                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: self.get_pattern(s, 1)})
+                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2), self.pattern: self.get_pattern(s, 2)})
                             s = new_s
 
             loss.append(loss_sum / update)
@@ -1057,7 +1057,7 @@ class InforGo(object):
         '''
         Evaluate the value of input state with neural network as an approximater
         '''
-        V = self.sess.run(self.V, feed_dict={self.inp: state, self.player_node: self.cast_player(player)})
+        V = self.sess.run(self.V, feed_dict={self.inp: state, self.player_node: self.cast_player(player), self.pattern: self.get_pattern(state, player)})
         return V[0][0]
     
     def cast_player(self, player):
