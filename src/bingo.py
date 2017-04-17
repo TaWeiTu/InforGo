@@ -91,10 +91,8 @@ class Bingo(object):
         '''
         if row < 0 or row > 4 or col < 0 or col > 4:
             return False
-
         if self.height[row][col] >= 4:
             return False
-
         return True
 
     def play(self, row, col):
@@ -106,29 +104,21 @@ class Bingo(object):
         if nothing happens: return 0
         '''
         player = self.player
-
         if self.full():
             return 3
-
         if not self.place(row, col):
             return -1
-
         if self.win(player):
             return player
-        
         if self.full():
             return 3
-
         return 0
         
     def change_player(self):
         '''
         switch player
         '''
-        if self.player == 1:
-            self.player = 2
-        else:
-            self.player = 1
+        self.player = 1 if self.player == 2 else 2 
 
     def win(self, player):
         '''
@@ -303,7 +293,6 @@ class MDP(object):
         '''
         row, col = action
         self.bingo.undo_action(row, col)
-
 
 
 class InforGo(object):
@@ -517,11 +506,7 @@ class InforGo(object):
             return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.001, dtype=tf.float64))
 
     def get_pattern(self, state, player):
-        opponent = 0
-        if player == 1:
-            opponent = 2
-        else:
-            opponent = 1
+        opponent = 1 if player == 2 else 2 
         corner = [0, 0]
         two = [0, 0]
         three = [0, 0]
@@ -741,7 +726,6 @@ class InforGo(object):
                     for rotate_time in range(4):
                         f = open('{}/{}'.format(directory, file_name), 'r')
                         s = self.MDP.get_initial_state()
-
                         while True:
                             try:
                                 height, row, col = map(int, f.readline().split())
@@ -904,10 +888,7 @@ class InforGo(object):
             record += '{} {} {}\n'.format(height, row, col)
 
             flag, s, _ = self.MDP.take_action(opponent, player)
-            if player == 1:
-                player = 2
-            else:
-                player = 1
+            player = 1 if player == 2 else 2 
             if flag == 1:
                 record += '-1 -1 -1\n'
                 if self.DEBUG and not test_flag and AI is None:
@@ -933,10 +914,7 @@ class InforGo(object):
                 winner = player
                 break
 
-            if player == 1:
-                player = 2
-            else:
-                player = 1
+            player = 1 if player == 2 else 2 
 
             if self.DEBUG and not test_flag and AI is None:
                 print("[Play] Enter position")
@@ -973,15 +951,12 @@ class InforGo(object):
 
             if flag == player:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag:
+                if self.DEBUG and not test_flag and AI is None:
                     print("[Play] User win")
                 winner = player
                 break
 
-            if player == 1:
-                player = 2
-            else:
-                player = 1
+            player = 1 if player == 2 else 2 
         # Record the game for future training
         f = open(tmp.name, 'w')
         f.write(record)
@@ -1001,25 +976,11 @@ class InforGo(object):
         if depth == 0:
             return self.evaluate(state, player), None
         
-        value, action = 0, 0
-        next_player = 0
-        next_level = 'Osas'
-        func = lambda a, b: 0
-
-        if level == 'Max':
-            value = -np.inf
-            next_level = 'Min'
-            func = lambda a, b: max(a, b)
-
-        else:
-            value = np.inf
-            next_level = 'Max'
-            func = lambda a, b: min(a, b)
-
-        if player == 1:
-            next_player = 2
-        else:
-            next_player = 1
+        value = np.inf if level == 'Min' else -np.inf
+        action = 0
+        next_player = 1 if player == 2 else 2
+        next_level = 'Max' if level == 'Min' else 'Max'
+        func = lambda a, b: max(a, b) if level == 'Max' else lambda a, b: min(a, b)
 
         move = False
         permutation = [i for i in range(16)]
@@ -1062,22 +1023,14 @@ class InforGo(object):
     
     def cast_player(self, player):
         tmp = np.zeros([1, 1])
-        node = 0
-        if player == 1:
-            node = 1
-        else:
-            node = -1
-        tmp[0, 0] = node
+        tmp[0, 0] = 1 if player == 1 else -1 
         return tmp
 
     def read_opponent_action(self, test_flag, bot, AI=None):
         if AI is not None:
             state = self.MDP.get_state()
             player = 0
-            if AI.first:
-                player = 1
-            else:
-                player = 2
+            player = 1 if AI.first else 2 
             value, action = AI.Minimax(Bingo(state), AI.search_depth, 'Max', 2)
             return self.decode_action(action)
 
@@ -1104,12 +1057,8 @@ class InforGo(object):
         win = 0
         player = 0
         percentage = 0
-        if self.first:
-            player = 1
-            bot = Bot(2)
-        else:
-            player = 2
-            bot = Bot(1)
+        player = 1 if self.first else 2
+        bot = Bot(2) if self.first else Bot(1)
         if self.DEBUG:
             print("[Test] Test Complete: {}%".format(0))
         for epoch in range(self.n_epoch):
@@ -1131,11 +1080,7 @@ class Bot:
 
     def __init__(self, player):
         self.player = player
-        self.opponent = 0
-        if self.player == 1:
-            self.opponent = 2
-        else:
-            self.opponent = 1
+        self.opponent = 1 if player == 2 else 2 
     
     def generate_action(self, state):
         bingo = Bingo(state)
