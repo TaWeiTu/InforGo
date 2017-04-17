@@ -51,18 +51,14 @@ class Bingo(object):
                         if self.board[h][r][c] != 0:
                             self.height[r][c] = h + 1
                             cnt += 1
-            if cnt % 2 == 0:
-                self.player = 1
-            else:
-                self.player = 2
+            self.player = 1 if cnt % 2 == 0 else 2 
         
 
     def place(self, row, col):
         '''
         place a cube on position(height, row, col), and return whether the operation is valid
         '''
-        if not self.valid_action(row, col):
-            return False
+        if not self.valid_action(row, col): return False
 
         # if the position is already taken
         height = self.height[row][col]
@@ -81,18 +77,15 @@ class Bingo(object):
         '''
         for r in range(4):
             for c in range(4):
-                if self.height[r][c] < 4:
-                    return False
+                if self.height[r][c] < 4: return False
         return True
 
     def valid_action(self, row, col):
         '''
         Return whether the action is valid
         '''
-        if row < 0 or row > 4 or col < 0 or col > 4:
-            return False
-        if self.height[row][col] >= 4:
-            return False
+        if row < 0 or row > 4 or col < 0 or col > 4: return False
+        if self.height[row][col] >= 4: return False
         return True
 
     def play(self, row, col):
@@ -104,14 +97,10 @@ class Bingo(object):
         if nothing happens: return 0
         '''
         player = self.player
-        if self.full():
-            return 3
-        if not self.place(row, col):
-            return -1
-        if self.win(player):
-            return player
-        if self.full():
-            return 3
+        if self.full(): return 3
+        if not self.place(row, col): return -1
+        if self.win(player): return player
+        if self.full(): return 3
         return 0
         
     def change_player(self):
@@ -127,96 +116,57 @@ class Bingo(object):
         for h in range(4):
             for r in range(4):
                 flag = True
-                for c in range(4):
-                    if self.board[h][r][c] != player:
-                        flag = False
-                if flag:
-                    return True
+                for c in range(4): flag = False if self.board[h][r][c] != player else flag
+                if flag: return True
 
         for h in range(4):
             for c in range(4):
                 flag = True
-                for r in range(4):
-                    if self.board[h][r][c] != player:
-                        flag = False
-                if flag:
-                    return True
+                for r in range(4): flag = False if self.board[h][r][c] != player else flag
+                if flag: return True
 
         for r in range(4):
             for c in range(4):
                 flag = True
-                for h in range(4):
-                    if self.board[h][r][c] != player:
-                        flag = False
-                if flag:
-                    return True
+                for h in range(4): flag = False if self.board[h][r][c] != player else flag
+                if flag: return True
         
         for h in range(4):
             flag = True
-            for i in range(4):
-                if self.board[h][i][i] != player:
-                    flag = False
-            if flag:
-                return True
+            for i in range(4): flag = False if self.board[h][i][i] != player else flag
+            if flag: return True
             flag = True
-            for i in range(4):
-                if self.board[h][i][3 - i] != player:
-                    flag = False
-            if flag:
-                return True
+            for i in range(4): flag = False if self.board[h][i][3 - i] != player else flag
+            if flag: return True
         
         for r in range(4):
             flag = True
-            for i in range(4):
-                if self.board[i][r][i] != player:
-                    flag = False
-            if flag:
-                return True
+            for i in range(4): flag = False if self.board[i][r][i] != player else flag
+            if flag: return True 
             flag = True
-            for i in range(4):
-                if self.board[i][r][3 - i] != player:
-                    flag = False
-            if flag:
-                return True
+            for i in range(4): flag = False if self.board[i][r][3 - i] else flag
+            if flag: return True
 
         for c in range(4):
             flag = True
-            for i in range(4):
-                if self.board[i][i][c] != player:
-                    flag = False
-            if flag:
-                return True
+            for i in range(4): flag = False if self.board[i][i][c] != player else flag
+            if flag: return True
             flag = True
-            for i in range(4):
-                if self.board[i][3 - i][c] != player:
-                    flag = False
-            if flag:
-                return True
+            for i in range(4): flag = False if self.board[i][3 - i][c] != player else flag
+            if flag: return True
         
         flag = True
-        for i in range(4):
-            if self.board[i][i][i] != player:
-                flag = False
-        if flag:
-            return True
+        for i in range(4): flag = False if self.board[i][i][i] != player else flag
+        if flag: return True
         flag = True
-        for i in range(4):
-            if self.board[i][i][3 - i] != player:
-                flag = False
-        if flag:
-            return True  
+        for i in range(4): flag = False if self.board[i][i][3 - i] != player else flag
+        if flag: return True  
         flag = True
-        for i in range(4):
-            if self.board[i][3 - i][i] != player:
-                flag = False
-        if flag:
-            return True
+        for i in range(4): flag = False if self.board[i][3 - i][i] != player else flag
+        if flag: return True
         flag = True
-        for i in range(4):
-            if self.board[3 - i][i][i] != player:
-                flag = False
-        if flag:
-            return True
+        for i in range(4): flag = False if self.board[3 - i][i][i] != player else flag
+        if flag: return True
 
         return False
 
@@ -334,28 +284,22 @@ class InforGo(object):
         self.search_depth = search_depth
 
         # Activation function at hidden layer
-        if activation_function == 'relu':
-            self.activation_function = lambda k: tf.nn.relu(k, name='relu')
+        if activation_function == 'relu': self.activation_function = lambda k: tf.nn.relu(k, name='relu')
 
-        elif activation_function == 'sigmoid':
-            self.activation_function = lambda k: tf.sigmoid(k, name='sigmoid')
+        elif activation_function == 'sigmoid': self.activation_function = lambda k: tf.sigmoid(k, name='sigmoid')
 
-        elif activation_function == 'tanh':
-            self.activation_function = lambda k: tf.tanh(k, name='tanh')
+        elif activation_function == 'tanh': self.activation_function = lambda k: tf.tanh(k, name='tanh')
 
         # Output function 
-        if output_function is None:
-            self.output_function = lambda k: k
+        if output_function is None: self.output_function = lambda k: k
 
-        elif output_function == 'softmax':
-            self.output_function = lambda k: tf.nn.softmax(k)
+        elif output_function == 'softmax': self.output_function = lambda k: tf.nn.softmax(k)
 
         # L2 regularization paramater
         self.regularization_param = regularization_param
         
         self.MDP = MDP(reward_function)
-        if self.DEBUG:
-            print("[Init] Done setting training parameter")
+        if self.DEBUG: print("[Init] Done setting training parameter")
 
         # Neural Network Setup
 
@@ -363,8 +307,7 @@ class InforGo(object):
         with tf.name_scope('Input-Layer'):
             self.inp = tf.placeholder(shape=[4, 4, 4, 1, 1], dtype=tf.float64, name='input')
 
-        if self.DEBUG:
-            print("[Init] Done consturcting input layer")
+        if self.DEBUG: print("[Init] Done consturcting input layer")
 
         # 3D-Convolution layer
         if convolution:
@@ -381,8 +324,7 @@ class InforGo(object):
             self.conv_layer_output = tf.reshape(self.inp, [1, -1], name='Flattened')
             self.conv_layer_length = 4 * 4 * 4
 
-        if self.DEBUG:
-            print("[Init] Done constructing convolution layer with out_channel = {}".format(out_channel))
+        if self.DEBUG: print("[Init] Done constructing convolution layer with out_channel = {}".format(out_channel))
         
         with tf.name_scope('Player-Node'):
             self.player_node = tf.placeholder(shape=[1, 1], dtype=tf.float64, name='Player-Node')
@@ -398,21 +340,18 @@ class InforGo(object):
                 'Weight': self.get_weight(self.conv_layer_length + 1 + 6, self.n_node_hidden[0], 0),
                 'Bias': self.get_bias(self.n_node_hidden[0], 0)
             }
-            if self.DEBUG:
-                print("[Init] Done initializing weight and bias from convolution layer to hidden layer 0")
+            if self.DEBUG: print("[Init] Done initializing weight and bias from convolution layer to hidden layer 0")
             for i in range(1, self.n_hidden_layer):
                 self.weight_and_bias[i] = {
                     'Weight': self.get_weight(self.n_node_hidden[i - 1], self.n_node_hidden[i], i),
                     'Bias': self.get_bias(self.n_node_hidden[i], i)
                 }
-                if self.DEBUG:
-                    print("[Init] Done initializing weight and bias from hidden layer {} to hidden layer {}".format(i - 1, i))
+                if self.DEBUG: print("[Init] Done initializing weight and bias from hidden layer {} to hidden layer {}".format(i - 1, i))
             self.weight_and_bias[self.n_hidden_layer] = {
                 'Weight': self.get_weight(self.n_node_hidden[self.n_hidden_layer - 1], 1, self.n_hidden_layer),
                 'Bias': self.get_bias(1, self.n_hidden_layer)
             }
-            if self.DEBUG:
-                print("[Init] Done initializing weight and bias from hidden layer {} to output layer".format(self.n_hidden_layer - 1))
+            if self.DEBUG: print("[Init] Done initializing weight and bias from hidden layer {} to output layer".format(self.n_hidden_layer - 1))
 
         # Store value of every node in each hidden layer
         self.hidden_layer = [{} for i in range(self.n_hidden_layer)]
@@ -423,20 +362,17 @@ class InforGo(object):
             }
             for i in range(1, self.n_hidden_layer):
                 self.hidden_layer[i - 1]['Activated_Output'] = self.activation_function(self.hidden_layer[i - 1]['Output'])
-                if self.DEBUG:
-                    print("[Init] Done activating output of hidden layer {}".format(i - 1))
+                if self.DEBUG: print("[Init] Done activating output of hidden layer {}".format(i - 1))
                 self.hidden_layer[i] = {
                     'Output': tf.add(tf.matmul(self.hidden_layer[i - 1]['Activated_Output'], self.weight_and_bias[i]['Weight']), self.weight_and_bias[i]['Bias'])
                 }
             self.hidden_layer[self.n_hidden_layer - 1]['Activated_Output'] = self.hidden_layer[self.n_hidden_layer - 1]['Output']
-            if self.DEBUG:
-                print("[Init] Done activating output of hidden layer {}".format(self.n_hidden_layer - 1))
+            if self.DEBUG: print("[Init] Done activating output of hidden layer {}".format(self.n_hidden_layer - 1))
 
         with tf.name_scope('Output_Layer'):
             self.output = tf.add(tf.matmul(self.hidden_layer[self.n_hidden_layer - 1]['Activated_Output'], self.weight_and_bias[self.n_hidden_layer]['Weight'], ), self.weight_and_bias[self.n_hidden_layer]['Bias'])
             self.V = self.output_function(self.output)
-            if self.DEBUG:
-                print("[Init] Done constructing output layer")
+            if self.DEBUG: print("[Init] Done constructing output layer")
 
         with tf.name_scope('Training_Model'):
             # Q-value to update the weight
@@ -450,19 +386,16 @@ class InforGo(object):
                 return self.L2_value
 
             self.loss = tf.reduce_sum(tf.square(self.V_desired - self.V))
-            if self.DEBUG:
-                print("[Init] Done caculating cost function")
+            if self.DEBUG: print("[Init] Done caculating cost function")
             # use gradient descent to optimize our model
             self.trainer = tf.train.GradientDescentOptimizer(self.learning_rate)
             self.model = self.trainer.minimize(self.loss, global_step=self.global_step)
-            if self.DEBUG:
-                print("[Init] Done setting up trainer")
+            if self.DEBUG: print("[Init] Done setting up trainer")
 
         init = tf.global_variables_initializer()
         self.sess = tf.Session()
         self.sess.run(init)
-        if self.DEBUG:
-            print("[Init] Done initializing all variables")
+        if self.DEBUG: print("[Init] Done initializing all variables")
     
     def get_weight(self, n, m, layer):
         '''
@@ -476,8 +409,7 @@ class InforGo(object):
                     try:
                         w[i, j] = float(f.readline())
                     except:
-                        if self.DEBUG:
-                            print("[ERROR] NaN or unstored weight")
+                        if self.DEBUG: print("[ERROR] NaN or unstored weight")
                         os.remove('../Data/Weight/{}.txt'.format(layer))
                         return tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.001, dtype=tf.float64)
             f.close()
@@ -496,8 +428,7 @@ class InforGo(object):
                 try:
                     b[0, i] = float(f.readline())
                 except:
-                    if self.DEBUG:
-                        print("[ERROR] NaN or unstored bias")
+                    if self.DEBUG: print("[ERROR] NaN or unstored bias")
                     os.remove('../Data/Bias/{}.txt'.format(layer))
                     return tf.Variable(tf.truncated_normal([1, n], mean=0.0, stddev=0.001, dtype=tf.float64))
             f.close()
@@ -511,186 +442,113 @@ class InforGo(object):
         two = [0, 0]
         three = [0, 0]
         for i in range(4):
-            if state[i][i][i][0][0] == player:
-                corner[0] += 1
-            elif state[i][i][i][0][0] == opponent:
-                corner[1] += 1
-            if state[i][3 - i][3 - i][0][0] == player:
-                corner[0] += 1
-            elif state[i][3 - i][3 - i][0][0] == opponent:
-                corner[1] += 1
-            if state[i][3 - i][i][0][0] == player:
-                corner[0] += 1
-            elif state[i][3 - i][i][0][0] == opponent:
-                corner[1] += 1
-            if state[i][i][3 - i][0][0] == player:
-                corner[0] += 1
-            elif state[i][i][3 - i][0][0] == opponent:
-                corner[1] += 1
+            if state[i][i][i][0][0] == player: corner[0] += 1
+            elif state[i][i][i][0][0] == opponent: corner[1] += 1
+            if state[i][3 - i][3 - i][0][0] == player: corner[0] += 1
+            elif state[i][3 - i][3 - i][0][0] == opponent: corner[1] += 1
+            if state[i][3 - i][i][0][0] == player: corner[0] += 1
+            elif state[i][3 - i][i][0][0] == opponent: corner[1] += 1
+            if state[i][i][3 - i][0][0] == player: corner[0] += 1
+            elif state[i][i][3 - i][0][0] == opponent: corner[1] += 1
 
         for h in range(4):
             for r in range(4):
                 cnt = [0, 0]
-                for c in range(4):
-                    if state[h][r][c][0][0]:
-                        cnt[int(state[h][r][c][0][0]) - 1] += 1
-                if cnt[0] == 2 and cnt[1] == 0:
-                    two[0] += 1
-                if cnt[1] == 2 and cnt[0] == 0:
-                    two[1] += 1
-                if cnt[0] == 3 and cnt[1] == 0:
-                    three[0] += 1
-                if cnt[1] == 3 and cnt[0] == 0:
-                    three[1] += 1
+                for c in range(4): 
+                    if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
+                if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+                if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+                if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+                if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
             for c in range(4):
                 cnt = [0, 0]
-                for r in range(4):
-                    if state[h][r][c][0][0]:
-                        cnt[int(state[h][r][c][0][0]) - 1] += 1
-                if cnt[0] == 2 and cnt[1] == 0:
-                    two[0] += 1
-                if cnt[1] == 2 and cnt[0] == 0:
-                    two[1] += 1
-                if cnt[0] == 3 and cnt[1] == 0:
-                    three[0] += 1
-                if cnt[1] == 3 and cnt[0] == 0:
-                    three[1] += 1
+                for r in range(4): 
+                    if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
+                if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+                if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+                if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+                if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
             cnt = [0, 0]
-            for i in range(4):
-                if state[h][i][i][0][0]:
-                    cnt[int(state[h][i][i][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0:
-                two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0:
-                two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0:
-                three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0:
-                three[1] += 1        
+            for i in range(4): 
+                if state[h][i][i][0][0]: cnt[int(state[h][i][i][0][0]) - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1        
             cnt = [0, 0]
-            for i in range(4):
-                if state[h][i][3 - i][0][0]:
-                    cnt[int(state[h][i][3 - i][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0:
-                two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0:
-                two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0:
-                three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0:
-                three[1] += 1
+            for i in range(4): 
+                if state[h][i][3 - i][0][0]: cnt[int(state[h][i][3 - i][0][0]) - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
 
         for r in range(4):
             for c in range(4):
                 cnt = [0, 0]
-                for h in range(4):
-                    if state[h][r][c][0][0]:
-                        cnt[int(state[h][r][c][0][0]) - 1] += 1
-                if cnt[0] == 2 and cnt[1] == 0:
-                    two[0] += 1
-                if cnt[1] == 2 and cnt[0] == 0:
-                    two[1] += 1
-                if cnt[0] == 3 and cnt[1] == 0:
-                    three[0] += 1
-                if cnt[1] == 3 and cnt[0] == 0:
-                    three[1] += 1
+                for h in range(4): 
+                    if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
+                if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+                if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+                if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+                if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
             cnt = [0, 0]
-            for i in range(4):
-                if state[i][r][i][0][0]:
-                    cnt[int(state[i][r][i][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0:
-                two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0:
-                two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0:
-                three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0:
-                three[1] += 1
+            for i in range(4): 
+                if state[i][r][i][0][0]: cnt[int(state[i][r][i][0][0]) - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
             cnt = [0, 0]
-            for i in range(4):
-                if state[i][r][3 - i][0][0]:
-                    cnt[int(state[i][r][3 - i][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0:
-                two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0:
-                two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0:
-                three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0:
-                three[1] += 1
+            for i in range(4): 
+                if state[i][r][3 - i][0][0]: cnt[int(state[i][r][3 - i][0][0]) - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         for c in range(4):
             cnt = [0, 0]
-            for i in range(4):
-                if state[i][i][c][0][0]:
-                    cnt[int(state[i][i][c][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0:
-                two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0:
-                two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0:
-                three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0:
-                three[1] += 1
+            for i in range(4): 
+                if state[i][i][c][0][0]: cnt[int(state[i][i][c][0][0]) - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
             cnt = [0, 0]
-            for i in range(4):
-                if state[i][3 - i][c][0][0]:
-                    cnt[int(state[i][3 - i][c][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0:
-                two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0:
-                two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0:
-                three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0:
-                three[1] += 1
+            for i in range(4): 
+                if state[i][3 - i][c][0][0]: cnt[int(state[i][3 - i][c][0][0]) - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         cnt = [0, 0]
-        for i in range(4):
-            if state[i][i][i][0][0]:
-                cnt[int(state[i][i][i][0][0]) - 1] += 1
-        if cnt[0] == 2 and cnt[1] == 0:
-            two[0] += 1
-        if cnt[1] == 2 and cnt[0] == 0:
-            two[1] += 1
-        if cnt[0] == 3 and cnt[1] == 0:
-            three[0] += 1
-        if cnt[1] == 3 and cnt[0] == 0:
-            three[1] += 1
+        for i in range(4): 
+            if state[i][i][i][0][0]: cnt[int(state[i][i][i][0][0]) - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         cnt = [0, 0]
-        for i in range(4):
-            if state[i][i][3 - i][0][0]:
-                cnt[int(state[i][i][3 - i][0][0]) - 1] += 1
-        if cnt[0] == 2 and cnt[1] == 0:
-            two[0] += 1
-        if cnt[1] == 2 and cnt[0] == 0:
-            two[1] += 1
-        if cnt[0] == 3 and cnt[1] == 0:
-            three[0] += 1
-        if cnt[1] == 3 and cnt[0] == 0:
-            three[1] += 1
+        for i in range(4): 
+            if state[i][i][3 - i][0][0]: cnt[int(state[i][i][3 - i][0][0]) - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         cnt = [0, 0]
-        for i in range(4):
-            if state[3 - i][i][i][0][0]:
-                cnt[int(state[3 - i][i][i][0][0]) - 1] += 1
-        if cnt[0] == 2 and cnt[1] == 0:
-            two[0] += 1
-        if cnt[1] == 2 and cnt[0] == 0:
-            two[1] += 1
-        if cnt[0] == 3 and cnt[1] == 0:
-            three[0] += 1
-        if cnt[1] == 3 and cnt[0] == 0:
-            three[1] += 1
+        for i in range(4): 
+            if state[3 - i][i][i][0][0]: cnt[int(state[3 - i][i][i][0][0]) - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         cnt = [0, 0]
-        for i in range(4):
-            if state[i][3 - i][i][0][0]:
-                cnt[int(state[i][3 - i][i][0][0]) - 1] += 1
-        if cnt[0] == 2 and cnt[1] == 0:
-            two[0] += 1
-        if cnt[1] == 2 and cnt[0] == 0:
-            two[1] += 1
-        if cnt[0] == 3 and cnt[1] == 0:
-            three[0] += 1
-        if cnt[1] == 3 and cnt[0] == 0:
-            three[1] += 1
+        for i in range(4): 
+            if state[i][3 - i][i][0][0]: cnt[int(state[i][3 - i][i][0][0]) - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         pattern = np.reshape(np.array([corner[0], corner[1], two[0], two[1], three[0], three[1]]), [1, 6])
         return pattern
 
@@ -730,12 +588,10 @@ class InforGo(object):
                             try:
                                 height, row, col = map(int, f.readline().split())
                             except:
-                                if self.DEBUG:
-                                    print("[ERROR] Invalid file format or context {}".format(file_name))
+                                if self.DEBUG: print("[ERROR] Invalid file format or context {}".format(file_name))
                                 break
 
-                            if (height, row, col) == (-1, -1, -1):
-                                break
+                            if (height, row, col) == (-1, -1, -1): break
 
                             height, row, col = self.rotate(height, row, col, rotate_time)
 
@@ -756,12 +612,10 @@ class InforGo(object):
                             try:
                                 height, row, col = map(int, f.readline().split())
                             except:
-                                if self.DEBUG:
-                                    print("[ERROR] Invalid file format or context {}".format(file_name))
+                                if self.DEBUG: print("[ERROR] Invalid file format or context {}".format(file_name))
                                 break
 
-                            if (height, row, col) == (-1, -1, -1):
-                                break
+                            if (height, row, col) == (-1, -1, -1): break
 
                             height, row, col = self.rotate(height, row, col, rotate_time)
 
@@ -781,13 +635,10 @@ class InforGo(object):
             loss.append(loss_sum / update)
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)    
-                if self.DEBUG:
-                    print("[Train] Training Complete: {}%".format(percentage))
-            if percentage % 10 == 0:
-                self.store_weight_and_bias()
+                if self.DEBUG: print("[Train] Training Complete: {}%".format(percentage))
+            if percentage % 10 == 0: self.store_weight_and_bias()
                 
-        if self.DEBUG:
-            print("[Train] Training Complete: {}%".format(100))
+        if self.DEBUG: print("[Train] Training Complete: {}%".format(100))
         self.store_weight_and_bias()
         return loss
 
@@ -808,22 +659,17 @@ class InforGo(object):
         directory = directory[1:]
         filename = {}
         for d in directory:
-            if d == '../Data/record/test_record' and not run_test:
-                continue
-            if d == '../Data/record/self_play' and not run_self_play:
-                continue
-            if d == '../Data/record/generator':
-                continue
+            if d == '../Data/record/test_record' and not run_test: continue
+            if d == '../Data/record/self_play' and not run_self_play: continue
+            if d == '../Data/record/generator': continue
             tmp = [x[2] for x in os.walk(d)]
             filename[d] = [x for x in tmp[0]]
-        if not run_generator:
-            return filename
+        if not run_generator: return filename
         s = set([])
         filename['../Data/record/generator'] = []
         for i in range(n_generator):
             game_id = random.randint(0, MAX)
-            while game_id in s or not os.path.exists('../Data/record/generator/{}'.format(game_id)):
-                game_id = random.randint(0, MAX)
+            while game_id in s or not os.path.exists('../Data/record/generator/{}'.format(game_id)): game_id = random.randint(0, MAX)
             s.add(game_id)
             filename['../Data/record/generator'].append('{}'.format(game_id))
         return filename           
@@ -839,39 +685,31 @@ class InforGo(object):
                 for k in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Weight']))[1]):
                     f.write('{}\n'.format(w[j, k]))
             f.close()
-            if self.DEBUG:
-                print("[Train] Done storing weight {}".format(i))
+            if self.DEBUG: print("[Train] Done storing weight {}".format(i))
 
             f = open('../Data/Bias/{}.txt'.format(i), 'w')
             b = self.sess.run(self.weight_and_bias[i]['Bias'])
             for j in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Bias']))[1]):
                 f.write('{}\n'.format(b[0, j]))
             f.close()
-            if self.DEBUG:
-                print("[Train] Done storing bias {}".format(i))
+            if self.DEBUG: print("[Train] Done storing bias {}".format(i))
 
     def play(self, test_flag=False, bot=None, AI=None):
-        if test_flag:
-            tmp = tempfile.NamedTemporaryFile(dir='../Data/record/test_record', delete=False)
-        elif AI is not None:
-            tmp = tempfile.NamedTemporaryFile(dir='../Data/record/self_play', delete=False)
-        else:
-            tmp = tempfile.NamedTemporaryFile(dir='../Data/record/selfrecord', delete=False)
+        if test_flag: tmp = tempfile.NamedTemporaryFile(dir='../Data/record/test_record', delete=False)
+        elif AI is not None: tmp = tempfile.NamedTemporaryFile(dir='../Data/record/self_play', delete=False)
+        else: tmp = tempfile.NamedTemporaryFile(dir='../Data/record/selfrecord', delete=False)
         winner = 0
         s = self.MDP.get_initial_state()
         record = ''
-        if self.DEBUG and not test_flag and AI is None:
-            print("[Play] Start playing")
+        if self.DEBUG and not test_flag and AI is None: print("[Play] Start playing")
 
         player = 1
         if self.first is False:
-            if self.DEBUG and not self.test_flag and AI is None:
-                print("[Play] Enter position")
+            if self.DEBUG and not self.test_flag and AI is None: print("[Play] Enter position")
             try:
                 opponent = self.read_opponent_action(test_flag, bot, AI=AI)
             except:
-                if self.DEBUG and not self.test_flag and AI is None:
-                    print("[ERROR] Fail to read opponent action")
+                if self.DEBUG and not self.test_flag and AI is None: print("[ERROR] Fail to read opponent action")
                 os.remove(tmp.name)
                 return
             while self.MDP.valid_action(opponent) is False:
@@ -881,8 +719,7 @@ class InforGo(object):
                 try:
                     opponent = self.read_opponent_action(test_flag, bot, AI=AI)
                 except:
-                    if not self.test_flag and AI is None:
-                        print("[ERROR] Fail to read opponent action")
+                    if not self.test_flag and AI is None: print("[ERROR] Fail to read opponent action")
             row, col = opponent
             height = self.MDP.bingo.height[row][col]
             record += '{} {} {}\n'.format(height, row, col)
@@ -891,8 +728,7 @@ class InforGo(object):
             player = 1 if player == 2 else 2 
             if flag == 1:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag and AI is None:
-                    print("[Play] User win")
+                if self.DEBUG and not test_flag and AI is None: print("[Play] User win")
                 winner = 1
 
         while True:
@@ -909,21 +745,18 @@ class InforGo(object):
 
             if flag == player:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag and AI is None:
-                    print("[Play] AI win")
+                if self.DEBUG and not test_flag and AI is None: print("[Play] AI win")
                 winner = player
                 break
 
             player = 1 if player == 2 else 2 
 
-            if self.DEBUG and not test_flag and AI is None:
-                print("[Play] Enter position")
+            if self.DEBUG and not test_flag and AI is None: print("[Play] Enter position")
 
             try:
                 opponent = self.read_opponent_action(test_flag, bot, AI=AI)
             except:
-                if self.DEBUG and not test_flag and AI is None:
-                    print("[ERROR] Invalid Opponent Move")
+                if self.DEBUG and not test_flag and AI is None: print("[ERROR] Invalid Opponent Move")
                 os.remove(tmp.name)
                 break
             
@@ -935,14 +768,12 @@ class InforGo(object):
                 try:
                     opponent = self.read_opponent_action(test_flag, bot, AI=AI)
                 except:
-                    if self.DEBUG and not test_flag and AI is None:
-                        print("[ERROR] Invalid Opponent Move")
+                    if self.DEBUG and not test_flag and AI is None: print("[ERROR] Invalid Opponent Move")
                     os.remove(tmp.name)
                     success = False
                     break
             
-            if not success:
-                break
+            if not success: break
             row, col = opponent
             height = self.MDP.bingo.height[row][col]
             record += '{} {} {}\n'.format(height, row, col)
@@ -951,8 +782,7 @@ class InforGo(object):
 
             if flag == player:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag and AI is None:
-                    print("[Play] User win")
+                if self.DEBUG and not test_flag and AI is None: print("[Play] User win")
                 winner = player
                 break
 
@@ -970,11 +800,9 @@ class InforGo(object):
         '''
         state = bingo.get_state()
 
-        if bingo.win(1) or bingo.win(2):
-            return self.evaluate(state, player), None
+        if bingo.win(1) or bingo.win(2): return self.evaluate(state, player), None
 
-        if depth == 0:
-            return self.evaluate(state, player), None
+        if depth == 0: return self.evaluate(state, player), None
         
         value = np.inf if level == 'Min' else -np.inf
         action = 0
@@ -995,23 +823,17 @@ class InforGo(object):
 
                 val, a = self.Minimax(new_bingo, depth - 1, next_level, next_player, alpha, beta)
 
-                if level == 'Min':
-                    beta = min(beta, val)
-                else:
-                    alpha = max(alpha, val)
+                if level == 'Min': beta = min(beta, val)
+                else: alpha = max(alpha, val)
 
                 value = func(value, val)
                 
                 # Lowerbound is greater than the upperbound, stop further searching
-                if alpha > beta:
-                    return value, action
+                if alpha > beta: return value, action
 
-                if value == val:
-                    action = i
+                if value == val: action = i
 
-        if not move:
-            return 0, None
-
+        if not move: return 0, None
         return value, action
 
     def evaluate(self, state, player):
@@ -1034,18 +856,14 @@ class InforGo(object):
             value, action = AI.Minimax(Bingo(state), AI.search_depth, 'Max', 2)
             return self.decode_action(action)
 
-        if test_flag:
-            return bot.generate_action(self.MDP.get_state())
+        if test_flag: return bot.generate_action(self.MDP.get_state())
 
-        try:
-            h, r, c = map(int, input().split())
-        except:
-            raise
+        try: h, r, c = map(int, input().split())
+        except: raise
         return r, c
         
     def emit_action(self, height, row, col, test_flag, AI=None):
-        if test_flag or AI is not None:
-            return
+        if test_flag or AI is not None: return
         if self.DEBUG:
             print("[DEBUG] ", end='')
             print("{} {} {}".format(height, row, col))
@@ -1059,19 +877,15 @@ class InforGo(object):
         percentage = 0
         player = 1 if self.first else 2
         bot = Bot(2) if self.first else Bot(1)
-        if self.DEBUG:
-            print("[Test] Test Complete: {}%".format(0))
+        if self.DEBUG: print("[Test] Test Complete: {}%".format(0))
         for epoch in range(self.n_epoch):
             winner = self.play(test_flag=True, bot=bot)
-            if winner == player:
-                win += 1
+            if winner == player: win += 1
 
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)    
-                if self.DEBUG:
-                    print("[Test] Test Complete: {}%".format(percentage))
-        if self.DEBUG:
-            print("[Test] Test Complete: {}%".format(100))
+                if self.DEBUG: print("[Test] Test Complete: {}%".format(percentage))
+        if self.DEBUG: print("[Test] Test Complete: {}%".format(100))
         print("[Test] Winning Percentage: {}%".format(win / self.n_epoch * 100.))
         return win / self.n_epoch * 100.
 
@@ -1088,8 +902,7 @@ class Bot:
             for j in range(4):
                 if bingo.valid_action(i, j):
                     bingo.place(i, j)
-                    if bingo.win(self.player):
-                        return i, j
+                    if bingo.win(self.player): return i, j
                     bingo.undo_action(i, j)
 
         bingo.change_player()
@@ -1097,8 +910,7 @@ class Bot:
             for j in range(4):
                 if bingo.valid_action(i, j):
                     bingo.place(i, j)
-                    if bingo.win(self.opponent):
-                        return i, j
+                    if bingo.win(self.opponent): return i, j
                     bingo.undo_action(i, j)
         return random.randint(0, 3), random.randint(0, 3)
 
@@ -1134,16 +946,12 @@ def self_play(AI, args):
         print("[Self-Play] Self-Play Complete: {}%".format(0))
     for epoch in range(args.n_epoch):
         winner = AI.play(AI=opponent)
-        if winner == 1:
-            first_win += 1
-        else:
-            second_win += 1
+        if winner == 1: first_win += 1
+        else: second_win += 1
         if epoch / args.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / args.n_epoch * 100)    
-                if args.DEBUG:
-                    print("[Self-Play] Self-Play Complete: {}%".format(percentage))
-    if args.DEBUG:
-        print("[Self-Play] Self-Play Complete: {}%".format(100))
+                if args.DEBUG: print("[Self-Play] Self-Play Complete: {}%".format(percentage))
+    if args.DEBUG: print("[Self-Play] Self-Play Complete: {}%".format(100))
     return first_win, second_win
 
 
@@ -1198,12 +1006,9 @@ def main():
     args = parser.parse_args()
 
     def reward_function(state, flag, player):
-        if flag == 3 or flag == 0:
-            return 0
-        if flag == player:
-            return 1
-        if flag != player:
-            return -1
+        if flag == 3 or flag == 0: return 0
+        if flag == player: return 1
+        if flag != player: return -1
         return 0
         
     LOG_DIR = './log' + args.logdir
@@ -1235,21 +1040,15 @@ def main():
         loss = AI.train(run_test=args.run_test, run_self_play=args.run_self_play, run_generator=args.run_generator, n_generator=args.n_generator, MAX=args.MAX)
         try:
             f = open('../tmp', 'w')
-            for i in loss:
-                f.write('{}\n'.format(i))
+            for i in loss: f.write('{}\n'.format(i))
             f.close()
         except:
-            for i in loss:
-                print(i, end=' ')
+            for i in loss: print(i, end=' ')
         plt.plot([i for i in range(len(loss))], loss)
         plt.show()
             
-    elif args.method == 'play':
-        AI.play()
-
-    elif args.method == 'test':
-        AI.test()
-
+    elif args.method == 'play': AI.play()
+    elif args.method == 'test': AI.test()
     elif args.method == 'self-play':
         a, b = self_play(AI, args)
         print("{} {}".format(a, b))
