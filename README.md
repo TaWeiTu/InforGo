@@ -20,27 +20,27 @@ $ pip install matplotlib
 ## Examples
 To play with InforGo on command line
 ```bash
-$ python bingo.py play [--argument=<value>]
+$ python src/bingo.py play [--argument=<value>]
 ```
 For example, play with AI that has a maximum search depth 3.
 ```base
-$ python bingo.py play --search_depth=3
+$ python src/bingo.py play --search_depth=3
 ```
 To train InforGo, first store the data in ```./Data/record/*```, the format of the file should contains 3 numbers per line, indicating the (height, row, col) of the corresponding position, with "-1 -1 -1" at the last line(without quote).
 ```bash
-$ python bingo.py train [--argument=<value>]
+$ python src/bingo.py train [--argument=<value>]
 ```
 For example, train AI with 3 hidden layers, each layer is constructed with 32, 16, 8 nodes, respectively.
 ```base
-$ python bingo.py train --n_hidden_layer=3 --n_node_hidden 32 16 8
+$ python src/bingo.py train --n_hidden_layer=3 --n_node_hidden 32 16 8
 ```
 To test how good InforGo is trained
 ```bash
-python bingo.py test [--argument=<value>]
+python src/bingo.py test [--argument=<value>]
 ```
 To make InforGo play against itself
 ```bash
-python bingo.py self-play [--argument=<value>]
+python src/bingo.py self-play [--argument=<value>]
 ```
 InforGo will be playing with a random bot which win if it can and prevent loss from opponent  
 

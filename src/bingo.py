@@ -144,7 +144,7 @@ class Bingo(object):
             for i in range(4): flag = False if self.board[i][r][i] != player else flag
             if flag: return True 
             flag = True
-            for i in range(4): flag = False if self.board[i][r][3 - i] else flag
+            for i in range(4): flag = False if self.board[i][r][3 - i] != player else flag
             if flag: return True
 
         for c in range(4):
@@ -393,7 +393,7 @@ class InforGo(object):
             if self.DEBUG: print("[Init] Done setting up trainer")
 
         init = tf.global_variables_initializer()
-        self.sess = tf.Session()
+        self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
         self.sess.run(init)
         if self.DEBUG: print("[Init] Done initializing all variables")
     
