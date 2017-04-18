@@ -51,7 +51,7 @@ class Bingo(object):
                         if self.board[h][r][c] != 0:
                             self.height[r][c] = h + 1
                             cnt += 1
-            self.player = 1 if cnt % 2 == 0 else 2 
+            self.player = 1 if cnt % 2 == 0 else -1 
         
 
     def place(self, row, col):
@@ -65,7 +65,7 @@ class Bingo(object):
         
         # place the cube
         self.board[height][row][col] = self.player
-        self.change_player()
+        self.player = -self.player
 
         self.height[row][col] += 1
 
@@ -102,12 +102,6 @@ class Bingo(object):
         if self.win(player): return player
         if self.full(): return 3
         return 0
-        
-    def change_player(self):
-        '''
-        switch player
-        '''
-        self.player = 1 if self.player == 2 else 2 
 
     def win(self, player):
         '''
@@ -436,122 +430,7 @@ class InforGo(object):
         else:
             return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.001, dtype=tf.float64))
 
-    def get_pattern(self, state, player):
-        opponent = 1 if player == 2 else 2 
-        corner = [0, 0]
-        two = [0, 0]
-        three = [0, 0]
-        for i in range(4):
-            if state[i][i][i][0][0] == player: corner[0] += 1
-            elif state[i][i][i][0][0] == opponent: corner[1] += 1
-            if state[i][3 - i][3 - i][0][0] == player: corner[0] += 1
-            elif state[i][3 - i][3 - i][0][0] == opponent: corner[1] += 1
-            if state[i][3 - i][i][0][0] == player: corner[0] += 1
-            elif state[i][3 - i][i][0][0] == opponent: corner[1] += 1
-            if state[i][i][3 - i][0][0] == player: corner[0] += 1
-            elif state[i][i][3 - i][0][0] == opponent: corner[1] += 1
-
-        for h in range(4):
-            for r in range(4):
-                cnt = [0, 0]
-                for c in range(4): 
-                    if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
-                if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-                if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-                if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-                if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-            for c in range(4):
-                cnt = [0, 0]
-                for r in range(4): 
-                    if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
-                if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-                if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-                if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-                if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-            cnt = [0, 0]
-            for i in range(4): 
-                if state[h][i][i][0][0]: cnt[int(state[h][i][i][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1        
-            cnt = [0, 0]
-            for i in range(4): 
-                if state[h][i][3 - i][0][0]: cnt[int(state[h][i][3 - i][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-
-        for r in range(4):
-            for c in range(4):
-                cnt = [0, 0]
-                for h in range(4): 
-                    if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
-                if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-                if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-                if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-                if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-            cnt = [0, 0]
-            for i in range(4): 
-                if state[i][r][i][0][0]: cnt[int(state[i][r][i][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-            cnt = [0, 0]
-            for i in range(4): 
-                if state[i][r][3 - i][0][0]: cnt[int(state[i][r][3 - i][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-        for c in range(4):
-            cnt = [0, 0]
-            for i in range(4): 
-                if state[i][i][c][0][0]: cnt[int(state[i][i][c][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-            cnt = [0, 0]
-            for i in range(4): 
-                if state[i][3 - i][c][0][0]: cnt[int(state[i][3 - i][c][0][0]) - 1] += 1
-            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-        cnt = [0, 0]
-        for i in range(4): 
-            if state[i][i][i][0][0]: cnt[int(state[i][i][i][0][0]) - 1] += 1
-        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-        cnt = [0, 0]
-        for i in range(4): 
-            if state[i][i][3 - i][0][0]: cnt[int(state[i][i][3 - i][0][0]) - 1] += 1
-        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-        cnt = [0, 0]
-        for i in range(4): 
-            if state[3 - i][i][i][0][0]: cnt[int(state[3 - i][i][i][0][0]) - 1] += 1
-        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-        cnt = [0, 0]
-        for i in range(4): 
-            if state[i][3 - i][i][0][0]: cnt[int(state[i][3 - i][i][0][0]) - 1] += 1
-        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
-        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
-        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
-        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
-        pattern = np.reshape(np.array([corner[0], corner[1], two[0], two[1], three[0], three[1]]), [1, 6])
-        return pattern
-
+    
     def decode_action(self, action_num):
         action = [0, 0]
         for i in range(2):
@@ -595,18 +474,18 @@ class InforGo(object):
 
                             height, row, col = self.rotate(height, row, col, rotate_time)
 
-                            v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(1), self.pattern: self.get_pattern(s, 1)})
+                            v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
                             flag, new_s, R = self.MDP.take_action((row, col), 1)
 
-                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1), self.pattern: self.get_pattern(new_s, 1)})
+                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1), self.pattern: get_pattern(new_s, 1)})
                             v_desired = np.zeros([1, 1])
                             # TD-0 update
                             # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
                             v_desired[0][0] = v[0][0] + self.alpha * (R + self.gamma * new_v[0][0] - v[0][0])
                             # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
-                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: self.get_pattern(s, 1)})
+                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
                             update += 1
-                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: self.get_pattern(s, 1)})
+                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
                             s = new_s
 
                             try:
@@ -619,17 +498,17 @@ class InforGo(object):
 
                             height, row, col = self.rotate(height, row, col, rotate_time)
 
-                            v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(2), self.pattern: self.get_pattern(s, 2)})
-                            flag, new_s, R = self.MDP.take_action((row, col), 2)
+                            v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
+                            flag, new_s, R = self.MDP.take_action((row, col), -1)
 
-                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(2), self.pattern: self.get_pattern(new_s, 2)})
+                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(new_s, -1)})
                             # TD-0 update
                             # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0]) 
                             v_desired[0][0] = v[0][0] + self.alpha * (R + self.gamma * new_v[0][0] - v[0][0])
                             # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
-                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2), self.pattern: self.get_pattern(s, 2)})
+                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
                             update += 1
-                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(2), self.pattern: self.get_pattern(s, 2)})
+                            self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
                             s = new_s
 
             loss.append(loss_sum / update)
@@ -725,7 +604,7 @@ class InforGo(object):
             record += '{} {} {}\n'.format(height, row, col)
 
             flag, s, _ = self.MDP.take_action(opponent, player)
-            player = 1 if player == 2 else 2 
+            player = -player
             if flag == 1:
                 record += '-1 -1 -1\n'
                 if self.DEBUG and not test_flag and AI is None: print("[Play] User win")
@@ -749,7 +628,7 @@ class InforGo(object):
                 winner = player
                 break
 
-            player = 1 if player == 2 else 2 
+            player = -player
 
             if self.DEBUG and not test_flag and AI is None: print("[Play] Enter position")
 
@@ -786,7 +665,7 @@ class InforGo(object):
                 winner = player
                 break
 
-            player = 1 if player == 2 else 2 
+            player = -player
         # Record the game for future training
         f = open(tmp.name, 'w')
         f.write(record)
@@ -800,13 +679,13 @@ class InforGo(object):
         '''
         state = bingo.get_state()
 
-        if bingo.win(1) or bingo.win(2): return self.evaluate(state, player), None
+        if bingo.win(1) or bingo.win(-1): return self.evaluate(state, player), None
 
         if depth == 0: return self.evaluate(state, player), None
         
         value = np.inf if level == 'Min' else -np.inf
         action = 0
-        next_player = 1 if player == 2 else 2
+        next_player = -player
         next_level = 'Max' if level == 'Min' else 'Max'
         func = lambda a, b: max(a, b) if level == 'Max' else lambda a, b: min(a, b)
 
@@ -840,20 +719,19 @@ class InforGo(object):
         '''
         Evaluate the value of input state with neural network as an approximater
         '''
-        V = self.sess.run(self.V, feed_dict={self.inp: state, self.player_node: self.cast_player(player), self.pattern: self.get_pattern(state, player)})
+        V = self.sess.run(self.V, feed_dict={self.inp: state, self.player_node: self.cast_player(player), self.pattern: get_pattern(state, player)})
         return V[0][0]
     
     def cast_player(self, player):
         tmp = np.zeros([1, 1])
-        tmp[0, 0] = 1 if player == 1 else -1 
+        tmp[0, 0] = player
         return tmp
 
     def read_opponent_action(self, test_flag, bot, AI=None):
         if AI is not None:
             state = self.MDP.get_state()
-            player = 0
-            player = 1 if AI.first else 2 
-            value, action = AI.Minimax(Bingo(state), AI.search_depth, 'Max', 2)
+            player = 1 if AI.first else -1
+            value, action = AI.Minimax(Bingo(state), AI.search_depth, 'Max', player)
             return self.decode_action(action)
 
         if test_flag: return bot.generate_action(self.MDP.get_state())
@@ -871,12 +749,10 @@ class InforGo(object):
             print(height + row * 4 + col * 16)
 
     def test(self):
-        bot = None
         win = 0
-        player = 0
         percentage = 0
-        player = 1 if self.first else 2
-        bot = Bot(2) if self.first else Bot(1)
+        player = 1 if self.first else -1
+        bot = Bot(-player)
         if self.DEBUG: print("[Test] Test Complete: {}%".format(0))
         for epoch in range(self.n_epoch):
             winner = self.play(test_flag=True, bot=bot)
@@ -894,7 +770,7 @@ class Bot:
 
     def __init__(self, player):
         self.player = player
-        self.opponent = 1 if player == 2 else 2 
+        self.opponent = -player
     
     def generate_action(self, state):
         bingo = Bingo(state)
@@ -905,7 +781,7 @@ class Bot:
                     if bingo.win(self.player): return i, j
                     bingo.undo_action(i, j)
 
-        bingo.change_player()
+        bingo.player = -bingo.player
         for i in range(4):
             for j in range(4):
                 if bingo.valid_action(i, j):
@@ -953,6 +829,123 @@ def self_play(AI, args):
                 if args.DEBUG: print("[Self-Play] Self-Play Complete: {}%".format(percentage))
     if args.DEBUG: print("[Self-Play] Self-Play Complete: {}%".format(100))
     return first_win, second_win
+
+
+def get_pattern(state, player):
+    opponent = -player
+    corner = [0, 0]
+    two = [0, 0]
+    three = [0, 0]
+    for i in range(4):
+        if state[i][i][i][0][0] == player: corner[0] += 1
+        elif state[i][i][i][0][0] == opponent: corner[1] += 1
+        if state[i][3 - i][3 - i][0][0] == player: corner[0] += 1
+        elif state[i][3 - i][3 - i][0][0] == opponent: corner[1] += 1
+        if state[i][3 - i][i][0][0] == player: corner[0] += 1
+        elif state[i][3 - i][i][0][0] == opponent: corner[1] += 1
+        if state[i][i][3 - i][0][0] == player: corner[0] += 1
+        elif state[i][i][3 - i][0][0] == opponent: corner[1] += 1
+
+    for h in range(4):
+        for r in range(4):
+            cnt = [0, 0]
+            for c in range(4): 
+                if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+        for c in range(4):
+            cnt = [0, 0]
+            for r in range(4): 
+                if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+        cnt = [0, 0]
+        for i in range(4): 
+            if state[h][i][i][0][0]: cnt[int(state[h][i][i][0][0]) - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1        
+        cnt = [0, 0]
+        for i in range(4): 
+            if state[h][i][3 - i][0][0]: cnt[int(state[h][i][3 - i][0][0]) - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+
+    for r in range(4):
+        for c in range(4):
+            cnt = [0, 0]
+            for h in range(4): 
+                if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
+            if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+            if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+            if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+            if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+        cnt = [0, 0]
+        for i in range(4): 
+            if state[i][r][i][0][0]: cnt[int(state[i][r][i][0][0]) - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+        cnt = [0, 0]
+        for i in range(4): 
+            if state[i][r][3 - i][0][0]: cnt[int(state[i][r][3 - i][0][0]) - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+    for c in range(4):
+        cnt = [0, 0]
+        for i in range(4): 
+            if state[i][i][c][0][0]: cnt[int(state[i][i][c][0][0]) - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+        cnt = [0, 0]
+        for i in range(4): 
+            if state[i][3 - i][c][0][0]: cnt[int(state[i][3 - i][c][0][0]) - 1] += 1
+        if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+        if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+        if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+        if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+    cnt = [0, 0]
+    for i in range(4): 
+        if state[i][i][i][0][0]: cnt[int(state[i][i][i][0][0]) - 1] += 1
+    if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+    if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+    if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+    if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+    cnt = [0, 0]
+    for i in range(4): 
+        if state[i][i][3 - i][0][0]: cnt[int(state[i][i][3 - i][0][0]) - 1] += 1
+    if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+    if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+    if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+    if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+    cnt = [0, 0]
+    for i in range(4): 
+        if state[3 - i][i][i][0][0]: cnt[int(state[3 - i][i][i][0][0]) - 1] += 1
+    if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+    if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+    if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+    if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+    cnt = [0, 0]
+    for i in range(4): 
+        if state[i][3 - i][i][0][0]: cnt[int(state[i][3 - i][i][0][0]) - 1] += 1
+    if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
+    if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
+    if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
+    if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
+    pattern = np.reshape(np.array([corner[0], corner[1], two[0], two[1], three[0], three[1]]), [1, 6])
+    return pattern
 
 
 def main():
@@ -1006,10 +999,20 @@ def main():
     args = parser.parse_args()
 
     def reward_function(state, flag, player):
-        if flag == 3 or flag == 0: return 0
-        if flag == player: return 1
-        if flag != player: return -1
-        return 0
+        np_state = np.zeros([4, 4, 4, 1, 1])
+        for h in range(4):
+            for r in range(4):
+                for c in range(4):
+                    np_state[h][r][c][0][0] = state[h][r][c]
+        pattern = get_pattern(np_state, player)
+        if flag == 3: return 0
+        if flag == player: return 50
+        if flag != player and flag != 0: return -50
+        reward = 0
+        for i in range(6):
+            if i % 2 == 0: reward += pattern[0, i]
+            else: reward -= pattern[0, i]
+        return reward
         
     LOG_DIR = './log' + args.logdir
 
