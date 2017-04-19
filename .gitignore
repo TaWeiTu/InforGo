@@ -5,3 +5,4 @@ Data/*
 log/*
 tmp
 */a.out
+*.pem

@@ -548,7 +548,7 @@ class InforGo(object):
         filename['../Data/record/generator'] = []
         for i in range(n_generator):
             game_id = random.randint(0, MAX)
-            while game_id in s or not os.path.exists('../Data/record/generator/{}'.format(game_id)): game_id = random.randint(0, MAX)
+            while game_id in s or not os.path.exists('../Data/record/generator/{}'.format(game_id)) or game_id % 10 != 0: game_id = random.randint(0, MAX)
             s.add(game_id)
             filename['../Data/record/generator'].append('{}'.format(game_id))
         return filename           
@@ -627,6 +627,11 @@ class InforGo(object):
                 if self.DEBUG and not test_flag and AI is None: print("[Play] AI win")
                 winner = player
                 break
+            if flag == 3:
+                record += '-1 -1 -1\n'
+                if self.DEBUG and not test_flag and AI is None: print("[Play] Draw")
+                winner = 3
+                break
 
             player = -player
 
@@ -666,6 +671,12 @@ class InforGo(object):
                 break
 
             player = -player
+
+            if flag == 3:
+                record += '-1 -1 -1\n'
+                if self.DEBUG and not test_flag and AI is None: print("[Play] Draw")
+                winner = 3
+                break
         # Record the game for future training
         f = open(tmp.name, 'w')
         f.write(record)
