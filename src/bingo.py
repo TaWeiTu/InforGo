@@ -379,7 +379,7 @@ class InforGo(object):
                     self.L2_value += tf.nn.l2_loss(self.weight_and_bias[i]['Weight']) + tf.nn.l2_loss(self.weight_and_bias[i]['Bias'])
                 return self.L2_value
 
-            self.loss = tf.reduce_sum(self.V_desired - self.V)
+            self.loss = tf.reduce_sum(tf.square(self.V_desired - self.V))
             if self.DEBUG: print("[Init] Done caculating cost function")
             # use gradient descent to optimize our model
             self.trainer = tf.train.GradientDescentOptimizer(self.learning_rate)
