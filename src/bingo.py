@@ -771,7 +771,7 @@ class InforGo(object):
 
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)    
-                if self.DEBUG: print("[Test] Test Complete: {}%".format(percentage))
+                if DEBUG: print("[Test] Test Complete: {}%".format(percentage))
         if DEBUG: print("[Test] Test Complete: {}%".format(100))
         print("[Test] Winning Percentage: {}%".format(win / self.n_epoch * 100.))
         return win / self.n_epoch * 100.
