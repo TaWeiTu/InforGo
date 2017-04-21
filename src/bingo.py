@@ -403,7 +403,7 @@ class InforGo(object):
                     try:
                         w[i, j] = float(f.readline())
                     except:
-                        if self.DEBUG: print("[ERROR] NaN or unstored weight")
+                        if DEBUG: print("[ERROR] NaN or unstored weight")
                         os.remove('../Data/Weight/{}.txt'.format(layer))
                         return tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.001, dtype=tf.float64)
             f.close()
@@ -422,7 +422,7 @@ class InforGo(object):
                 try:
                     b[0, i] = float(f.readline())
                 except:
-                    if self.DEBUG: print("[ERROR] NaN or unstored bias")
+                    if DEBUG: print("[ERROR] NaN or unstored bias")
                     os.remove('../Data/Bias/{}.txt'.format(layer))
                     return tf.Variable(tf.truncated_normal([1, n], mean=0.0, stddev=0.001, dtype=tf.float64))
             f.close()
