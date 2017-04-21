@@ -22,8 +22,9 @@ import distutils.util
 import math
 
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 LOG_DIR = '../log/tensorboard'
+DEBUG = False
 argv = sys.argv
 
 
@@ -53,7 +54,6 @@ class Bingo(object):
                             cnt += 1
             self.player = 1 if cnt % 2 == 0 else -1 
         
-
     def place(self, row, col):
         '''
         place a cube on position(height, row, col), and return whether the operation is valid
@@ -247,19 +247,18 @@ class InforGo(object):
     hidden-layer: relu/sigmoid/tanh function
     output-layer: approximate value for the input state
     '''
-    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='relu', output_function=None, learning_rate=0.00000001, alpha=0.00000001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, convolution=True, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, DEBUG=False, first=True):
-
+    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='relu', output_function=None, learning_rate=0.00000001, alpha=0.00000001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, convolution=True, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, first=True):
         if DEBUG:
             print("[Init] Start setting training parameter")
 
-        self.DEBUG = DEBUG
         self.first = first
         self.n_epoch = n_epoch
         self.alpha = alpha
 
         # Learning rate decay
         self.global_step = tf.Variable(0, trainable=False)
-        self.learning_rate = tf.train.exponential_decay(learning_rate, self.global_step, decay_step, decay_rate, staircase=True)
+        # self.learning_rate = tf.train.exponential_decay(learning_rate, self.global_step, decay_step, decay_rate, staircase=True)
+        self.learning_rate = learning_rate
 
         # Discount factor between 0 to 1
         self.gamma = gamma
@@ -293,7 +292,7 @@ class InforGo(object):
         self.regularization_param = regularization_param
         
         self.MDP = MDP(reward_function)
-        if self.DEBUG: print("[Init] Done setting training parameter")
+        if DEBUG: print("[Init] Done setting training parameter")
 
         # Neural Network Setup
 
@@ -301,7 +300,7 @@ class InforGo(object):
         with tf.name_scope('Input-Layer'):
             self.inp = tf.placeholder(shape=[4, 4, 4, 1, 1], dtype=tf.float64, name='input')
 
-        if self.DEBUG: print("[Init] Done consturcting input layer")
+        if DEBUG: print("[Init] Done consturcting input layer")
 
         # 3D-Convolution layer
         if convolution:
@@ -318,7 +317,7 @@ class InforGo(object):
             self.conv_layer_output = tf.reshape(self.inp, [1, -1], name='Flattened')
             self.conv_layer_length = 4 * 4 * 4
 
-        if self.DEBUG: print("[Init] Done constructing convolution layer with out_channel = {}".format(out_channel))
+        if DEBUG: print("[Init] Done constructing convolution layer with out_channel = {}".format(out_channel))
         
         with tf.name_scope('Player-Node'):
             self.player_node = tf.placeholder(shape=[1, 1], dtype=tf.float64, name='Player-Node')
@@ -334,18 +333,18 @@ class InforGo(object):
                 'Weight': self.get_weight(self.conv_layer_length + 1 + 6, self.n_node_hidden[0], 0),
                 'Bias': self.get_bias(self.n_node_hidden[0], 0)
             }
-            if self.DEBUG: print("[Init] Done initializing weight and bias from convolution layer to hidden layer 0")
+            if DEBUG: print("[Init] Done initializing weight and bias from convolution layer to hidden layer 0")
             for i in range(1, self.n_hidden_layer):
                 self.weight_and_bias[i] = {
                     'Weight': self.get_weight(self.n_node_hidden[i - 1], self.n_node_hidden[i], i),
                     'Bias': self.get_bias(self.n_node_hidden[i], i)
                 }
-                if self.DEBUG: print("[Init] Done initializing weight and bias from hidden layer {} to hidden layer {}".format(i - 1, i))
+                if DEBUG: print("[Init] Done initializing weight and bias from hidden layer {} to hidden layer {}".format(i - 1, i))
             self.weight_and_bias[self.n_hidden_layer] = {
                 'Weight': self.get_weight(self.n_node_hidden[self.n_hidden_layer - 1], 1, self.n_hidden_layer),
                 'Bias': self.get_bias(1, self.n_hidden_layer)
             }
-            if self.DEBUG: print("[Init] Done initializing weight and bias from hidden layer {} to output layer".format(self.n_hidden_layer - 1))
+            if DEBUG: print("[Init] Done initializing weight and bias from hidden layer {} to output layer".format(self.n_hidden_layer - 1))
 
         # Store value of every node in each hidden layer
         self.hidden_layer = [{} for i in range(self.n_hidden_layer)]
@@ -356,17 +355,17 @@ class InforGo(object):
             }
             for i in range(1, self.n_hidden_layer):
                 self.hidden_layer[i - 1]['Activated_Output'] = self.activation_function(self.hidden_layer[i - 1]['Output'])
-                if self.DEBUG: print("[Init] Done activating output of hidden layer {}".format(i - 1))
+                if DEBUG: print("[Init] Done activating output of hidden layer {}".format(i - 1))
                 self.hidden_layer[i] = {
                     'Output': tf.add(tf.matmul(self.hidden_layer[i - 1]['Activated_Output'], self.weight_and_bias[i]['Weight']), self.weight_and_bias[i]['Bias'])
                 }
             self.hidden_layer[self.n_hidden_layer - 1]['Activated_Output'] = self.hidden_layer[self.n_hidden_layer - 1]['Output']
-            if self.DEBUG: print("[Init] Done activating output of hidden layer {}".format(self.n_hidden_layer - 1))
+            if DEBUG: print("[Init] Done activating output of hidden layer {}".format(self.n_hidden_layer - 1))
 
         with tf.name_scope('Output_Layer'):
             self.output = tf.add(tf.matmul(self.hidden_layer[self.n_hidden_layer - 1]['Activated_Output'], self.weight_and_bias[self.n_hidden_layer]['Weight'], ), self.weight_and_bias[self.n_hidden_layer]['Bias'])
             self.V = self.output_function(self.output)
-            if self.DEBUG: print("[Init] Done constructing output layer")
+            if DEBUG: print("[Init] Done constructing output layer")
 
         with tf.name_scope('Training_Model'):
             # Q-value to update the weight
@@ -380,16 +379,17 @@ class InforGo(object):
                 return self.L2_value
 
             self.loss = tf.reduce_sum(tf.square(self.V_desired - self.V))
-            if self.DEBUG: print("[Init] Done caculating cost function")
+            if DEBUG: print("[Init] Done caculating cost function")
             # use gradient descent to optimize our model
             self.trainer = tf.train.GradientDescentOptimizer(self.learning_rate)
-            self.model = self.trainer.minimize(self.loss, global_step=self.global_step)
-            if self.DEBUG: print("[Init] Done setting up trainer")
+            # self.model = self.trainer.minimize(self.loss, global_step=global_step)
+            self.model = self.trainer.minimize(self.loss)
+            if DEBUG: print("[Init] Done setting up trainer")
 
         init = tf.global_variables_initializer()
-        self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+        self.sess = tf.Session()
         self.sess.run(init)
-        if self.DEBUG: print("[Init] Done initializing all variables")
+        if DEBUG: print("[Init] Done initializing all variables")
     
     def get_weight(self, n, m, layer):
         '''
@@ -445,12 +445,12 @@ class InforGo(object):
         '''
         writer = tf.summary.FileWriter(LOG_DIR)
         writer.add_graph(self.sess.graph)
-        if self.DEBUG:
+        if DEBUG:
             print("[Train] Done Tensorboard setup")
             print("[Train] Start training")
         percentage = 0
         record = self.get_record(run_test, run_self_play, run_generator, n_generator, MAX)
-        if self.DEBUG:
+        if DEBUG:
             print("[Train] Done Collecting record")
             print("[Train] Training Complete: {}%".format(percentage))
 
@@ -467,7 +467,7 @@ class InforGo(object):
                             try:
                                 height, row, col = map(int, f.readline().split())
                             except:
-                                if self.DEBUG: print("[ERROR] Invalid file format or context {}".format(file_name))
+                                if DEBUG: print("[ERROR] Invalid file format or context {}".format(file_name))
                                 break
 
                             if (height, row, col) == (-1, -1, -1): break
@@ -491,7 +491,7 @@ class InforGo(object):
                             try:
                                 height, row, col = map(int, f.readline().split())
                             except:
-                                if self.DEBUG: print("[ERROR] Invalid file format or context {}".format(file_name))
+                                if DEBUG: print("[ERROR] Invalid file format or context {}".format(file_name))
                                 break
 
                             if (height, row, col) == (-1, -1, -1): break
@@ -514,10 +514,10 @@ class InforGo(object):
             loss.append(loss_sum / update)
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)    
-                if self.DEBUG: print("[Train] Training Complete: {}%".format(percentage))
+                if DEBUG: print("[Train] Training Complete: {}%".format(percentage))
             if percentage % 10 == 0: self.store_weight_and_bias()
                 
-        if self.DEBUG: print("[Train] Training Complete: {}%".format(100))
+        if DEBUG: print("[Train] Training Complete: {}%".format(100))
         self.store_weight_and_bias()
         return loss
 
@@ -564,14 +564,14 @@ class InforGo(object):
                 for k in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Weight']))[1]):
                     f.write('{}\n'.format(w[j, k]))
             f.close()
-            if self.DEBUG: print("[Train] Done storing weight {}".format(i))
+            if DEBUG: print("[Train] Done storing weight {}".format(i))
 
             f = open('../Data/Bias/{}.txt'.format(i), 'w')
             b = self.sess.run(self.weight_and_bias[i]['Bias'])
             for j in range(self.sess.run(tf.shape(self.weight_and_bias[i]['Bias']))[1]):
                 f.write('{}\n'.format(b[0, j]))
             f.close()
-            if self.DEBUG: print("[Train] Done storing bias {}".format(i))
+            if DEBUG: print("[Train] Done storing bias {}".format(i))
 
     def play(self, test_flag=False, bot=None, AI=None):
         if test_flag: tmp = tempfile.NamedTemporaryFile(dir='../Data/record/test_record', delete=False)
@@ -580,19 +580,19 @@ class InforGo(object):
         winner = 0
         s = self.MDP.get_initial_state()
         record = ''
-        if self.DEBUG and not test_flag and AI is None: print("[Play] Start playing")
+        if DEBUG and not test_flag and AI is None: print("[Play] Start playing")
 
         player = 1
         if self.first is False:
-            if self.DEBUG and not self.test_flag and AI is None: print("[Play] Enter position")
+            if DEBUG and not self.test_flag and AI is None: print("[Play] Enter position")
             try:
                 opponent = self.read_opponent_action(test_flag, bot, AI=AI)
             except:
-                if self.DEBUG and not self.test_flag and AI is None: print("[ERROR] Fail to read opponent action")
+                if DEBUG and not self.test_flag and AI is None: print("[ERROR] Fail to read opponent action")
                 os.remove(tmp.name)
                 return
             while self.MDP.valid_action(opponent) is False:
-                if self.DEBUG and not self.test_flag and AI is None:
+                if DEBUG and not self.test_flag and AI is None:
                     print("[FATAL] Invalid")
                     print("[FATAL] Re-enter position")
                 try:
@@ -607,7 +607,7 @@ class InforGo(object):
             player = -player
             if flag == 1:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag and AI is None: print("[Play] User win")
+                if DEBUG and not test_flag and AI is None: print("[Play] User win")
                 winner = 1
 
         while True:
@@ -624,35 +624,35 @@ class InforGo(object):
 
             if flag == player:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag and AI is None: print("[Play] AI win")
+                if DEBUG and not test_flag and AI is None: print("[Play] AI win")
                 winner = player
                 break
             if flag == 3:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag and AI is None: print("[Play] Draw")
+                if DEBUG and not test_flag and AI is None: print("[Play] Draw")
                 winner = 3
                 break
 
             player = -player
 
-            if self.DEBUG and not test_flag and AI is None: print("[Play] Enter position")
+            if DEBUG and not test_flag and AI is None: print("[Play] Enter position")
 
             try:
                 opponent = self.read_opponent_action(test_flag, bot, AI=AI)
             except:
-                if self.DEBUG and not test_flag and AI is None: print("[ERROR] Invalid Opponent Move")
+                if DEBUG and not test_flag and AI is None: print("[ERROR] Invalid Opponent Move")
                 os.remove(tmp.name)
                 break
             
             success = True
             while self.MDP.valid_action(opponent) is False:
-                if self.DEBUG and not test_flag and AI is None:
+                if DEBUG and not test_flag and AI is None:
                     print("[FATAL] Invalid input action")
                     print("[FATAL] Re-enter position")
                 try:
                     opponent = self.read_opponent_action(test_flag, bot, AI=AI)
                 except:
-                    if self.DEBUG and not test_flag and AI is None: print("[ERROR] Invalid Opponent Move")
+                    if DEBUG and not test_flag and AI is None: print("[ERROR] Invalid Opponent Move")
                     os.remove(tmp.name)
                     success = False
                     break
@@ -666,7 +666,7 @@ class InforGo(object):
 
             if flag == player:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag and AI is None: print("[Play] User win")
+                if DEBUG and not test_flag and AI is None: print("[Play] User win")
                 winner = player
                 break
 
@@ -674,7 +674,7 @@ class InforGo(object):
 
             if flag == 3:
                 record += '-1 -1 -1\n'
-                if self.DEBUG and not test_flag and AI is None: print("[Play] Draw")
+                if DEBUG and not test_flag and AI is None: print("[Play] Draw")
                 winner = 3
                 break
         # Record the game for future training
@@ -753,7 +753,7 @@ class InforGo(object):
         
     def emit_action(self, height, row, col, test_flag, AI=None):
         if test_flag or AI is not None: return
-        if self.DEBUG:
+        if DEBUG:
             print("[DEBUG] ", end='')
             print("{} {} {}".format(height, row, col))
         else:
@@ -764,7 +764,7 @@ class InforGo(object):
         percentage = 0
         player = 1 if self.first else -1
         bot = Bot(-player)
-        if self.DEBUG: print("[Test] Test Complete: {}%".format(0))
+        if DEBUG: print("[Test] Test Complete: {}%".format(0))
         for epoch in range(self.n_epoch):
             winner = self.play(test_flag=True, bot=bot)
             if winner == player: win += 1
@@ -772,7 +772,7 @@ class InforGo(object):
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)    
                 if self.DEBUG: print("[Test] Test Complete: {}%".format(percentage))
-        if self.DEBUG: print("[Test] Test Complete: {}%".format(100))
+        if DEBUG: print("[Test] Test Complete: {}%".format(100))
         print("[Test] Winning Percentage: {}%".format(win / self.n_epoch * 100.))
         return win / self.n_epoch * 100.
 
@@ -819,7 +819,6 @@ def self_play(AI, args):
         filter_height=args.filter_height,
         filter_width=args.filter_width,
         out_channel=args.out_channel,
-        DEBUG=args.DEBUG,
         first=not args.first,
         search_depth=args.search_depth,
         activation_function=args.activation_function,
@@ -829,7 +828,7 @@ def self_play(AI, args):
     first_win = 0
     second_win = 0
 
-    if args.DEBUG:
+    if DEBUG:
         print("[Self-Play] Self-Play Complete: {}%".format(0))
     for epoch in range(args.n_epoch):
         winner = AI.play(AI=opponent)
@@ -838,7 +837,7 @@ def self_play(AI, args):
         if epoch / args.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / args.n_epoch * 100)    
                 if args.DEBUG: print("[Self-Play] Self-Play Complete: {}%".format(percentage))
-    if args.DEBUG: print("[Self-Play] Self-Play Complete: {}%".format(100))
+    if DEBUG: print("[Self-Play] Self-Play Complete: {}%".format(100))
     return first_win, second_win
 
 
@@ -1024,8 +1023,10 @@ def main():
             if i % 2 == 0: reward += pattern[0, i]
             else: reward -= pattern[0, i]
         return reward
-        
+    
+    global LOG_DIR, DEBUG
     LOG_DIR = './log' + args.logdir
+    DEBUG = args.DEBUG == 1
 
     AI = InforGo(
         reward_function=reward_function, 
@@ -1043,7 +1044,6 @@ def main():
         filter_height=args.filter_height,
         filter_width=args.filter_width,
         out_channel=args.out_channel,
-        DEBUG=args.DEBUG,
         first=args.first,
         search_depth=args.search_depth,
         activation_function=args.activation_function,

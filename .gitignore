@@ -6,3 +6,4 @@ log/*
 tmp
 */a.out
 *.pem
+ubuntu*
