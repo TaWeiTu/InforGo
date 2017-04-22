@@ -611,6 +611,9 @@ class InforGo(object):
                 winner = 1
 
         while True:
+            if DEBUG:
+                plot_state(s)
+                print("[DEBUG] Evaluate (player {}): {}".format(player, self.evaluate(s, player)))
             # Choose the best action using Minimax Tree Search
             _, action = self.Minimax(Bingo(s), self.search_depth, 'Max', player)
             row, col = self.decode_action(action)
@@ -634,7 +637,9 @@ class InforGo(object):
                 break
 
             player = -player
-
+            if DEBUG:
+                plot_state(s)
+                print("[DEBUG] Evaluate (player {}): {}".format(player, self.evaluate(s, player)))
             if DEBUG and not test_flag and AI is None: print("[Play] Enter position")
 
             try:
@@ -800,6 +805,15 @@ class Bot:
                     if bingo.win(self.opponent): return i, j
                     bingo.undo_action(i, j)
         return random.randint(0, 3), random.randint(0, 3)
+
+
+def plot_state(state):
+    for r in range(4):
+        output = ""
+        for h in range(4):
+            for c in range(4): output += state[h][r][c][0][0]
+            output += " | "
+        print(output)
 
 
 def self_play(AI, args):
@@ -1058,8 +1072,8 @@ def main():
             f.close()
         except:
             for i in loss: print(i, end=' ')
-        plt.plot([i for i in range(len(loss))], loss)
-        plt.show()
+        # plt.plot([i for i in range(len(loss))], loss)
+        # plt.show()
             
     elif args.method == 'play': AI.play()
     elif args.method == 'test': AI.test()
