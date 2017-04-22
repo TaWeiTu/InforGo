@@ -3,7 +3,9 @@ node_modules/
 .*.swp
 Data/*
 log/*
+*/log
 tmp
 */a.out
 *.pem
 ubuntu*
+*/__pycache__
