@@ -811,7 +811,7 @@ def plot_state(state):
     for r in range(4):
         output = ""
         for h in range(4):
-            for c in range(4): output += state[h][r][c][0][0]
+            for c in range(4): output += str(int(state[h][r][c][0][0]))
             output += " | "
         print(output)
 
