@@ -6,14 +6,16 @@ var app        = require('express')()
 var server     = require('http').Server(app)
 var io         = require('socket.io')(server)
 var http       = require('http')
-var bingo      = require('./js/bingo.js')
+var bingo      = require('./static/bingo.js')
 var config     = require("./config.json")
 
 var port = config.port
 
+bingo.init({ 'io':io });
+
 app.use('/assets', express.static(__dirname + '/assets'))
 app.use('/static', express.static(__dirname + '/static'))
-app.get('/lobby', function(req, res){
+app.get('/', function(req, res){
 	res.sendFile(__dirname + '/pages/clients.html', function(){
 		res.end()
 	})
@@ -23,97 +25,94 @@ app.get('/game', function(req, res){
 		res.end()
 	})
 })
-var roomList = []
 //start.js
 
 io.sockets.on('connection', function(socket){
+	
+	// initialize
 	let player = new bingo.Player(socket)
 	console.log("someone in")
-	socket.emit('refreshRoomInfo', getSimpleRoomList(roomList))
-	socket.on('createRoomReq', (name, mode) => {
-		if(mode != 'pvp' && mode != 'com')return
-		console.log('get createRoomReq with mode',mode)
-		console.log(name)
-		if(!name)return
-		else name = escape(name.toString())
-		console.log(name)
-		if(typeof player.name === 'undefined')player.name = name
-		else name = player.name
-		let newRoom = new bingo.Room(name, mode)
-		roomList.push(newRoom)
-		newRoom.playerList.push(player);
-		socket.emit('message', {'message':'Room create sucess.', 'msgId':bingo.randomString(8)})
+	socket.emit('refreshRoomInfo', { 'list':bingo.getSimpleRoomList() })
 
-		io.emit('refreshRoomInfo',getSimpleRoomList(roomList))
+	// socket events
+	socket.on('createRoomReq', function(data){
+		if(!data.playerName || !data.roomName || !data.mode) return
+		if(!player.name) player.name = escape(data.playerName.toString())
+		data.roomName = escape(data.roomName.toString())
+		createRoom(player, data.roomName, data.mode)
 	})
-	socket.on('joinRoomReq', (name, rid) => {
-		if(!name)return
-		else name = escape(name.toString())
-		if(typeof player.name === 'undefined')player.name = name
-		else name = player.name
-		let room = getRoomByRid(rid)
-		room.audList.push(player)
-		socket.emit('message', {'message':'successful join room.'})
+
+	socket.on('joinRoomReq', function(name, rid){
+		if(!name || !rid || rid == player.rid) return
+		if(!player.name) player.name = escape(name.toString())
+		joinRoom(player, rid);
 	})
-	socket.on('audBecomePlayer', rid => {
-		if(!player.name)return
-		let room = getRoomByRid(rid)
-		if(room.playerList.length == 2){
-			socket.emit('message', {'message':'failed', 'detail':'player already full.', 'msgId': bingo.randomString(8)})
-			return
-		}
-		for(let i=0;i<room.audList.length;++i){
-			if(room.audList[i] == player){
-				room.audList.splice(i,1)
-				room.playerList.push(player)
-				socket.emit('message', {'message':'success become player', 'msgId':bingo.randomString(8)})
-				return
-			}
-		}
-		socket.emit('message',{'message':'failed become player', 'detail':'can\'t find such player in list.', 'msgId': bingo.randomString(8)})
+
+	socket.on('joinGameReq', function(){
+		if(!player.rid) return
+		let room = bingo.getRoomByRid(player.rid)
+		if(!room) return
+		player.joinGame(room);
 	})
-	socket.on('removeRoom', rid => {
-		console.log('Get remove room request')
-		getRoomByRid(rid).removeRoom(roomList,io)
-		console.log('Remove sucess.')
-		console.log('Room list',roomList)
-		io.emit('refreshRoomInfo',getSimpleRoomList(roomList))
+
+	socket.on('disconnect', function(){
+		bingo.playerDisconnect(player);
+	})
+
+	socket.on('downReq',function(num){
+		if(player.rid) bingo.getRoomByRid(player.rid).downReq(player.id, num)
+	})
+
+	// for admin
+	socket.on('removeRoom', function(rid, passwd){
+		if (passwd != config.passwd) return
+		bingo.getRoomByRid(rid).announce('message', {'message':'Admin removed the room.', 'msgId':bingo.randomString(8)})
+		bingo.getRoomByRid(rid).removeRoom(bingo.roomList)
+		io.emit('refreshRoomInfo', { 'list':bingo.getSimpleRoomList()})		
+	})
+	socket.on('check', function(params){
+		if (params == 'roomList') console.log(bingo.getSimpleRoomList());
+		if (params == 'id') console.log(player.id)
 	})
 })
 
-function getRoomByRid(rid){
-	for(let i=0;i<roomList.length;i++){
-		if(roomList[i].rid == rid)return roomList[i]
-	}
-	throw "Room not found"
+function joinRoom(player, rid){
+	player.joinRoom(bingo.getRoomByRid(rid));
+	player.socket.emit('message', {'message':'Join room successfully.', 'msgId':bingo.randomString(8)})
+}
+
+function createRoom(player, roomName, mode){
+	if (mode != 'pvp' && mode != 'com') return
+	let newRoom = new bingo.Room(roomName, mode)
+	bingo.roomList.push(newRoom)
+	player.joinRoom(newRoom);
+	player.socket.emit('message', {'message':'New room created.', 'msgId':bingo.randomString(8)})
+	io.emit('refreshRoomInfo', { 'list':bingo.getSimpleRoomList() })
 }
 
 function searchPlayerInRoomList(socket){
-	for(let i=0;i<roomList.length;i++){
-		for(let j=0;j<audList.length;j++)if(audList[i] == socket)return roomList[i]
-		for(let j=0;j<playerList.length;j++)if(playerList[i] == socket)return roomList[i]
+	for (let i = 0; i < bingo.roomList.length; ++i){
+		for (let j = 0; j < audList.length; ++j) if (audList[i] == socket) return bingo.roomList[i]
+		for (let j = 0; j < playerList.length; ++j) if (playerList[i] == socket) return bingo.roomList[i]
 	}
 	return null
 }
 
-function getSimpleRoomList(list){
-	let simpleList = []
-	for(let i=0;i<list.length;i++){
-		simpleList.push({
-			'rid': list[i].rid,
-			'name': list[i].name,
-			'mode': list[i].mode,
-			'playing': list[i].playing
-		})
-	}
-	return simpleList
+function escape(str){
+	return str.replace(/&/g, "&amp").replace(/</g, "&lt").replace(/>/g, "&gt")
 }
 
-function escape(str){
-	return str
-	// return str.replace(/&/g, "&amp").replace(/</g, "&lt").replace(/>/g, "&gt")
+function jizz(){
+	for (let i=0;i<5;i++){
+		let a = Math.floor(Math.random()*10+1)
+		let b = Math.floor(Math.random()*10+1)
+		console.log(Math.min(a,b),Math.max(a,b),Math.floor(Math.random()*50))
+	}
+	for (var i = 0; i < 8; i++) {
+		console.log(Math.floor(Math.random()*10+1),Math.floor(Math.random()*20)+1)
+	};
 }
 
 server.listen(port, function(){
-	console.log("Server is running at port",port)
+	console.log("Server is running at port", port)
 })

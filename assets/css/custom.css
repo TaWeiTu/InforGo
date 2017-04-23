@@ -63,3 +63,66 @@
   -webkit-animation-name: fadeOutUp;
   animation-name: fadeOutUp;
 }
+
+.roomList:hover {
+    -moz-box-shadow: inset 0 0 100px 100px rgba(255, 255, 255, 0.3);
+    -webkit-box-shadow: inset 0 0 100px 100px rgba(255, 255, 255, 0.3);
+    box-shadow: inset 0 0 100px 100px rgba(255, 255, 255, 0.3);
+}
+
+body{
+  margin: 0;
+}
+canvas{
+  width: 75%;
+  height: 100%;
+  z-index: 1;
+}
+#info{
+  position: absolute;
+  left: 0%;
+  height: 100%;
+  width: 25%;
+  text-align: center;
+}
+#gameInfo{
+  position: absolute;
+  left: 25%;
+  height: 17.5%;
+  width: 17.5%;
+  z-index: 10;
+  background-color: rgba(34, 34, 34, 0.5);
+}
+#gameBoard{
+  position: absolute;
+  right: 0%;
+  height: 100%;
+  width: 75%;
+}
+#messageBox{
+  position: absolute;
+  margin: 0 0 0 0;
+  padding-top: 1em;
+  right: 17.5%;
+  width: 40%;
+  text-align: center;
+}
+.messageBoxText{
+  margin: 0 0.5em;
+  text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+  line-height: 2;
+  font-size: 1.7em;
+  font-weight: bold;
+  font-style: oblique;
+}
+#joinButton{
+  position: absolute;
+  right: 5%;
+  bottom: 5%;
+  height: 5%;
+  width: 10%;
+  z-index: 10;
+  line-height: 0px;
+  text-align: center;
+  vertical-align: baseline;
+}
