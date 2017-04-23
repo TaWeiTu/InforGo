@@ -16,6 +16,8 @@ echo "[BUILD] Making ./Data/record"
 if [ ! -d "./Data/record" ]; then
     mkdir ./Data/record
     mkdir ./Data/record/selfrecord
+    mkdir ./Data/record/test_record
+    mkdir ./Data/record/self_play
 fi
 
 echo "[BUILD] Making ./Data/Weight"

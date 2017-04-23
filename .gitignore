@@ -4,3 +4,10 @@ node_modules/
 Data/*
 log/*
 config.json
+*/log
+tmp
+*/a.out
+*.pem
+ubuntu*
+*/__pycache__
+*/*.log
