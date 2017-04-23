@@ -202,7 +202,7 @@ class InforGo(object):
             action_num //= 4
         return action
 
-    def train(self, run_test=True, run_self_play=True, run_generator=True, n_generator=1000, MAX=0, training_directory=[None]):
+    def train(self, run_test=True, run_self_play=True, run_generator=True, n_generator=1000, MAX=0, training_directory=[None], logfile=None):
         '''
         Main Learning Process
         return final score, graph_x, graph_y
@@ -219,6 +219,7 @@ class InforGo(object):
             print("[Train] Training Complete: {}%".format(percentage))
 
         loss = []
+        log = open(logfile, 'w') if logfile else None
         for epoch in range(self.n_epoch):
             loss_sum = 0
             update = 0
@@ -227,6 +228,7 @@ class InforGo(object):
                     for rotate_time in range(4):
                         f = open('{}/{}'.format(directory, file_name), 'r')
                         s = self.MDP.get_initial_state()
+                        if logfile: log.write("New Game\n")
                         while True:
                             try:
                                 height, row, col = map(int, f.readline().split())
@@ -248,17 +250,18 @@ class InforGo(object):
                             v_desired[0, 0] = v[0, 0] + self.alpha * (R + self.gamma * new_v[0, 0] - v[0, 0])
                             v_desired_[0, 0] = v_[0, 0] + self.alpha * (-R + self.gamma * new_v_[0, 0] - v_[0, 0])
                             
-                            print("Current State: ")
-                            plot_state(s)
-                            print("Value (player {}): {}".format(1, v[0, 0]))
-                            print("Value (player {}): {}".format(-1, v_[0, 0]))
-                            print("Reward (player {}): {}".format(1, R))
-                            print("Reward (player {}): {}".format(-1, -R))
-                            print("New Value (player {}): {}".format(1, new_v[0, 0]))
-                            print("New Value (player {}): {}".format(-1, new_v_[0, 0]))
-                            print("TD(0) (player {}): {}".format(1, v_desired[0, 0]))
-                            print("TD(0) (player {}): {}".format(-1, v_desired_[0, 0]))
-                            print("")
+                            if logfile is not None:
+                                log.write("Current State: \n")
+                                log_state(s, log)
+                                log.write("Value (player {}): {}\n".format(1, v[0, 0]))
+                                log.write("Value (player {}): {}\n".format(-1, v_[0, 0]))
+                                log.write("Reward (player {}): {}\n".format(1, R))
+                                log.write("Reward (player {}): {}\n".format(-1, -R))
+                                log.write("New Value (player {}): {}\n".format(1, new_v[0, 0]))
+                                log.write("New Value (player {}): {}\n".format(-1, new_v_[0, 0]))
+                                log.write("TD(0) (player {}): {}\n".format(1, v_desired[0, 0]))
+                                log.write("TD(0) (player {}): {}\n".format(-1, v_desired_[0, 0]))
+                                log.write("\n")
                             
                             # TD-0 update
                             # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0])
@@ -286,17 +289,19 @@ class InforGo(object):
                             new_v_ = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1), self.pattern: get_pattern(new_s, 1)})
                             v_desired[0, 0] = v[0, 0] + self.alpha * (R + self.gamma * new_v[0, 0] - v[0, 0])
                             v_desired_[0, 0] = v_[0, 0] + self.alpha * (-R + self.gamma * new_v_[0, 0] - v_[0, 0])
-                            print("Current State: ")
-                            plot_state(s)
-                            print("Value (player {}): {}".format(-1, v[0, 0]))
-                            print("Value (player {}): {}".format(1, v_[0, 0]))
-                            print("Reward (player {}): {}".format(-1, R))
-                            print("Reward (player {}): {}".format(1, -R))
-                            print("New Value (player {}): {}".format(-1, new_v[0, 0]))
-                            print("New Value (player {}): {}".format(1, new_v_[0, 0]))
-                            print("TD(0) (player {}): {}".format(-1, v_desired[0, 0]))
-                            print("TD(0) (player {}): {}".format(1, v_desired_[0, 0]))
-                            print("")
+
+                            if logfile is not None:
+                                log.write("Current State: \n")
+                                log_state(s, log)
+                                log.write("Value (player {}): {}\n".format(-1, v[0, 0]))
+                                log.write("Value (player {}): {}\n".format(1, v_[0, 0]))
+                                log.write("Reward (player {}): {}\n".format(-1, R))
+                                log.write("Reward (player {}): {}\n".format(1, -R))
+                                log.write("New Value (player {}): {}\n".format(-1, new_v[0, 0]))
+                                log.write("New Value (player {}): {}\n".format(1, new_v_[0, 0]))
+                                log.write("TD(0) (player {}): {}\n".format(-1, v_desired[0, 0]))
+                                log.write("TD(0) (player {}): {}\n".format(1, v_desired_[0, 0]))
+                                log.write("\n")
 
                             # TD-0 update
                             # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0])
@@ -316,6 +321,7 @@ class InforGo(object):
 
         if DEBUG: print("[Train] Training Complete: {}%".format(100))
         self.store_weight_and_bias()
+        if logfile is not None: log.close()
         return loss
 
     def rotate(self, height, row, col, t):

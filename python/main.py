@@ -58,6 +58,7 @@ def main():
     parser.add_argument('--n_generator', default=1000, type=int, help='Train the model with n_generator auto-generated game')
     parser.add_argument('--MAX', default=12877521, type=int, help='Maximum generated game id')
     parser.add_argument('--training_directory', default=[None], type=str, nargs='+', help='Specify training data directory')
+    parser.add_argument('--logfile', default=None, type=str, help='Log file')
 
     args = parser.parse_args()
 
@@ -106,7 +107,7 @@ def main():
 
     # TODO: run_generator is True even if specified False
     if args.method == 'train':
-        loss = AI.train(run_test=args.run_test, run_self_play=args.run_self_play, run_generator=args.run_generator, n_generator=args.n_generator, MAX=args.MAX, training_directory=args.training_directory)
+        loss = AI.train(run_test=args.run_test, run_self_play=args.run_self_play, run_generator=args.run_generator, n_generator=args.n_generator, MAX=args.MAX, training_directory=args.training_directory, logfile=args.logfile)
         try:
             f = open('../tmp', 'w')
             for i in loss: f.write('{}\n'.format(i))

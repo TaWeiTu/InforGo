@@ -11,6 +11,15 @@ def plot_state(state):
         print(output)
 
 
+def log_state(state, logfile):
+    for r in range(4):
+        output = ""
+        for h in range(4):
+            for c in range(4): output += str(int(state[h][r][c][0][0]))
+            output += " | "
+        logfile.write(output + "\n")
+
+
 def get_pattern(state, player):
     opponent = -player
     corner = [0, 0]
