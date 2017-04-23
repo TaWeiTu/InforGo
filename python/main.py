@@ -4,6 +4,7 @@ import numpy as np
 import distutils.util
 import global_mod
 from utils import *
+from debugger import Debugger
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -76,15 +77,14 @@ def main():
             else: reward -= pattern[0, i]
         return reward
 
-    global_mod.__dict__['LOG_DIR'] = './log/' + args.logdir
+    global_mod.__dict__['LOG_DIR'] = '../log/' + args.logdir
     global_mod.__dict__['DEBUG'] = args.DEBUG == 1
 
-    
+
     from ai import InforGo
 
 
     AI = InforGo(
-        reward_function=reward_function,
         n_epoch=args.n_epoch,
         n_hidden_layer=args.n_hidden_layer,
         n_node_hidden=args.n_node_hidden,

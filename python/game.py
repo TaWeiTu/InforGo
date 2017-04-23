@@ -157,3 +157,6 @@ class Bingo(object):
                 for c in range(4):
                     state[h][r][c][0][0] = self.board[h][r][c]
         return state
+
+    def terminate(self):
+        return self.win(1) or self.win(-1) or self.full()

@@ -2,8 +2,10 @@ import tensorflow as tf
 import numpy as np
 import os.path
 import random
+import math
 from utils import *
 from global_mod import *
+from game import Bingo
 from env import MDP
 
 
@@ -15,7 +17,7 @@ class InforGo(object):
     hidden-layer: relu/sigmoid/tanh function
     output-layer: approximate value for the input state
     '''
-    def __init__(self, reward_function, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='relu', output_function=None, learning_rate=0.00000001, alpha=0.00000001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, convolution=True, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, first=True):
+    def __init__(self, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='relu', output_function=None, learning_rate=0.00000001, alpha=0.00000001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, convolution=True, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, first=True):
         if DEBUG:
             print("[Init] Start setting training parameter")
 
@@ -33,9 +35,6 @@ class InforGo(object):
 
         # lambda of TD-lambda algorithm
         self.td_lambda = td_lambda
-
-        # R(s) is the reward obtain by achieving state s
-        self.reward_function = reward_function
 
         # Number of hidden layers and number of nodes in each hidden layer
         self.n_hidden_layer = n_hidden_layer
@@ -59,7 +58,7 @@ class InforGo(object):
         # L2 regularization paramater
         self.regularization_param = regularization_param
 
-        self.MDP = MDP(reward_function)
+        self.MDP = MDP()
         if DEBUG: print("[Init] Done setting training parameter")
 
         # Neural Network Setup
@@ -88,7 +87,7 @@ class InforGo(object):
         if DEBUG: print("[Init] Done constructing convolution layer with out_channel = {}".format(out_channel))
 
         with tf.name_scope('Player-Node'):
-            self.player_node = tf.placeholder(shape=[1, 1], dtype=tf.float64, name='Player-Node')
+            self.player_node = tf.placeholder(shape=[1, 30], dtype=tf.float64, name='Player-Node')
 
         with tf.name_scope('Pattern'):
             self.pattern = tf.placeholder(shape=[1, 6], dtype=tf.float64, name='Pattern')
@@ -98,7 +97,7 @@ class InforGo(object):
 
         with tf.name_scope('Weight_and_Bias'):
             self.weight_and_bias[0] = {
-                'weight': self.get_weight(self.conv_layer_length + 1 + 6, self.n_node_hidden[0], 0),
+                'weight': self.get_weight(self.conv_layer_length + 30 + 6, self.n_node_hidden[0], 0),
                 'bias': self.get_bias(self.n_node_hidden[0], 0)
             }
             if DEBUG: print("[Init] Done initializing weight and bias from convolution layer to hidden layer 0")
@@ -118,15 +117,11 @@ class InforGo(object):
         self.hidden_layer = [{} for i in range(self.n_hidden_layer)]
 
         with tf.name_scope('Hidden_Layer'):
-            self.hidden_layer[0] = {
-                'output': tf.add(tf.matmul(tf.concat([self.conv_layer_output, self.player_node, self.pattern], 1), self.weight_and_bias[0]['weight']), self.weight_and_bias[0]['bias'])
-            }
+            self.hidden_layer[0]['output'] = tf.add(tf.matmul(tf.concat([self.conv_layer_output, self.player_node, self.pattern], 1), self.weight_and_bias[0]['weight']), self.weight_and_bias[0]['bias'])
             for i in range(1, self.n_hidden_layer):
                 self.hidden_layer[i - 1]['activated_output'] = self.activation_function(self.hidden_layer[i - 1]['output'])
                 if DEBUG: print("[Init] Done activating output of hidden layer {}".format(i - 1))
-                self.hidden_layer[i] = {
-                    'output': tf.add(tf.matmul(self.hidden_layer[i - 1]['activated_output'], self.weight_and_bias[i]['weight']), self.weight_and_bias[i]['bias'])
-                }
+                self.hidden_layer[i]['output'] = tf.add(tf.matmul(self.hidden_layer[i - 1]['activated_output'], self.weight_and_bias[i]['weight']), self.weight_and_bias[i]['bias'])
             self.hidden_layer[self.n_hidden_layer - 1]['activated_output'] = self.hidden_layer[self.n_hidden_layer - 1]['output']
             if DEBUG: print("[Init] Done activating output of hidden layer {}".format(self.n_hidden_layer - 1))
 
@@ -136,7 +131,7 @@ class InforGo(object):
             if DEBUG: print("[Init] Done constructing output layer")
 
         with tf.name_scope('Training_Model'):
-            # Q-value to update the weight
+            # V-value to update the weight
             self.V_desired = tf.placeholder(shape=[1, 1], dtype=tf.float64)
 
             # Cost function
@@ -177,6 +172,7 @@ class InforGo(object):
             f.close()
             return tf.Variable(tf.cast(w, tf.float64))
         else:
+            # return tf.Variable(tf.cast(np.zeros([n, m]), dtype=tf.float64))
             return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.001, dtype=tf.float64))
 
     def get_bias(self, n, layer):
@@ -196,8 +192,8 @@ class InforGo(object):
             f.close()
             return tf.Variable(tf.cast(b, tf.float64))
         else:
+            # return tf.Variable(tf.cast(np.zeros([1, n]), dtype=tf.float64))
             return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.001, dtype=tf.float64))
-
 
     def decode_action(self, action_num):
         action = [0, 0]
@@ -229,9 +225,9 @@ class InforGo(object):
             for directory in record.keys():
                 for file_name in record[directory]:
                     for rotate_time in range(4):
-                        print("file_name: {}".format(file_name))
                         f = open('{}/{}'.format(directory, file_name), 'r')
                         s = self.MDP.get_initial_state()
+                        print("New Game")
                         while True:
                             try:
                                 height, row, col = map(int, f.readline().split())
@@ -241,21 +237,33 @@ class InforGo(object):
 
                             if (height, row, col) == (-1, -1, -1): break
 
-                            height, row, col = self.rotate(height, row, col, rotate_time)
+                            height, row, col = self.rotate(height, row, col, 0)
 
                             v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
                             v_ = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
                             flag, new_s, R = self.MDP.take_action((row, col), 1)
-
-                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1), self.pattern: get_pattern(new_s, 1)})
                             new_v_ = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(new_s, -1)})
+                            new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1), self.pattern: get_pattern(new_s, 1)})
                             v_desired = np.zeros([1, 1])
                             v_desired_ = np.zeros([1, 1])
+                            v_desired[0, 0] = v[0, 0] + self.alpha * (R + self.gamma * new_v[0, 0] - v[0, 0])
+                            v_desired_[0, 0] = v_[0, 0] + self.alpha * (-R + self.gamma * new_v_[0, 0] - v_[0, 0])
+                            
+                            # print("Current State: ")
+                            # plot_state(s)
+                            # print("Value (player {}): {}".format(1, v[0, 0]))
+                            # print("Value (player {}): {}".format(-1, v_[0, 0]))
+                            # print("Reward (player {}): {}".format(1, R))
+                            # print("Reward (player {}): {}".format(-1, -R))
+                            # print("New Value (player {}): {}".format(1, new_v[0, 0]))
+                            # print("New Value (player {}): {}".format(-1, new_v_[0, 0]))
+                            # print("TD(0) (player {}): {}".format(1, v_desired[0, 0]))
+                            # print("TD(0) (player {}): {}".format(-1, v_desired_[0, 0]))
+                            # print("")
+                            
                             # TD-0 update
                             # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0])
-                            v_desired[0][0] = v[0][0] + self.alpha * (R + self.gamma * new_v[0][0] - v[0][0])
                             # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
-                            v_desired_[0][0] = v_[0][0] + self.alpha * (-R + self.gamma * new_v_[0][0] - v_[0][0])
                             loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
                             update += 1
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
@@ -270,21 +278,32 @@ class InforGo(object):
 
                             if (height, row, col) == (-1, -1, -1): break
 
-                            height, row, col = self.rotate(height, row, col, rotate_time)
+                            height, row, col = self.rotate(height, row, col, 0)
 
                             v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
-                            flag, new_s, R = self.MDP.take_action((row, col), -1)
                             v_ = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
-
+                            flag, new_s, R = self.MDP.take_action((row, col), -1)
                             new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(new_s, -1)})
+                            new_v_ = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1), self.pattern: get_pattern(new_s, 1)})
+                            v_desired[0, 0] = v[0, 0] + self.alpha * (R + self.gamma * new_v[0, 0] - v[0, 0])
+                            v_desired_[0, 0] = v_[0, 0] + self.alpha * (-R + self.gamma * new_v_[0, 0] - v_[0, 0])
+                            # print("Current State: ")
+                            # plot_state(s)
+                            # print("Value (player {}): {}".format(-1, v[0, 0]))
+                            # print("Value (player {}): {}".format(1, v_[0, 0]))
+                            # print("Reward (player {}): {}".format(-1, R))
+                            # print("Reward (player {}): {}".format(1, -R))
+                            # print("New Value (player {}): {}".format(-1, new_v[0, 0]))
+                            # print("New Value (player {}): {}".format(1, new_v_[0, 0]))
+                            # print("TD(0) (player {}): {}".format(-1, v_desired[0, 0]))
+                            # print("TD(0) (player {}): {}".format(1, v_desired_[0, 0]))
+                            # print("")
+
                             # TD-0 update
                             # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0])
-                            v_desired[0][0] = v[0][0] + self.alpha * (R + self.gamma * new_v[0][0] - v[0][0])
                             # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
                             loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
                             update += 1
-                            new_v_ = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1), self.pattern: get_pattern(new_s, 1)})
-                            v_desired_[0][0] = v[0][0] + self.alpha * (-R + self.gamma * new_v_[0][0] - v_[0][0])
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
 
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired_, self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
@@ -475,7 +494,7 @@ class InforGo(object):
         '''
         state = bingo.get_state()
 
-        if bingo.win(1) or bingo.win(-1): return self.evaluate(state, player), None
+        if bingo.terminate(): return self.evaluate(state, player), None
 
         if depth == 0: return self.evaluate(state, player), None
 
@@ -515,13 +534,14 @@ class InforGo(object):
         '''
         Evaluate the value of input state with neural network as an approximater
         '''
+        tmp_bingo = Bingo(state)
+        if tmp_bingo.terminate(): return 0
         V = self.sess.run(self.V, feed_dict={self.inp: state, self.player_node: self.cast_player(player), self.pattern: get_pattern(state, player)})
         return V[0][0]
 
     def cast_player(self, player):
-        tmp = np.zeros([1, 1])
-        tmp[0, 0] = player
-        return tmp
+        tmp = [player for i in range(30)]
+        return np.reshape(tmp, [1, -1])
 
     def read_opponent_action(self, test_flag, bot, AI=None):
         if AI is not None:

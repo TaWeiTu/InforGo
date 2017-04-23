@@ -1,5 +1,6 @@
 import numpy as np
 from game import Bingo
+from utils import *
 
 
 class MDP(object):
@@ -7,9 +8,8 @@ class MDP(object):
     Markov Decision Process
     which can be represented as M(S, D, A, P, gamma, R)
     '''
-    def __init__(self, reward_function):
+    def __init__(self):
         # R(s, a) is the reward obtaining by taking action a at state s
-        self.R = reward_function
         self.bingo = Bingo()
 
     def get_initial_state(self):
@@ -22,11 +22,22 @@ class MDP(object):
     def get_state(self):
         return self.bingo.get_state()
 
-    def get_reward(self, s, flag, player):
-        '''
-        Return the reward of tranforming into state s
-        '''
-        return self.R(s, flag, player)
+    def get_reward(self, state, flag, player):
+        tmp_bingo = Bingo(state)
+        np_state = np.zeros([4, 4, 4, 1, 1])
+        for h in range(4):
+            for r in range(4):
+                for c in range(4):
+                    np_state[h][r][c][0][0] = state[h][r][c]
+        pattern = get_pattern(np_state, player)
+        if flag == 3: return 0
+        if flag == player: return 50
+        if flag != player and flag != 0: return -50
+        reward = 0
+        for i in range(6):
+            if i % 2 == 0: reward += (i // 2 + 1) * pattern[0, i]
+            else: reward -= (i // 2 + 1) * pattern[0, i]
+        return reward
 
     def take_action(self, action, player):
         '''

@@ -10,6 +10,7 @@ def plot_state(state):
             output += " | "
         print(output)
 
+
 def get_pattern(state, player):
     opponent = -player
     corner = [0, 0]

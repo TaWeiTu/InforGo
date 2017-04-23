@@ -9,3 +9,4 @@ tmp
 *.pem
 ubuntu*
 */__pycache__
+*/*.log

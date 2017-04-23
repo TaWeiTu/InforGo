@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class Debugger(object):
 
     def __init__(self, AI):
