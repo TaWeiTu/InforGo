@@ -1,3 +1,7 @@
+"""
+Entry point of InforGo.
+Collecting execution argument.
+"""
 import os.path
 import argparse
 import numpy as np
@@ -7,6 +11,7 @@ from utils import *
 from debugger import Debugger
 
 
+# Ignore warning and tensorflow stdout
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
@@ -59,31 +64,16 @@ def main():
     parser.add_argument('--MAX', default=12877521, type=int, help='Maximum generated game id')
     parser.add_argument('--training_directory', default=[None], type=str, nargs='+', help='Specify training data directory')
     parser.add_argument('--logfile', default=None, type=str, help='Log file')
+    parser.add_argument('--n_test', default=1000, type=int, help='Number of test file to train')
+    parser.add_argument('--n_self_play', default=1000, type=int, help='Number of self-play to train')
 
     args = parser.parse_args()
-
-    def reward_function(state, flag, player):
-        np_state = np.zeros([4, 4, 4, 1, 1])
-        for h in range(4):
-            for r in range(4):
-                for c in range(4):
-                    np_state[h][r][c][0][0] = state[h][r][c]
-        pattern = get_pattern(np_state, player)
-        if flag == 3: return 0
-        if flag == player: return 50
-        if flag != player and flag != 0: return -50
-        reward = 0
-        for i in range(6):
-            if i % 2 == 0: reward += pattern[0, i]
-            else: reward -= pattern[0, i]
-        return reward
 
     global_mod.__dict__['LOG_DIR'] = '../log/' + args.logdir
     global_mod.__dict__['DEBUG'] = args.DEBUG == 1
 
-
+    # import AI after initializing global varibles
     from ai import InforGo
-
 
     AI = InforGo(
         n_epoch=args.n_epoch,
@@ -105,18 +95,14 @@ def main():
         activation_function=args.activation_function,
         output_function=args.output_function)
 
-    # TODO: run_generator is True even if specified False
     if args.method == 'train':
-        loss = AI.train(run_test=args.run_test, run_self_play=args.run_self_play, run_generator=args.run_generator, n_generator=args.n_generator, MAX=args.MAX, training_directory=args.training_directory, logfile=args.logfile)
+        loss = AI.train(run_test=args.run_test, run_self_play=args.run_self_play, run_generator=args.run_generator, n_generator=args.n_generator, MAX=args.MAX, training_directory=args.training_directory, logfile=args.logfile, n_test=args.n_test, n_self_play=args.n_self_play)
         try:
             f = open('../tmp', 'w')
             for i in loss: f.write('{}\n'.format(i))
             f.close()
         except:
             for i in loss: print(i, end=' ')
-        # plt.plot([i for i in range(len(loss))], loss)
-        # plt.show()
-
     elif args.method == 'play': AI.play()
     elif args.method == 'test': AI.test()
     elif args.method == 'self-play':

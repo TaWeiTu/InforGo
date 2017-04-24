@@ -10,24 +10,22 @@ from env import MDP
 
 
 class InforGo(object):
-    '''
+    """
     A Neural Network model for training 3D-bingo AI
     input-layer: 4 x 4 x 4 board
-    convolution-layer: stride = 1 x 1 x 1
-    hidden-layer: relu/sigmoid/tanh function
+    convolution-layer: stride = 1 x 1 x 1 (optinal)
+    hidden-layer: relu/sigmoid/tanh function 
     output-layer: approximate value for the input state
-    '''
+    """
     def __init__(self, n_epoch=100, n_hidden_layer=1, n_node_hidden=[32], activation_function='relu', output_function=None, learning_rate=0.00000001, alpha=0.00000001, gamma=0.99, td_lambda=0.85, regularization_param=0.001, decay_step=10000, decay_rate=0.96, convolution=True, filter_depth=1, filter_height=1, filter_width=1, out_channel=5, search_depth=3, first=True):
-        if DEBUG:
-            print("[Init] Start setting training parameter")
+        if DEBUG: print("[Init] Start setting training parameter")
 
+        
         self.first = first
         self.n_epoch = n_epoch
         self.alpha = alpha
 
-        # Learning rate decay
-        self.global_step = tf.Variable(0, trainable=False)
-        # self.learning_rate = tf.train.exponential_decay(learning_rate, self.global_step, decay_step, decay_rate, staircase=True)
+        # Learning rate
         self.learning_rate = learning_rate
 
         # Discount factor between 0 to 1
@@ -155,9 +153,9 @@ class InforGo(object):
         if DEBUG: print("[Init] Done initializing all variables")
 
     def get_weight(self, n, m, layer):
-        '''
+        """
         Weight to the layer-th hidden layer, with size n x m
-        '''
+        """
         if os.path.exists('../Data/Weight/{}.txt'.format(layer)):
             f = open('../Data/Weight/{}.txt'.format(layer), 'r')
             w = np.zeros([n, m])
@@ -172,13 +170,12 @@ class InforGo(object):
             f.close()
             return tf.Variable(tf.cast(w, tf.float64))
         else:
-            # return tf.Variable(tf.cast(np.zeros([n, m]), dtype=tf.float64))
             return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.001, dtype=tf.float64))
 
     def get_bias(self, n, layer):
-        '''
+        """
         Bias to the layer-th hidden layer, with size 1 x n
-        '''
+        """
         if os.path.exists('../Data/Bias/{}.txt'.format(layer)):
             f = open('../Data/Bias/{}.txt'.format(layer), 'r')
             b = np.zeros([1, n])
@@ -192,7 +189,6 @@ class InforGo(object):
             f.close()
             return tf.Variable(tf.cast(b, tf.float64))
         else:
-            # return tf.Variable(tf.cast(np.zeros([1, n]), dtype=tf.float64))
             return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.001, dtype=tf.float64))
 
     def decode_action(self, action_num):
@@ -202,24 +198,24 @@ class InforGo(object):
             action_num //= 4
         return action
 
-    def train(self, run_test=True, run_self_play=True, run_generator=True, n_generator=1000, MAX=0, training_directory=[None], logfile=None):
-        '''
+    def train(self, run_test=True, run_self_play=True, run_generator=True, n_generator=1000, MAX=0, training_directory=[None], logfile=None, n_test=1000, n_self_play=1000):
+        """
         Main Learning Process
-        return final score, graph_x, graph_y
-        '''
+        Iterate through all file in training_directory n_epoch times
+        """
+        # Tensorboard Setup
         writer = tf.summary.FileWriter(LOG_DIR)
         writer.add_graph(self.sess.graph)
-        if DEBUG:
-            print("[Train] Done Tensorboard setup")
-            print("[Train] Start training")
+        if DEBUG: print("[Train] Done Tensorboard setup")
         percentage = 0
-        record = self.get_record(run_test, run_self_play, run_generator, n_generator, MAX, training_directory)
-        if DEBUG:
-            print("[Train] Done Collecting record")
-            print("[Train] Training Complete: {}%".format(percentage))
-
+        record = self.get_record(run_test, run_self_play, run_generator, n_generator, MAX, training_directory, n_test, n_self_play)
+        if DEBUG: print("[Train] Done Collecting record")
         loss = []
+        # Neural Network log file
         log = open(logfile, 'w') if logfile else None
+        if DEBUG: 
+            print("[Train] Start Training")
+            print("[Train] Training Complete: {}%".format(percentage))
         for epoch in range(self.n_epoch):
             loss_sum = 0
             update = 0
@@ -239,14 +235,19 @@ class InforGo(object):
                             if (height, row, col) == (-1, -1, -1): break
 
                             height, row, col = self.rotate(height, row, col, 0)
-
+                            
+                            # Value of the current state
                             v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
                             v_ = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
                             flag, new_s, R = self.MDP.take_action((row, col), 1)
+
+                            # Value of the successive state
                             new_v_ = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(new_s, -1)})
                             new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1), self.pattern: get_pattern(new_s, 1)})
                             v_desired = np.zeros([1, 1])
                             v_desired_ = np.zeros([1, 1])
+
+                            # v(s) = v(s) + alpha * (r + gamma * v(s_) - v(s))
                             v_desired[0, 0] = v[0, 0] + self.alpha * (R + self.gamma * new_v[0, 0] - v[0, 0])
                             v_desired_[0, 0] = v_[0, 0] + self.alpha * (-R + self.gamma * new_v_[0, 0] - v_[0, 0])
                             
@@ -263,11 +264,7 @@ class InforGo(object):
                                 log.write("TD(0) (player {}): {}\n".format(-1, v_desired_[0, 0]))
                                 log.write("\n")
                             
-                            # TD-0 update
-                            # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0])
-                            # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
-                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
-                            update += 1
+                            # update the neural network
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired_, self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
                             s = new_s
@@ -281,12 +278,17 @@ class InforGo(object):
                             if (height, row, col) == (-1, -1, -1): break
 
                             height, row, col = self.rotate(height, row, col, 0)
-
+                            
+                            # Value of the current state
                             v = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
                             v_ = self.sess.run(self.V, feed_dict={self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
                             flag, new_s, R = self.MDP.take_action((row, col), -1)
+
+                            # Value of the successive state
                             new_v = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(new_s, -1)})
                             new_v_ = self.sess.run(self.V, feed_dict={self.inp: new_s, self.player_node: self.cast_player(1), self.pattern: get_pattern(new_s, 1)})
+
+                            # v(s) = v(s) + alpha * (r + gamma * v(s_) - v(s))
                             v_desired[0, 0] = v[0, 0] + self.alpha * (R + self.gamma * new_v[0, 0] - v[0, 0])
                             v_desired_[0, 0] = v_[0, 0] + self.alpha * (-R + self.gamma * new_v_[0, 0] - v_[0, 0])
 
@@ -303,11 +305,6 @@ class InforGo(object):
                                 log.write("TD(0) (player {}): {}\n".format(1, v_desired_[0, 0]))
                                 log.write("\n")
 
-                            # TD-0 update
-                            # v_desired[0][0] = new_v[0][0] * self.td_lambda + self.alpha * (1 - self.td_lambda) * (R + self.gamma * new_v[0][0] - v[0][0])
-                            # loss.append(self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(1)}))
-                            loss_sum += self.sess.run(self.loss, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
-                            update += 1
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired, self.inp: s, self.player_node: self.cast_player(-1), self.pattern: get_pattern(s, -1)})
 
                             self.sess.run(self.model, feed_dict={self.V_desired: v_desired_, self.inp: s, self.player_node: self.cast_player(1), self.pattern: get_pattern(s, 1)})
@@ -325,29 +322,41 @@ class InforGo(object):
         return loss
 
     def rotate(self, height, row, col, t):
-        '''
+        """
         Rotate the board 90 x t degree clockwise
-        '''
+        """
         for i in range(t):
             row, col = col, row
             col = 3 - col
         return height, row, col
 
-    def get_record(self, run_test=True, run_self_play=True, run_generator=True, n_generator=1000, MAX=0, training_directory=[None]):
-        '''
+    def get_record(self, run_test=True, run_self_play=True, run_generator=True, n_generator=1000, MAX=0, training_directory=[None], n_test=1000, n_self_play=1000):
+        """
         Return every record file under ../Data/record/*
-        '''
+        """
         directory = [x[0] for x in os.walk('../Data/record')]
         directory = directory[1:]
         filename = {}
+        test = []
+        self_play = []
         for d in directory:
             if training_directory[0] and not d in training_directory: continue
-            if d == '../Data/record/test_record' and not run_test: continue
-            if d == '../Data/record/self_play' and not run_self_play: continue
+            if d == '../Data/record/test_record':
+                if run_test: test = [x for x in tmp[0]]
+                continue
+            if d == '../Data/record/self_play':
+                if run_self_play: self_play = [x for x in tmp[0]]
+                continue
             if d == '../Data/record/generator': continue
             tmp = [x[2] for x in os.walk(d)]
             filename[d] = [x for x in tmp[0]]
         if not run_generator: return filename
+        if run_test:
+            random.shuffle(test)
+            filename['../Data/record/test'] = test[:min(n_test, len(test))]
+        if run_self_play:
+            random.shuffle(self_play)
+            filename['../Data/record/self_play'] = self_play[:min(n_self_play, len(test))]
         s = set([])
         filename['../Data/record/generator'] = []
         for i in range(n_generator):
@@ -358,9 +367,9 @@ class InforGo(object):
         return filename
 
     def store_weight_and_bias(self):
-        '''
+        """
         Store weights under ./Data/Weight, biases under ./Data/Bias
-        '''
+        """
         for i in range(self.n_hidden_layer + 1):
             f = open('../Data/Weight/{}.txt'.format(i), 'w')
             w = self.sess.run(self.weight_and_bias[i]['weight'])
@@ -493,10 +502,10 @@ class InforGo(object):
         return winner
 
     def Minimax(self, bingo, depth, level, player, alpha=-np.inf, beta=np.inf):
-        '''
+        """
         recursively search every possible action with maximum depth = self.search_depth
         use alpha-beta pruning to reduce time complexity
-        '''
+        """
         state = bingo.get_state()
 
         if bingo.terminate(): return self.evaluate(state, player), None
@@ -536,11 +545,14 @@ class InforGo(object):
         return value, action
 
     def evaluate(self, state, player):
-        '''
+        """
         Evaluate the value of input state with neural network as an approximater
-        '''
+        """
         tmp_bingo = Bingo(state)
-        if tmp_bingo.terminate(): return 0
+        if tmp_bingo.terminate():
+            if tmp_bingo.win(player): return 50
+            if tmp_bingo.win(-player): return -50
+            return 0
         V = self.sess.run(self.V, feed_dict={self.inp: state, self.player_node: self.cast_player(player), self.pattern: get_pattern(state, player)})
         return V[0][0]
 
