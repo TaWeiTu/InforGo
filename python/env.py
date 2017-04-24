@@ -60,7 +60,7 @@ class MDP(object):
 
     def undo_action(self, action):
         '''
-        Undo the latest action on position (row, col)
+        Undo the latest action on position (row, cole
         '''
         row, col = action
         self.bingo.undo_action(row, col)

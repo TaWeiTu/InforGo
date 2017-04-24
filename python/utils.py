@@ -25,6 +25,7 @@ def get_pattern(state, player):
     corner = [0, 0]
     two = [0, 0]
     three = [0, 0]
+    f = lambda x: 0 if x == player else 1
     for i in range(4):
         if state[i][i][i][0][0] == player: corner[0] += 1
         elif state[i][i][i][0][0] == opponent: corner[1] += 1
@@ -39,7 +40,7 @@ def get_pattern(state, player):
         for r in range(4):
             cnt = [0, 0]
             for c in range(4):
-                if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
+                if state[h][r][c][0][0]: cnt[f(state[h][r][c][0][0])] += 1
             if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
             if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
             if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
@@ -47,21 +48,21 @@ def get_pattern(state, player):
         for c in range(4):
             cnt = [0, 0]
             for r in range(4):
-                if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
+                if state[h][r][c][0][0]: cnt[f(state[h][r][c][0][0])] += 1
             if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
             if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
             if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
             if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         cnt = [0, 0]
         for i in range(4):
-            if state[h][i][i][0][0]: cnt[int(state[h][i][i][0][0]) - 1] += 1
+            if state[h][i][i][0][0]: cnt[f(state[h][i][i][0][0])] += 1
         if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
         if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
         if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
         if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         cnt = [0, 0]
         for i in range(4):
-            if state[h][i][3 - i][0][0]: cnt[int(state[h][i][3 - i][0][0]) - 1] += 1
+            if state[h][i][3 - i][0][0]: cnt[f(state[h][i][3 - i][0][0])] += 1
         if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
         if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
         if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
@@ -71,21 +72,21 @@ def get_pattern(state, player):
         for c in range(4):
             cnt = [0, 0]
             for h in range(4):
-                if state[h][r][c][0][0]: cnt[int(state[h][r][c][0][0]) - 1] += 1
+                if state[h][r][c][0][0]: cnt[f(state[h][r][c][0][0])] += 1
             if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
             if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
             if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
             if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         cnt = [0, 0]
         for i in range(4):
-            if state[i][r][i][0][0]: cnt[int(state[i][r][i][0][0]) - 1] += 1
+            if state[i][r][i][0][0]: cnt[f(state[i][r][i][0][0])] += 1
         if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
         if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
         if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
         if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         cnt = [0, 0]
         for i in range(4):
-            if state[i][r][3 - i][0][0]: cnt[int(state[i][r][3 - i][0][0]) - 1] += 1
+            if state[i][r][3 - i][0][0]: cnt[f(state[i][r][3 - i][0][0])] += 1
         if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
         if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
         if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
@@ -93,42 +94,42 @@ def get_pattern(state, player):
     for c in range(4):
         cnt = [0, 0]
         for i in range(4):
-            if state[i][i][c][0][0]: cnt[int(state[i][i][c][0][0]) - 1] += 1
+            if state[i][i][c][0][0]: cnt[f(state[i][i][c][0][0])] += 1
         if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
         if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
         if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
         if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
         cnt = [0, 0]
         for i in range(4):
-            if state[i][3 - i][c][0][0]: cnt[int(state[i][3 - i][c][0][0]) - 1] += 1
+            if state[i][3 - i][c][0][0]: cnt[f(state[i][3 - i][c][0][0])] += 1
         if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
         if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
         if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
         if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
     cnt = [0, 0]
     for i in range(4):
-        if state[i][i][i][0][0]: cnt[int(state[i][i][i][0][0]) - 1] += 1
+        if state[i][i][i][0][0]: cnt[f(state[i][i][i][0][0])] += 1
     if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
     if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
     if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
     if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
     cnt = [0, 0]
     for i in range(4):
-        if state[i][i][3 - i][0][0]: cnt[int(state[i][i][3 - i][0][0]) - 1] += 1
+        if state[i][i][3 - i][0][0]: cnt[f(state[i][i][3 - i][0][0])] += 1
     if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
     if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
     if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
     if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
     cnt = [0, 0]
     for i in range(4):
-        if state[3 - i][i][i][0][0]: cnt[int(state[3 - i][i][i][0][0]) - 1] += 1
+        if state[3 - i][i][i][0][0]: cnt[f(state[3 - i][i][i][0][0])] += 1
     if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
     if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
     if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
     if cnt[1] == 3 and cnt[0] == 0: three[1] += 1
     cnt = [0, 0]
     for i in range(4):
-        if state[i][3 - i][i][0][0]: cnt[int(state[i][3 - i][i][0][0]) - 1] += 1
+        if state[i][3 - i][i][0][0]: cnt[f(state[i][3 - i][i][0][0])] += 1
     if cnt[0] == 2 and cnt[1] == 0: two[0] += 1
     if cnt[1] == 2 and cnt[0] == 0: two[1] += 1
     if cnt[0] == 3 and cnt[1] == 0: three[0] += 1
