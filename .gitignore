@@ -1,6 +1,7 @@
 node_modules/
 *.swp
 .*.swp
+.key/
 Data/*
 log/*
 */log
@@ -10,3 +11,5 @@ tmp
 ubuntu*
 */__pycache__
 */*.log
+__pycache__
+*/*/__pycache__
