@@ -3,10 +3,12 @@ import numpy as np
 import os.path
 import random
 import math
+import tempfile
 from utils import *
 from global_mod import *
 from game import Bingo
 from env import MDP
+from bot import Bot 
 
 
 class InforGo(object):
