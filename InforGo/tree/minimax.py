@@ -29,7 +29,7 @@ class Minimax(object):
         for i in actions:
             n_state = State(c_state)
             r, c = decode_action(i)
-            n_state.take_action(r, c, player)
+            n_state.take_action(r, c)
             val, action = self.search(n_state, -player, depth - 1, not max_level, alpha, beta)
             return_val = comp(return_val, val)
             if val == return_val: return_action = i

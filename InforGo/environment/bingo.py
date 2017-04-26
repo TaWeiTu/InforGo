@@ -6,13 +6,23 @@ from InforGo.util import get_pattern
 class Bingo(object):
 
     def __init__(self, board=None):
+        """
+        if board is empty: return empty board
+        if board is a list or numpy array: return the same board
+        if board is another board: return a copy of it
+        """
         if board is None:
             self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
             self.height = [[0 for i in range(4)] for j in range(4)]
             self.player = 1
         elif type(board) != 'list' and type(board).__module__ != np.__name__:
-            self.board = board.board
-            self.height = board.height
+            self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
+            self.height = [[0 for i in range(4)] for j in range(4)]
+            for i in range(4):
+                for j in range(4):
+                    for k in range(4): self.board[i][j][k] = board.board[i][j][k]
+            for i in range(4):
+                for j in range(4): self.height[i][j] = board.height[i][j]
             self.player = board.player
         else:
             self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
@@ -57,7 +67,7 @@ class Bingo(object):
         return True
 
     def win(self, player):
-        """return True if player won, False otherwise by checking all possible winning combination"""
+        """return True if player won"""
         for h in range(4):
             for r in range(4):
                 flag = True
@@ -133,11 +143,16 @@ class Bingo(object):
         return self.win(1) or self.win(-1) or self.full()
 
     def get_initial_state(self):
-        """Refresh the game and return the Initial state s0 based on D"""
+        """Refresh the game and return the initial state"""
         self.__init__()
         return np.zeros(shape=[4, 4, 4])
 
     def get_reward(self, state, flag, player):
+        """
+        if player win: return 50
+        if opponent win: return -50
+        else return pattern: corner * 1 + two * 2 + three * 3
+        """
         np_state = np.reshape(np.array(state), [4, 4, 4]) 
         pattern = get_pattern(np_state, player)
         if flag == 3: return 0
@@ -149,14 +164,15 @@ class Bingo(object):
             else: reward -= (i // 2 + 1) * pattern[0, i]
         return reward
 
-    def take_action(self, row, col, player):
+    def take_action(self, row, col):
         """Take action and Return whether the action is valid, whether the player win or not, new state and the reward"""
         flag = self.place(row, col)
         new_state = self.get_state()
-        reward = self.get_reward(new_state, flag, player)
+        reward = self.get_reward(new_state, flag, -self.player)
         return flag, new_state, reward
 
     def __getitem__(self, tup):
+        """operator overload"""
         i, j, k = tup
         return self.board[i][j][k]
 

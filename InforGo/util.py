@@ -5,7 +5,7 @@ def plot_state(state):
     for r in range(4):
         output = ""
         for h in range(4):
-            for c in range(4): output += str(int(state[h][r][c][0][0]))
+            for c in range(4): output += str(int(state[h][r][c])) if type(state) == 'list' or type(state).__module__ == np.__name__ else str(state[h, r, c])
             output += " | "
         print(output)
 
@@ -20,6 +20,7 @@ def log_state(state, logfile):
 
 
 def get_pattern(state, player):
+    """Calculate corner position, two in a line, three in a line for both player"""
     opponent = -player
     corner = [0, 0]
     two = [0, 0]
@@ -144,6 +145,11 @@ def decode_action(action_num):
         action_num //= 4
     return action
 
+def encode_action(action_pair):
+    row, col = action_pair
+    return row + col * 4
+
 
 def TD(v, v_, R, alpha, gamma):
+    """TD(0)"""
     return v + alpha * (R + gamma * v_ - v)

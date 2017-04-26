@@ -6,7 +6,7 @@ from InforGo.util import decode_action
 
 
 class Bot(object):
-
+    """Simple AI that first choose to win then prevent loss, finally play randomly"""
     def __init__(self, player):
         self.player = player
         self.opponent = -player
@@ -38,19 +38,17 @@ class Tester(schema):
         self.bot = Bot(-self.player)
 
     def test(self):
-        env = State()
         victory = 1
         for epoch in range(self.n_epoch):
-            s = env.get_initial_state()
-            player = 1
+            state = State()
             while True:
-                action = self.get_action(s, player)
-                flag, s, R = env.take_action(*action, player)
-                if flag == player: break
-                player = -player
-            if player == self.player: victory += 1
+                action = self.get_action(state, state.player)
+                flag, _, R = state.take_action(*action)
+                if flag == -state.player: break
+            if -s.player == self.player: victory += 1
         return victory / self.n_epoch
 
     def get_action(self, state, player):
-        if player == self.player: return self.AI.get_action(state)
-        return self.bot.generate_action(state)
+        n_state = State(state)
+        if player == self.player: return self.AI.get_action(n_state)
+        return self.bot.generate_action(n_state)

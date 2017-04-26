@@ -4,7 +4,14 @@ import os
 
 
 class NeuralNetwork(object):
-    
+    """
+    Neural Network Setup
+    input layer: state + current_player + pattern
+    hidden layer: n_hidden_layer with nodes at each layer = n_node_hidden, activation function is activation_fn
+    output layer: value of the input state for current player
+    weight and bias are stored in directory
+    learning rate = learning_rate
+    """ 
     def __init__(self, player_len=1, pattern_len=6, n_hidden_layer=1, n_node_hidden=[32], activation_fn='tanh', learning_rate=0.001, directory='../Data/default/'):
         
         self.input_state = tf.placeholder(shape=[4, 4, 4], dtype=tf.float64)
