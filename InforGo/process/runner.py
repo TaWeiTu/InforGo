@@ -1,5 +1,5 @@
 from InforGo.process.schema import Schema as schema
-from InforGo.bingo import Bingo as State
+from InforGo.environment.bingo import Bingo as State
 
 
 class Runner(schema):

@@ -2,7 +2,7 @@ import os.path
 import argparse
 import distutils.util
 
-from InforGo import global_var
+from InforGo.environment import global_var
 from InforGo.process.trainer import Trainer
 from InforGo.process.tester import Tester
 from InforGo.process.runner import Runner

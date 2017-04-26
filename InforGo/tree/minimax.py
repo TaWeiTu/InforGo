@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 from InforGo.util import get_pattern, decode_action
-from InforGo.bingo import Bingo as State
+from InforGo.environment.bingo import Bingo as State
 
 
 class Minimax(object):

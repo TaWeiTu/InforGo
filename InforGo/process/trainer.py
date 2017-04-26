@@ -2,9 +2,9 @@ import os
 import random
 
 from InforGo.process.schema import Schema as schema
-from InforGo.bingo import Bingo as State
+from InforGo.environment.bingo import Bingo as State
 from InforGo.util import get_pattern, TD
-from InforGo.global_var import *
+from InforGo.environment.global_var import *
 
 
 class Trainer(schema):
@@ -77,7 +77,7 @@ class Trainer(schema):
                             # Value of the current state
                             v = self.AI.nn.predict(s, 1, get_pattern(s, 1))
                             v_ = self.AI.nn.predict(s, -1, get_pattern(s, -1))
-                            flag, new_s, R = env.take_action((row, col), 1)
+                            flag, new_s, R = env.take_action(row, col, 1)
                             # Value of the successive state
                             new_v = self.AI.nn.predict(new_s, 1, get_pattern(new_s, 1))
                             new_v_ = self.AI.nn.predict(new_s, -1, get_pattern(new_s, -1))
@@ -98,7 +98,7 @@ class Trainer(schema):
                             # Value of the current state
                             v = self.AI.nn.predict(s, -1, get_pattern(s, -1))
                             v_ = self.AI.nn.predict(s, 1, get_pattern(s, 1))
-                            flag, new_s, R = env.take_action((row, col), -1)
+                            flag, new_s, R = env.take_action(row, col, -1)
                             # Value of the successive state
                             new_v = self.AI.nn.predict(new_s, -1, get_pattern(new_s, -1))
                             new_v_ = self.AI.nn.predict(new_s, 1, get_pattern(new_s, 1))

@@ -1,9 +1,8 @@
 from InforGo.util import decode_action
-from InforGo.global_var import DEBUG
+from InforGo.environment.global_var import DEBUG
 from InforGo.model.neural_net import NeuralNetwork as NN
 from InforGo.tree.minimax import Minimax as minimax
 from InforGo.tree.mcts import MCTS as mcts
-from InforGo.bingo import Bingo
 
 
 class InforGo(object):
