@@ -89,7 +89,3 @@ class MCTS(object):
         if state.win(self.player): return 1
         if state.win(-self.player): return -1;
         return 0
-        
-
-
-
