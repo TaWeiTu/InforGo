@@ -86,6 +86,8 @@ class NeuralNetwork(object):
         self.sess.run(self.opt_model, feed_dict={self.input_state: state, self.player_node: player_node, self.pattern: pattern, self.v_: v_placeholder})
 
     def store(self):
+        if not os.path.exists(self.directory):
+            os.makedirs(self.directory)
         for _id in range(len(self.weight)):
             with open(self.directory + 'weight{}'.format(_id), 'w+') as f:
                 w = self.sess.run(self.weight[_id])
