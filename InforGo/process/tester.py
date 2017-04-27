@@ -33,7 +33,7 @@ class Tester(schema):
     def __init__(self, **kwargs):
         super().__init__(kwargs['n_epoch'], kwargs['player_len'], kwargs['pattern_len'], kwargs['n_hidden_layer'], kwargs['n_node_hidden'],
                          kwargs['activation_fn'], kwargs['learning_rate'], kwargs['directory'], kwargs['alpha'], kwargs['gamma'], kwargs['lamda'],
-                         kwargs['search_depth'], kwargs['play_first'])
+                         kwargs['search_depth'], kwargs['c'], kwargs['n_playout'], kwargs['playout_depth'], kwargs['play_first'], kwargs['tree_type'])
         self.player = 1 if kwargs['play_first'] else -1
         self.bot = Bot(-self.player)
 
@@ -45,7 +45,7 @@ class Tester(schema):
                 action = self.get_action(state, state.player)
                 flag, _, R = state.take_action(*action)
                 if flag == -state.player: break
-            if -s.player == self.player: victory += 1
+            if -state.player == self.player: victory += 1
         return victory / self.n_epoch
 
     def get_action(self, state, player):

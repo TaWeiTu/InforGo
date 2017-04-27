@@ -69,7 +69,7 @@ def main():
 
     if args.method == 'train': Trainer(**vars(args)).train(args.logfile)
     elif args.method == 'run': Runner(**vars(args)).run()
-    elif args.method == 'test': Tester(**vars(args)).test()
+    elif args.method == 'test': print(Tester(**vars(args)).test())
 
 
 if __name__ == '__main__':

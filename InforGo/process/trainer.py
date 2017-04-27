@@ -37,13 +37,13 @@ class Trainer(schema):
             if d == './Data/record/generator': continue
             tmp = [x[2] for x in os.walk(d)]
             filename[d] = [x for x in tmp[0]]
-        if self.n_generator == 0: return filename
         if self.n_test > 0:
             random.shuffle(test)
             filename['./Data/record/test'] = test[:min(self.n_test, len(test))]
         if self.n_self_play > 0:
             random.shuffle(self_play)
             filename['./Data/record/self_play'] = self_play[:min(self.n_self_play, len(test))]
+        if self.n_generator == 0: return filename
         s = set([])
         filename['./Data/record/generator'] = []
         for i in range(self.n_generator):
