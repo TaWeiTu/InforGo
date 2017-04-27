@@ -47,7 +47,7 @@ class NeuralNetwork(object):
         self.trainer = tf.train.GradientDescentOptimizer(learning_rate)
         self.opt_model = self.trainer.minimize(self.error)
 
-        self.sess = tf.Session()
+        self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
         self.sess.run(tf.global_variables_initializer())
 
     def initialize_weight(self, n, m, _id):

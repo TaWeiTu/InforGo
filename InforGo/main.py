@@ -7,7 +7,7 @@ from InforGo.environment import global_var
 
 
 # Ignore warning and tensorflow stdout
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 def main():
