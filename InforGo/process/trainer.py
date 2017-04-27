@@ -1,5 +1,6 @@
 import os
 import random
+import math
 
 from InforGo.process.schema import Schema as schema
 from InforGo.environment.bingo import Bingo as State
@@ -12,7 +13,7 @@ class Trainer(schema):
     def __init__(self, **kwargs):
         super().__init__(kwargs['n_epoch'], kwargs['player_len'], kwargs['pattern_len'], kwargs['n_hidden_layer'], kwargs['n_node_hidden'],
                          kwargs['activation_fn'], kwargs['learning_rate'], kwargs['directory'], kwargs['alpha'], kwargs['gamma'], kwargs['lamda'],
-                         kwargs['search_depth'], kwargs['play_first'])
+                         kwargs['search_depth'], kwargs['c'], kwargs['n_playout'], kwargs['playout_depth'], kwargs['play_first'], kwargs['tree_type'])
         self.n_test = kwargs['n_test']
         self.n_generator = kwargs['n_generator']
         self.n_self_play = kwargs['n_self_play']
@@ -77,7 +78,7 @@ class Trainer(schema):
                             # Value of the current state
                             v = self.AI.nn.predict(s, 1, get_pattern(s, 1))
                             v_ = self.AI.nn.predict(s, -1, get_pattern(s, -1))
-                            flag, new_s, R = env.take_action(row, col, 1)
+                            flag, new_s, R = env.take_action(row, col)
                             # Value of the successive state
                             new_v = self.AI.nn.predict(new_s, 1, get_pattern(new_s, 1))
                             new_v_ = self.AI.nn.predict(new_s, -1, get_pattern(new_s, -1))
@@ -98,7 +99,7 @@ class Trainer(schema):
                             # Value of the current state
                             v = self.AI.nn.predict(s, -1, get_pattern(s, -1))
                             v_ = self.AI.nn.predict(s, 1, get_pattern(s, 1))
-                            flag, new_s, R = env.take_action(row, col, -1)
+                            flag, new_s, R = env.take_action(row, col)
                             # Value of the successive state
                             new_v = self.AI.nn.predict(new_s, -1, get_pattern(new_s, -1))
                             new_v_ = self.AI.nn.predict(new_s, 1, get_pattern(new_s, 1))

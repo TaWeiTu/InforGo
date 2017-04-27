@@ -3,9 +3,7 @@ import argparse
 import distutils.util
 
 from InforGo.environment import global_var
-from InforGo.process.trainer import Trainer
-from InforGo.process.tester import Tester
-from InforGo.process.runner import Runner
+
 
 
 # Ignore warning and tensorflow stdout
@@ -65,6 +63,10 @@ def main():
     global_var.__dict__['LOG_DIR'] = '../log/' + args.logdir
     global_var.__dict__['DEBUG'] = args.DEBUG == 1
     
+    from InforGo.process.trainer import Trainer
+    from InforGo.process.tester import Tester
+    from InforGo.process.runner import Runner
+
     if args.method == 'train': Trainer(**vars(args)).train(args.logfile)
     elif args.method == 'run': Runner(**vars(args)).run()
     elif args.method == 'test': Tester(**vars(args)).test()
