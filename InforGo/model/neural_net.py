@@ -25,7 +25,7 @@ class NeuralNetwork(object):
         self.directory = directory
         self.hidden_layer = [{} for i in range(n_hidden_layer)]
 
-        self.weight[0] = self.initialize_weight(64 + player_len + 6, n_node_hidden[0], 0)
+        self.weight[0] = self.initialize_weight(64 + player_len + pattern_len, n_node_hidden[0], 0)
         self.bias[0] = self.initialize_bias(n_node_hidden[0], 0)
 
         for i in range(1, n_hidden_layer):
@@ -47,7 +47,8 @@ class NeuralNetwork(object):
         self.trainer = tf.train.GradientDescentOptimizer(learning_rate)
         self.opt_model = self.trainer.minimize(self.error)
 
-        self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+        # self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+        self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
 
     def initialize_weight(self, n, m, _id):
@@ -100,5 +101,4 @@ class NeuralNetwork(object):
                 shape = self.sess.run(tf.shape(self.bias[_id]))
                 for i in range(shape[1]): f.write('{}\n'.format(b[0, i]))
                 f.close()
-
 

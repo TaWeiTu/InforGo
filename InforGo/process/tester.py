@@ -1,5 +1,7 @@
 import random
+import math
 
+from InforGo.environment.global_var import *
 from InforGo.process.schema import Schema as schema
 from InforGo.environment.bingo import Bingo as State
 from InforGo.util import decode_action
@@ -39,6 +41,7 @@ class Tester(schema):
 
     def test(self):
         victory = 1
+        if DEBUG: print("[Test] Testing Complete 0%")
         for epoch in range(self.n_epoch):
             state = State()
             while True:
@@ -46,6 +49,10 @@ class Tester(schema):
                 flag, _, R = state.take_action(*action)
                 if flag == -state.player: break
             if -state.player == self.player: victory += 1
+            if epoch / self.n_epoch > percentage / 100:
+                percentage = math.ceil(epoch / self.n_epoch * 100)
+                if DEBUG: print("[Test] Testing Complete: {}%".format(percentage))
+        if DEBUG: print("[Test] Testing Complete: 100%")
         return victory / self.n_epoch
 
     def get_action(self, state, player):
