@@ -41,6 +41,7 @@ class Tester(schema):
 
     def test(self):
         victory = 1
+        percentage = 0
         if DEBUG: print("[Test] Testing Complete 0%")
         for epoch in range(self.n_epoch):
             state = State()
