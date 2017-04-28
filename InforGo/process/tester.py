@@ -44,7 +44,7 @@ class Tester(schema):
     def test(self):
         victory = 1
         percentage = 0
-        logging.info("[Test] Testing Complete 0%")
+        logging.info("[Test] Testing Complete: 0%")
         for epoch in range(self.n_epoch):
             state = State()
             while True:

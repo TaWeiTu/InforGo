@@ -59,6 +59,7 @@ class MCTS(object):
         self.n_playout = n_playout
         self.evaluator = evaluator
         self.root = TreeNode(None, State(np.zeros([4, 4, 4])))
+        self.origin_root = self.root
         self.playout_depth = playout_depth
         self.player = player
 
@@ -96,5 +97,5 @@ class MCTS(object):
         return 0
 
     def release_mem(self):
-        self.root.release_mem()
+        self.origin_root.release_mem()
         self.root = TreeNode(None, State(np.zeros([4, 4, 4])))
