@@ -1,17 +1,20 @@
 import os.path
 import argparse
 import distutils.util
+import coloredlogs, logging
 
 from InforGo.environment import global_var
 
 
 
 # Ignore warning and tensorflow stdout
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 def main():
-
+    coloredlogs.install()
+    os.system('export COLOREDLOGS_LOG_FORMAT="[%(hostname)s] %(asctime)s - %(message)s"')
+    logging.info('[Main] Start Collecting Arguments')
     parser = argparse.ArgumentParser(description='Execution argument')
 
     # Method
@@ -63,6 +66,7 @@ def main():
     global_var.__dict__['LOG_DIR'] = '../log/' + args.logdir
     global_var.__dict__['DEBUG'] = args.DEBUG == 1
     
+    logging.info('[Main] Done Collecting Arguments')
     from InforGo.process.trainer import Trainer
     from InforGo.process.tester import Tester
     from InforGo.process.runner import Runner

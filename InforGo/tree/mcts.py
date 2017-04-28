@@ -46,6 +46,11 @@ class TreeNode(object):
     def is_leaf(self):
         return len(self.children) == 0
 
+    def release_mem(self):
+        for i in self.children.items(): i[1].release_mem()
+        del self
+
+
 class MCTS(object):
     
     def __init__(self, lamda, c, n_playout, evaluator, playout_depth, player):
@@ -89,3 +94,7 @@ class MCTS(object):
         if state.win(self.player): return 1
         if state.win(-self.player): return -1;
         return 0
+
+    def release_mem(self):
+        self.root.release_mem()
+        self.root = TreeNode(None, State(np.zeros([4, 4, 4])))

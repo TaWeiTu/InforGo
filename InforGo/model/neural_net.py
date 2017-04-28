@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import os
+import coloredlogs, logging
 
 
 class NeuralNetwork(object):
@@ -13,7 +14,7 @@ class NeuralNetwork(object):
     learning rate = learning_rate
     """ 
     def __init__(self, player_len=1, pattern_len=6, n_hidden_layer=1, n_node_hidden=[32], activation_fn='tanh', learning_rate=0.001, directory='../Data/default/'):
-        
+        logging.info('[NeuralNetwork] Start Building Neural Network')
         self.input_state = tf.placeholder(shape=[4, 4, 4], dtype=tf.float64)
         self.state = tf.reshape(self.input_state, [1, 64])
         self.player_node = tf.placeholder(shape=[1, player_len], dtype=tf.float64)
@@ -50,6 +51,7 @@ class NeuralNetwork(object):
         # self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
+        logging.info('[NeuralNetwork] Done Building Neural Network')
 
     def initialize_weight(self, n, m, _id):
         if os.path.exists(self.directory + 'weight{}'.format(_id)):
