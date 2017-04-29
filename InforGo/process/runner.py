@@ -1,9 +1,8 @@
-import coloredlogs, logging
-
 import InforGo
 from InforGo.process.schema import Schema as schema
 from InforGo.environment.bingo import Bingo as State
 from InforGo.util import encode_action
+from InforGo.util import emit_action, logger
 
 
 class Runner(schema):
@@ -20,18 +19,21 @@ class Runner(schema):
         while True:
             action = self.get_action(state, state.player)
             if type(self.AI.tree) is InforGo.tree.mcts.MCTS: self.AI.tree.step(encode_action(action))
-            logging.verbose("position: ", *action)
+            logger.debug("position: {} {}".format(action[0], action[1]))
             flag, s, R = state.take_action(*action)
             if flag == -state.player: break
         return -state.player
 
     def get_action(self, state, player):
         n_state = State(state)
-        if player == self.player: return self.AI.get_action(n_state)
+        if player == self.player:
+            action = self.AI.get_action(n_state)
+            emit_action(action)
+            return action
         return self.read_action()
 
     def read_action(self):
-        logging.verbose("input (height, row, col):")
+        logger.debug("input (height, row, col):")
         height, row, col = map(int, input().split())
         return row, col
 

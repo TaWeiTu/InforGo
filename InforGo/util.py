@@ -1,4 +1,5 @@
 import numpy as np
+from InforGo.environment.global_var import LOGGER, DEBUG
 
 
 def plot_state(state):
@@ -153,3 +154,23 @@ def encode_action(action_pair):
 def TD(v, v_, R, alpha, gamma):
     """TD(0)"""
     return v + alpha * (R + gamma * v_ - v)
+
+
+def emit_action(action):
+    row, col = action
+    if not DEBUG: print(row, col)
+
+
+class Logger(object):
+    def __init__(self):
+        pass
+    def info(self, message):
+        if DEBUG: LOGGER.info(message)
+    def error(self, message):
+        if DEBUG: LOGGER.error(message)
+    def debug(self, message):
+        if DEBUG: LOGGER.debug(message)
+    def verbose(self, message):
+        if VERBOSE: LOGGER.verbose(message)
+
+logger = Logger()

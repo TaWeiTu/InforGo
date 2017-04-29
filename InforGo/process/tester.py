@@ -1,12 +1,11 @@
 import random
 import math
-import coloredlogs, logging
 
 import InforGo
 from InforGo.environment.global_var import *
 from InforGo.process.schema import Schema as schema
 from InforGo.environment.bingo import Bingo as State
-from InforGo.util import decode_action
+from InforGo.util import decode_action, logger
 
 
 class Bot(object):
@@ -44,7 +43,7 @@ class Tester(schema):
     def test(self):
         victory = 1
         percentage = 0
-        logging.info("[Test] Testing Complete: 0%")
+        logger.debug("[Test] Testing Complete: 0%")
         for epoch in range(self.n_epoch):
             state = State()
             while True:
@@ -54,9 +53,9 @@ class Tester(schema):
             if -state.player == self.player: victory += 1
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)
-                logging.info("[Test] Testing Complete: {}%".format(percentage))
+                logger.debug("[Test] Testing Complete: {}%".format(percentage))
             if type(self.AI.tree) == InforGo.tree.mcts.MCTS: self.AI.tree.release_mem()
-        logging.info("[Test] Testing Complete: 100%")
+        logger.debug("[Test] Testing Complete: 100%")
         return victory / self.n_epoch
 
     def get_action(self, state, player):

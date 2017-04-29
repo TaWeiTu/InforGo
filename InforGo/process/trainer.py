@@ -1,12 +1,12 @@
 import os
 import random
 import math
-import coloredlogs, logging
 
 from InforGo.process.schema import Schema as schema
 from InforGo.environment.bingo import Bingo as State
 from InforGo.util import get_pattern, TD
 from InforGo.environment.global_var import *
+from InforGo.util import logger
 
 
 class Trainer(schema):
@@ -22,7 +22,7 @@ class Trainer(schema):
         self.MAX = kwargs['MAX']
 
     def get_record(self):
-        logging.info('[Train] Start Collecting Record')
+        logger.info('[Train] Start Collecting Record')
         directory = [x[0] for x in os.walk('./Data/record')]
         directory = directory[1:]
         filename = {}
@@ -46,7 +46,7 @@ class Trainer(schema):
             random.shuffle(self_play)
             filename['./Data/record/self_play'] = self_play[:min(self.n_self_play, len(test))]
         if self.n_generator == 0: 
-            logging.info('[Train] Done Collecting Record')
+            logger.info('[Train] Done Collecting Record')
             return filename
         s = set([])
         filename['./Data/record/generator'] = []
@@ -55,7 +55,7 @@ class Trainer(schema):
             while game_id in s or not os.path.exists('./Data/record/generator/{}'.format(game_id)) or game_id % 10 != 0: game_id = random.randint(0,self. MAX)
             s.add(game_id)
             filename['./Data/record/generator'].append('{}'.format(game_id))
-        logging.info('[Train] Done Collecting Record')
+        logger.info('[Train] Done Collecting Record')
         return filename
 
     def train(self, logfile):
@@ -63,8 +63,8 @@ class Trainer(schema):
         record = self.get_record()
         log = open(logfile, 'w') if logfile else None
         env = State()
-        logging.info('[Train] Start Training')
-        logging.info('[Train] Training Complete: 0%')
+        logger.info('[Train] Start Training')
+        logger.debug('[Train] Training Complete: 0%')
         for epoch in range(self.n_epoch):
             loss_sum = 0
             update = 0
@@ -77,7 +77,7 @@ class Trainer(schema):
                         while True:
                             try: height, row, col = map(int, f.readline().split())
                             except:
-                                logging.error('Invalid file format or context {}'.format(file_name))
+                                logger.error('Invalid file format or context {}'.format(file_name))
                                 break
                             if (height, row, col) == (-1, -1, -1): break
 
@@ -97,7 +97,7 @@ class Trainer(schema):
 
                             try: height, row, col = map(int, f.readline().split())
                             except:
-                                logging.error('Invalid file format or context {}'.format(file_name))
+                                logger.error('Invalid file format or context {}'.format(file_name))
                                 break
                             if (height, row, col) == (-1, -1, -1): break
 
@@ -117,10 +117,10 @@ class Trainer(schema):
 
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)
-                logging.info('[Train] Training Complete: {}%'.format(percentage))
+                logger.debug('[Train] Training Complete: {}%'.format(percentage))
             if percentage % 10 == 0: self.AI.nn.store()
 
-        logging.info('[Train] Training Complete: 100%')
+        logger.debug('[Train] Training Complete: 100%')
         self.AI.nn.store()
         if logfile is not None: log.close()
 

@@ -12,13 +12,15 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 def main():
-    coloredlogs.install()
-    os.system('export COLOREDLOGS_LOG_FORMAT="[%(hostname)s] %(asctime)s - %(message)s"')
-    logging.info('[Main] Start Collecting Arguments')
+    os.environ['COLOREDLOGS_LOG_FORMAT'] = "[%(hostname)s] %(asctime)s - %(message)s"
+    logger = logging.getLogger('InforGo')
+    coloredlogs.install(level='DEBUG')
+
+    # logger.info('[Main] Start Collecting Arguments')
     parser = argparse.ArgumentParser(description='Execution argument')
 
     # Method
-    parser.add_argument('method', help='play/train/self-play/test')
+    parser.add_argument('method', help='run/train/test')
 
     # Log
     parser.add_argument('--logdir', '-lg', default='tensorboard', help='Tensorboard log directory')
@@ -38,7 +40,8 @@ def main():
     parser.add_argument('--activation_fn', '-fn', default='tanh', type=str, help='activation function')
 
     # DEBUG
-    parser.add_argument('--DEBUG', default=False, type=distutils.util.strtobool, help='Debug mode')
+    parser.add_argument('--debug', '-d', const=True, default=False, nargs='?', type=distutils.util.strtobool, help='Debug mode')
+    parser.add_argument('--verbose', '-v', const=True, default=False, nargs='?', help='Verbose Mode')
 
     # Run
     parser.add_argument('--play_first', '-pf', default=True, type=distutils.util.strtobool, help='Play first')
@@ -60,13 +63,19 @@ def main():
     parser.add_argument('--tree_type', '-tt', default='minimax', type=str, help='minimax/mcts')
     parser.add_argument('--search_depth', '-sd', default=3, type=int, help='Maximum search depth')
     parser.add_argument('--c', '-c', default=1.0, type=float, help='Exploration/Exploitation')
-
+    
+    # GPU
+    parser.add_argument('--gpu', default=False, const=True, nargs='?', help='Run Tensorflow with/without GPUs')
     args = parser.parse_args()
 
     global_var.__dict__['LOG_DIR'] = '../log/' + args.logdir
-    global_var.__dict__['DEBUG'] = args.DEBUG == 1
+    global_var.__dict__['DEBUG'] = args.debug
+    global_var.__dict__['GPU'] = args.gpu
+    global_var.__dict__['LOGGER'] = logger
+    global_var.__dict__['VERBOSE'] = args.verbose
     
-    logging.info('[Main] Done Collecting Arguments')
+    if args.debug: logger.info('[Main] Done Collecting Arguments')
+
     from InforGo.process.trainer import Trainer
     from InforGo.process.tester import Tester
     from InforGo.process.runner import Runner
