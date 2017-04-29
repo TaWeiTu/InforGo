@@ -132,7 +132,7 @@ function Room(roomName, mode){
 		if (!this.playing) return
 		if (playerId != this.playerList[this.turn - 1].id) return
 		if (this.stat_1D[num] != 3) return
-		console.log(player.id, "downed");
+		console.log(playerId, "downed");
 	
 		// update stat_1D and record
 		this.stat_1D[num] = this.turn
