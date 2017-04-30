@@ -2,7 +2,7 @@ var rdmString  = require('randomstring')
 var spawn = require('child_process').spawn
 var fs = require('fs')
 var roomList = [];
-var io;
+var io,config,DEBUG;
 var fileNum = 0, recordRoot = __dirname + "/../Data/record/" + rdmString.generate(16) + '/';
 fs.mkdir(recordRoot, function (err) {
 	if(err) throw err;
@@ -10,6 +10,8 @@ fs.mkdir(recordRoot, function (err) {
 
 function init(data){
 	io = data.io
+	config = data.config
+	DEBUG = data.DEBUG
 }
 
 function Player(socket, name){
@@ -18,7 +20,7 @@ function Player(socket, name){
 	this.id = socket.id
 	this.rid = null;
 	this.joinGame = function(room){
-		if(!room.isJoinable()){
+		if (!room.isJoinable()){
 			this.socket.emit('joinGameRes',{'status':'failed', 'rid':room.rid})
 			return
 		}
@@ -29,7 +31,7 @@ function Player(socket, name){
 			}
 		}
 		room.playerList.push(this)
-		this.socket.emit('joinGameRes',{'status':'success'})
+		this.socket.emit('joinGameRes', {'status':'success'})
 		room.tryStart()
 	}
 	this.joinRoom = function(room){
@@ -46,7 +48,7 @@ function Player(socket, name){
 			if(room.playerList[i] == this){
 				if(room.playing){
 					let winnerId = i==0? 2:1
-					console.log("@bingo.js someone in the game left")
+					if (DEBUG) console.log("[Debug] someone in the game left")
 					room.gameOver({
 						'endWay': 0,
 						'winnerId': winnerId,
@@ -108,7 +110,7 @@ function Room(roomName, mode){
 	this.tryStart = function(){
 		if (this.mode == 'pvp' && this.playerList.length == 2) this.pvpStart()
 		if (this.mode == 'com' && this.playerList.length == 1) this.comStart()
-		console.log("tried to start with mode", mode)
+		if (DEBUG) console.log("[Debug] Tried to start with \"mode {0}, player count {1}\".".format(this.mode, this.playerList.length))
 	}
 	this.pvpStart = function(){
 		//setup variables and stats
@@ -121,18 +123,31 @@ function Room(roomName, mode){
 		io.emit('refreshRoomInfo', { 'list':getSimpleRoomList() });
 		this.playerList[0].socket.emit('playerAnnounce', 1)
 		this.playerList[1].socket.emit('playerAnnounce', 2)
-		console.log("[Bingo] Game start!")
+		console.log("[Bingo] Room", this.name, "game start!")
 	}
 	this.comStart = function(){
+		// setup variables, stat and agent
 		this.agent = spawn('python', ['../py/bingo.py', 'n_hidden_layer', '3', 'n_node_hidden', '32', '16', '8']);
+		this.agent.stdout.on('data', function(data){
+			if (DEBUG) console.log("[Debug] agent print", data)
+			this.agentDown(parseInt(data))
+		})
+		this.turn = 1
+		this.initialize()
+		this.announce('restart')
+		this.announce('refreshState', { stat: this.stat, turn: this.turn })
+		io.emit('refreshRoomInfo', { 'list':getSimpleRoomList() });
+		this.playerList[0].socket.emit('playerAnnounce', 1)
 	}
-	this.downReq  = function(playerId, num) {
+	this.agentDown = function(num){
 
 		// filter
 		if (!this.playing) return
-		if (playerId != this.playerList[this.turn - 1].id) return
-		if (this.stat_1D[num] != 3) return
-		console.log(playerId, "downed");
+		if (this.stat_1D[num] != 3){
+			console.log("[Bingo] WTFFFFFFFFFFFFFFFFFFFFFF, computer down at invalid place")
+			return
+		}
+		if (DEBUG) console.log("[Debug] agent downed at", num)
 	
 		// update stat_1D and record
 		this.stat_1D[num] = this.turn
@@ -142,10 +157,50 @@ function Room(roomName, mode){
 
 		// check winner
 		let winnerId = this.checkWinner(num)
-		console.log(winnerId);
+		if (DEBUG) console.log("[Debug] winner check result", winnerId);
 		if (winnerId == 3) this.gameOver({'endWay': 3})
 		if (winnerId == 0){
-			console.log("no one win")
+			this.turn = (this.turn == 1)? 2 : 1
+			this.announce('refreshState', { stat: this.stat_1D, turn: this.turn })
+		}
+		else {
+			// check if game is over
+			if (winnerId == 1){
+				this.gameOver({
+					'endWay': winnerId,
+					'winnerId': winnerId,
+					'winnerName': this.playerList[winnerId-1].name
+				})
+			}
+			else {
+				this.gameOver({
+					'endWay': winnerId,
+					'winnerId': winnerId,
+					'winnerName': 'AI InforGo'
+				})
+			}
+		}
+		this.agent.stdin.write((num / 4).toString() + ' ' + (num / 4 % 4).toString() + ' ' + (num / 16).toString() + '\n')
+	}
+	this.downReq  = function(playerId, num) {
+
+		// filter
+		if (!this.playing) return
+		if (playerId != this.playerList[this.turn - 1].id) return
+		if (this.stat_1D[num] != 3) return
+		if (DEBUG) console.log("[Debug]", playerId, "downed")
+	
+		// update stat_1D and record
+		this.stat_1D[num] = this.turn
+		this.stat_3D[num % 4][Math.floor(num / 4) % 4][Math.floor(num / 16)] = this.turn
+		if ((num % 4) != 3) this.stat_1D[num + 1] = 3
+		this.appendRecord(num)
+
+		// check winner
+		let winnerId = this.checkWinner(num)
+		if (DEBUG) console.log("[Debug] winner check result", winnerId);
+		if (winnerId == 3) this.gameOver({'endWay': 3})
+		if (winnerId == 0){
 			this.turn = (this.turn == 1)? 2 : 1
 			this.announce('refreshState', { stat: this.stat_1D, turn: this.turn })
 		}
@@ -163,16 +218,33 @@ function Room(roomName, mode){
 		for (let i = 0; i < this.playerList.length; ++i) if (this.playerList[i].id == Socket_id) return this.playerList[i];
 	}
 	this.gameOver = function(gameInfo){
-		console.log("@bingo.js call gameOver")
+		if (DEBUG) console.log("[Debug] called gameOver")
+
+		// stop agent
+		if (this.mode == 'com'){
+			this.agent.stdin.write('-1 -1 -1')
+			this.agent.end()
+		}
+
+		// clear table
 		for (let i = 0; i < 64; ++i) if (this.stat_1D[i] == 3) this.stat_1D[i] = 0;
-		this.announce('gameOver', gameInfo);
-		this.announce('refreshState', { stat: this.stat_1D, turn: 3 });
+
+		//set variables
 		this.playing = false;
 		this.turn = 3;
+
+		// announce game info
+		gameInfo.mode = this.mode
+		this.announce('gameOver', gameInfo);
+		this.announce('refreshState', { stat: this.stat_1D, turn: this.turn });
+
+		// try start again
 		let tmp = this;
 		setTimeout(this.tryStart.bind(this), 10000);
+
+		// write record
 		if (gameInfo.endWay != 0) this.writeRecord();
-		console.log("[Bingo] Game over.");
+		console.log("[Bingo] Game over with", gameInfo.endWay);
 	}
 	this.appendRecord = function(id){
 		this.record += id % 4 + ' ';
@@ -224,7 +296,7 @@ function Room(roomName, mode){
 	}
 	this.removeRoom = function(){
 		io.emit('message', {'message':'Room removed.', 'msgId':randomString(8)})
-		console.log('Room', this.rid, 'removed.');
+		if (DEBUG) console.log('[Debug] Room', this.rid, 'removed.');
 		for(let i = 0; i < roomList.length; ++i){
 			if (roomList[i].rid == this.rid){
 				roomList.splice(i, 1);
@@ -251,7 +323,7 @@ function randomString(length){
 
 function playerDisconnect(player){
 	player.leaveRoom();
-	console.log("@bingo.js someone disconnect")
+	console.log("[Bingo] someone disconnect")
 }
 
 function getRoomByRid(rid){
@@ -275,6 +347,13 @@ function getSimpleRoomList(){
 	}
 	return simpleList
 }
+
+// string format function
+String.prototype.format = function(){
+    let s = this, i = arguments.length;
+    while(i--)s = s.replace(new RegExp('\\{'+i+'\\}', 'gm'), arguments[i]);
+    return s;
+};
 
 module.exports = {
 	init,

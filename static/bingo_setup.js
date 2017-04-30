@@ -237,7 +237,7 @@ socket.on('refreshState',function(data){
 })
 socket.on('gameOver',function(gameInfo){
     if (gameInfo.endWay == 3){
-        alert("此局平手~");
+        alert("此局平手，10秒後開啟新局");
     }
     if (gameInfo.endWay == 0){
         if (gameInfo.winnerId == 1) alert("紅方離開遊戲，藍方 " + gameInfo.winnerName + " 勝利~ 10秒後等候另外兩位參賽者開啟新局");
@@ -286,6 +286,9 @@ socket.on('joinGameRes', function(data){
     if(data.status == 'failed'){
         spawnMessage('Join game failed.')
     }
+})
+socket.on('createRoomRes', function(data){
+    if(data.status == 'success') socket.emit('joinGameReq')
 })
 
 function spawnMessage(text, id){

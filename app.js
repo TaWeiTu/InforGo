@@ -8,10 +8,15 @@ var io         = require('socket.io')(server)
 var http       = require('http')
 var bingo      = require('./static/bingo.js')
 var config     = require("./config.json")
+var DEBUG = true
 
 var port = config.port
 
-bingo.init({ 'io':io });
+bingo.init({ 
+	'io':io,
+	'config':config,
+	'DEBUG':DEBUG
+});
 
 app.use('/assets', express.static(__dirname + '/assets'))
 app.use('/static', express.static(__dirname + '/static'))
@@ -31,13 +36,13 @@ io.sockets.on('connection', function(socket){
 	
 	// initialize
 	let player = new bingo.Player(socket)
-	console.log("someone in")
+	console.log("[Bingo] Someone connented.")
 	socket.emit('refreshRoomInfo', { 'list':bingo.getSimpleRoomList() })
 
 	// socket events
 	socket.on('createRoomReq', function(data){
-		if(!data.playerName || !data.roomName || !data.mode) return
-		if(!player.name) player.name = escape(data.playerName.toString())
+		if (!data.playerName || !data.roomName || !data.mode) return
+		if (!player.name) player.name = escape(data.playerName.toString())
 		data.roomName = escape(data.roomName.toString())
 		createRoom(player, data.roomName, data.mode)
 	})
@@ -45,18 +50,18 @@ io.sockets.on('connection', function(socket){
 	socket.on('joinRoomReq', function(name, rid){
 		if(!name || !rid || rid == player.rid) return
 		if(!player.name) player.name = escape(name.toString())
-		joinRoom(player, rid);
+		joinRoom(player, rid)
 	})
 
 	socket.on('joinGameReq', function(){
 		if(!player.rid) return
 		let room = bingo.getRoomByRid(player.rid)
 		if(!room) return
-		player.joinGame(room);
+		player.joinGame(room)
 	})
 
 	socket.on('disconnect', function(){
-		bingo.playerDisconnect(player);
+		bingo.playerDisconnect(player)
 	})
 
 	socket.on('downReq',function(num){
@@ -68,16 +73,16 @@ io.sockets.on('connection', function(socket){
 		if (passwd != config.passwd) return
 		bingo.getRoomByRid(rid).announce('message', {'message':'Admin removed the room.', 'msgId':bingo.randomString(8)})
 		bingo.getRoomByRid(rid).removeRoom(bingo.roomList)
-		io.emit('refreshRoomInfo', { 'list':bingo.getSimpleRoomList()})		
+		io.emit('refreshRoomInfo', { 'list':bingo.getSimpleRoomList() })		
 	})
 	socket.on('check', function(params){
-		if (params == 'roomList') console.log(bingo.getSimpleRoomList());
+		if (params == 'roomList') console.log(bingo.getSimpleRoomList())
 		if (params == 'id') console.log(player.id)
 	})
 })
 
 function joinRoom(player, rid){
-	player.joinRoom(bingo.getRoomByRid(rid));
+	player.joinRoom(bingo.getRoomByRid(rid))
 	player.socket.emit('message', {'message':'Join room successfully.', 'msgId':bingo.randomString(8)})
 }
 
@@ -86,8 +91,9 @@ function createRoom(player, roomName, mode){
 	let newRoom = new bingo.Room(roomName, mode)
 	bingo.roomList.push(newRoom)
 	player.joinRoom(newRoom);
-	player.socket.emit('message', {'message':'New room created.', 'msgId':bingo.randomString(8)})
+	player.socket.emit('createRoomRes', {'status':'success','rid':newRoom.rid})
 	io.emit('refreshRoomInfo', { 'list':bingo.getSimpleRoomList() })
+	if (DEBUG) console.log("[Bingo] Player", player.name, "created room", roomName)
 }
 
 function searchPlayerInRoomList(socket){
@@ -106,7 +112,7 @@ function jizz(){
 	for (let i=0;i<5;i++){
 		let a = Math.floor(Math.random()*10+1)
 		let b = Math.floor(Math.random()*10+1)
-		console.log(Math.min(a,b),Math.max(a,b),Math.floor(Math.random()*50))
+		console.log(Math.min(a, b), Math.max(a, b), Math.floor(Math.random()*50))
 	}
 	for (var i = 0; i < 8; i++) {
 		console.log(Math.floor(Math.random()*10+1),Math.floor(Math.random()*20)+1)

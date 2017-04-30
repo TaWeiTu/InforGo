@@ -63,7 +63,23 @@
   -webkit-animation-name: fadeOutUp;
   animation-name: fadeOutUp;
 }
-
+.roomList{
+/* Overflow behavior at line end
+   Right end if ltr, left end if rtl */
+  text-overflow: clip;
+  text-overflow: ellipsis;
+  text-overflow: "…";
+  text-overflow: fade;
+  text-overflow: fade(10px);
+  text-overflow: fade(5%);
+  /* Overflow behavior at left end | at right end
+  Directionality has no influence */
+  text-overflow: clip ellipsis;
+  text-overflow: "…" "…";
+  text-overflow: fade clip;
+  text-overflow: fade(10px) fade(10px);
+  text-overflow: fade(5%) fade(5%);
+}
 .roomList:hover {
     -moz-box-shadow: inset 0 0 100px 100px rgba(255, 255, 255, 0.3);
     -webkit-box-shadow: inset 0 0 100px 100px rgba(255, 255, 255, 0.3);

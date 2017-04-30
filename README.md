@@ -18,47 +18,28 @@ $ pip install tensorflow
 $ pip install matplotlib
 ```
 ## Examples
-To play with InforGo on command line
+To execute the project
 ```bash
-$ python src/bingo.py play [--argument=<value>]
+python -m InforGo.main [method] [--argument=value]
 ```
-For example, play with AI that has a maximum search depth 3.
-```base
-$ python src/bingo.py play --search_depth=3
-```
-To train InforGo, first store the data in ```./Data/record/*```, the format of the file should contains 3 numbers per line, indicating the (height, row, col) of the corresponding position, with "-1 -1 -1" at the last line(without quote).
-```bash
-$ python src/bingo.py train [--argument=<value>]
-```
-For example, train AI with 3 hidden layers, each layer is constructed with 32, 16, 8 nodes, respectively.
-```base
-$ python src/bingo.py train --n_hidden_layer=3 --n_node_hidden 32 16 8
-```
-To test how good InforGo is trained
-```bash
-python src/bingo.py test [--argument=<value>]
-```
-To make InforGo play against itself
-```bash
-python src/bingo.py self-play [--argument=<value>]
-```
-InforGo will be playing with a random bot which win if it can and prevent loss from opponent  
-
 Valid argument are the following:
 * **n_epoch:** number of epoches to every training data, default is 1
 * **n_hidden_layer:** number of hidden layers, default is 1
 * **n_node_hidden:** an array of length n_hidden_layer, representing the number of nodes in corresponding hidden layer, default is [32]
-* **activation_function:** activation function of hidden layers, "relu", "sigmoid", "tanh" are currently available, default is "relu"
-* **learning_rate:** learning rate of the neural network, default is 0.00000001
+* **activation_fn:** activation function of hidden layers, "relu", "sigmoid", "tanh" are currently available, default is "tanh"
+* **learning_rate:** learning rate of the neural network, default is 0.001
 * **gamma:** discount factor of the value funciton, default is 0.99
-* **regularization_param:** regularization parameter of L2-Regularization, default is 0.001
-* **decay_step:** step of learning rate decay, default is 0.96
-* **decay_rate:** rate of learning rate decay, default is 100
-* **filter_depth:** depth of filter of Convolution layer, default is 1
-* **filter_height:** height of filter of Convolution layer, default is 1
-* **filter_width:** width of filter of Convolution layer, default is 1
-* **out_channel:** the number of output of Convolution layer, default is 5
+* **alpha:** learning rate of TD, default is 0.1
 * **search_depth:** maximum search depth of Minimax Tree Search, default is 3
 * **DEBUG:** Debug mode, default is False
-* **first:** AI go first or second, default is True
-* **run_test:** Train the model with testing data, default is True
+* **play_first:** AI go first or second, default is True
+* **n_test:** Number of test data to be trained
+* **n_self_play:** Number of self-play data to be trained
+* **n_generator:** Number of generated data to be trained
+* **MAX:** Maximum id of generated data to be trained
+* **logdir:** Tensorboard logdir
+* **logfile:** Logfile
+* **player_len:** Number of player nodes in neural network
+* **pattern_len:** Length of pattern recognition
+* **directory:** Directory to store weight and bias
+* **training_directory:** Directory to be trained, if not specified, train all of the avaible directory
