@@ -17,39 +17,38 @@ class NeuralNetwork(object):
     """ 
     def __init__(self, player_len=1, pattern_len=6, n_hidden_layer=1, n_node_hidden=[32], activation_fn='tanh', learning_rate=0.001, directory='../Data/default/'):
         logger.info('[NeuralNetwork] Start Building Neural Network')
-        with tf.device('/gpu:0'):
-            self.input_state = tf.placeholder(shape=[4, 4, 4], dtype=tf.float64)
-            self.state = tf.reshape(self.input_state, [1, 64])
-            self.player_node = tf.placeholder(shape=[1, player_len], dtype=tf.float64)
-            self.player_len = player_len
-            self.pattern = tf.placeholder(shape=[1, pattern_len], dtype=tf.float64)
-            self.activation_fn = self.get_fn(activation_fn)
-            self.weight = [None for i in range(n_hidden_layer + 1)]
-            self.bias = [None for i in range(n_hidden_layer + 1)]
-            self.directory = directory
-            self.hidden_layer = [{} for i in range(n_hidden_layer)]
+        self.input_state = tf.placeholder(shape=[4, 4, 4], dtype=tf.float64)
+        self.state = tf.reshape(self.input_state, [1, 64])
+        self.player_node = tf.placeholder(shape=[1, player_len], dtype=tf.float64)
+        self.player_len = player_len
+        self.pattern = tf.placeholder(shape=[1, pattern_len], dtype=tf.float64)
+        self.activation_fn = self.get_fn(activation_fn)
+        self.weight = [None for i in range(n_hidden_layer + 1)]
+        self.bias = [None for i in range(n_hidden_layer + 1)]
+        self.directory = directory
+        self.hidden_layer = [{} for i in range(n_hidden_layer)]
 
-            self.weight[0] = self.initialize_weight(64 + player_len + pattern_len, n_node_hidden[0], 0)
-            self.bias[0] = self.initialize_bias(n_node_hidden[0], 0)
+        self.weight[0] = self.initialize_weight(64 + player_len + pattern_len, n_node_hidden[0], 0)
+        self.bias[0] = self.initialize_bias(n_node_hidden[0], 0)
 
-            for i in range(1, n_hidden_layer):
-                self.weight[i] = self.initialize_weight(n_node_hidden[i - 1], n_node_hidden[i], i)
-                self.bias[i] = self.initialize_bias(n_node_hidden[i], i)
-            self.weight[n_hidden_layer] = self.initialize_weight(n_node_hidden[n_hidden_layer - 1], 1, n_hidden_layer)
-            self.bias[n_hidden_layer] = self.initialize_bias(1, n_hidden_layer)
+        for i in range(1, n_hidden_layer):
+            self.weight[i] = self.initialize_weight(n_node_hidden[i - 1], n_node_hidden[i], i)
+            self.bias[i] = self.initialize_bias(n_node_hidden[i], i)
+        self.weight[n_hidden_layer] = self.initialize_weight(n_node_hidden[n_hidden_layer - 1], 1, n_hidden_layer)
+        self.bias[n_hidden_layer] = self.initialize_bias(1, n_hidden_layer)
 
-            self.hidden_layer[0]['output'] = tf.add(tf.matmul(tf.concat([self.state, self.player_node, self.pattern], 1), self.weight[0]), self.bias[0])
+        self.hidden_layer[0]['output'] = tf.add(tf.matmul(tf.concat([self.state, self.player_node, self.pattern], 1), self.weight[0]), self.bias[0])
 
-            for i in range(1, n_hidden_layer):
-                self.hidden_layer[i - 1]['activate'] = self.activation_fn(self.hidden_layer[i - 1]['output'])
-                self.hidden_layer[i]['output'] = tf.add(tf.matmul(self.hidden_layer[i - 1]['activate'], self.weight[i]), self.bias[i])
-            self.hidden_layer[n_hidden_layer - 1]['activate'] = self.activation_fn(self.hidden_layer[n_hidden_layer - 1]['output'])
+        for i in range(1, n_hidden_layer):
+            self.hidden_layer[i - 1]['activate'] = self.activation_fn(self.hidden_layer[i - 1]['output'])
+            self.hidden_layer[i]['output'] = tf.add(tf.matmul(self.hidden_layer[i - 1]['activate'], self.weight[i]), self.bias[i])
+        self.hidden_layer[n_hidden_layer - 1]['activate'] = self.activation_fn(self.hidden_layer[n_hidden_layer - 1]['output'])
 
-            self.v = tf.add(tf.matmul(self.hidden_layer[n_hidden_layer - 1]['activate'], self.weight[n_hidden_layer]), self.bias[n_hidden_layer])
-            self.v_ = tf.placeholder(shape=[1, 1], dtype=tf.float64)
-            self.error = tf.reduce_sum(tf.square(self.v_ - self.v))
-            self.trainer = tf.train.GradientDescentOptimizer(learning_rate)
-            self.opt_model = self.trainer.minimize(self.error)
+        self.v = tf.add(tf.matmul(self.hidden_layer[n_hidden_layer - 1]['activate'], self.weight[n_hidden_layer]), self.bias[n_hidden_layer])
+        self.v_ = tf.placeholder(shape=[1, 1], dtype=tf.float64)
+        self.error = tf.reduce_sum(tf.square(self.v_ - self.v))
+        self.trainer = tf.train.GradientDescentOptimizer(learning_rate)
+        self.opt_model = self.trainer.minimize(self.error)
 
         # self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
         self.sess = tf.Session()
