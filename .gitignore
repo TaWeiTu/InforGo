@@ -1,10 +1,10 @@
-node_modules/
+/interface/node_modules/
+/interface/Data/record/*
+/interface/config.json
 *.swp
 .*.swp
 .key/
-Data/*
 log/*
-config.json
 */log
 tmp
 */a.out

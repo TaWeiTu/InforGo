@@ -202,7 +202,7 @@ function onDocumentWheel(event){
 }
 
 function renderRefresh(gameStat){
-    for(let i = 0; i < 64; ++i){
+        for(let i = 0; i < 64; ++i){
         cubes[i].material = color[gameStat[i]];
         cubes[i].situation = gameStat[i];
     }
@@ -232,6 +232,8 @@ socket.on('playerAnnounce',function(playerNum){
     }
 })
 socket.on('refreshState',function(data){
+    console.log("get refreshState command")
+    console.log(data)
     renderRefresh(data.stat);
     turn = data.turn;
 })
