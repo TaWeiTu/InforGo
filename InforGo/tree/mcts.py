@@ -64,6 +64,8 @@ class MCTS(object):
         self.player = player
 
     def step(self, last_action):
+        if not last_action in self.root.children:
+            self.root.expand()
         self.root = self.root.children[last_action]
         self.root.parent = None
 
