@@ -127,9 +127,10 @@ function Room(roomName, mode){
 	}
 	this.comStart = function(){
 		// setup variables, stat and agent
-		this.agent = spawn('python', ['../py/bingo.py', 'n_hidden_layer', '3', 'n_node_hidden', '32', '16', '8']);
+		this.agent = spawn('python', ['-m', 'InforGo.main', '-tt', 'mcts', '--n_playout=10'])
 		this.agent.stdout.on('data', function(data){
 			if (DEBUG) console.log("[Debug] agent print", data)
+			if (typeof(data) == 'string' && DEBUG) console.log("[DEBUG] agent output a string")
 			this.agentDown(parseInt(data))
 		})
 		this.turn = 1
@@ -165,19 +166,15 @@ function Room(roomName, mode){
 		}
 		else {
 			// check if game is over
-			if (winnerId == 1){
-				this.gameOver({
-					'endWay': winnerId,
-					'winnerId': winnerId,
-					'winnerName': this.playerList[winnerId-1].name
-				})
-			}
-			else {
+			if (winnerId == 2){
 				this.gameOver({
 					'endWay': winnerId,
 					'winnerId': winnerId,
 					'winnerName': 'AI InforGo'
 				})
+			}
+			else {
+				console.log("[Bingo] WTFFFFFFFFFFFFFFFFFF player win while AI down.")
 			}
 		}
 		this.agent.stdin.write((num / 4).toString() + ' ' + (num / 4 % 4).toString() + ' ' + (num / 16).toString() + '\n')
@@ -210,7 +207,7 @@ function Room(roomName, mode){
 				'endWay': winnerId,
 				'winnerId': winnerId,
 				'winnerName': this.playerList[winnerId-1].name
-			});
+			})
 		}
 	}
 	this.getCliById = function(Socket_id){
