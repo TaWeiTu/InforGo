@@ -58,6 +58,7 @@ def main():
     parser.add_argument('--directory', '-dir', default='./Data/default/', type=str, help='Directory to store weight and bias')
 
     # Tree
+    parser.add_argument('--eps', '-e', default=0.1, type=float, help='Probability of choosing random action in minimax')
     parser.add_argument('--n_playout', '-np', default=10000, type=int, help='Number of playouts at each action selection')
     parser.add_argument('--playout_depth', '-pd', default=10, type=int, help='Depth of playout')
     parser.add_argument('--tree_type', '-tt', default='minimax', type=str, help='minimax/mcts')
@@ -76,11 +77,13 @@ def main():
     
     if args.debug: logger.info('[Main] Done Collecting Arguments')
 
-    from InforGo.process.trainer import Trainer
+    from InforGo.process.supervised_trainer import SupervisedTrainer
+    from InforGo.process.reinforcement_trainer import ReinforcementTrainer
     from InforGo.process.tester import Tester
     from InforGo.process.runner import Runner
 
-    if args.method == 'train': Trainer(**vars(args)).train(args.logfile)
+    if args.method == 's_train': SupervisedTrainer(**vars(args)).train(args.logfile)
+    elif args.method == 'r_train': ReinforcementTrainer(**vars(args)).train()
     elif args.method == 'run': Runner(**vars(args)).run()
     elif args.method == 'test': print(Tester(**vars(args)).test())
 

@@ -44,7 +44,7 @@ class NeuralNetwork(object):
             self.hidden_layer[i]['output'] = tf.add(tf.matmul(self.hidden_layer[i - 1]['activate'], self.weight[i]), self.bias[i])
         self.hidden_layer[n_hidden_layer - 1]['activate'] = self.activation_fn(self.hidden_layer[n_hidden_layer - 1]['output'])
 
-        self.v = tf.add(tf.matmul(self.hidden_layer[n_hidden_layer - 1]['activate'], self.weight[n_hidden_layer]), self.bias[n_hidden_layer])
+        self.v = tf.tanh(tf.add(tf.matmul(self.hidden_layer[n_hidden_layer - 1]['activate'], self.weight[n_hidden_layer]), self.bias[n_hidden_layer]))
         self.v_ = tf.placeholder(shape=[1, 1], dtype=tf.float64)
         self.error = tf.reduce_sum(tf.square(self.v_ - self.v))
         self.trainer = tf.train.GradientDescentOptimizer(learning_rate)
