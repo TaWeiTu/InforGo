@@ -46,6 +46,7 @@ class Tester(schema):
         logger.debug("[Test] Testing Complete: 0%")
         for epoch in range(self.n_epoch):
             state = State()
+            self.AI.refresh()
             while True:
                 action = self.get_action(state, state.player)
                 flag, _, R = state.take_action(*action)
