@@ -279,8 +279,8 @@ function Room(roomName, mode){
 	}
 	this.appendRecord = function(id){
 		this.record += id % 4 + ' ';
-		this.record += Math.floor(id / 16) + ' ';
 		this.record += Math.floor(id / 4) % 4 + ' ';
+		this.record += Math.floor(id / 16) + ' ';
 		this.record += '\n';
 	}
 	this.writeRecord = function (){

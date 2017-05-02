@@ -25,11 +25,14 @@ app.get('/', function(req, res){
 		res.end()
 	})
 })
-app.get('/game', function(req, res){
-	res.sendFile(__dirname + '/pages/elements.html', function(){
+app.get('/simulate', function(req, res){
+	res.sendFile(__dirname + '/pages/simulate.html', function(){
 		res.end()
 	})
 })
+
+
+
 //start.js
 
 io.sockets.on('connection', function(socket){
