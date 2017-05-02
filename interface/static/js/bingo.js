@@ -51,9 +51,9 @@ function Player(socket, name){
 			if(room.playerList[i] == this){
 				if(room.playing){
 					let winnerId = i==0? 2:1
-					if (DEBUG) console.log("[Debug] someone in the game left")
-                    if (this.mode == 'com'){
-                        room.gameOver({
+					if (DEBUG) console.log("[Debug] someone in the game left with mode", room.mode)
+                    if (room.mode == 'com'){
+                         room.gameOver({
                             'endWay':0,
                             'winnerId':winnerId,
                             'winnerName':'AI InforGo'
@@ -141,7 +141,7 @@ function Room(roomName, mode){
 		if (DEBUG) console.log("[Debug] Called comstart function")
         // setup variables, stat and agent
         console.log(__dirname)
-		this.agent = spawn('python', ['-m', 'InforGo.main', 'run', '-tt', 'mcts', '--n_playout=50', '--play_first=False'],{ cwd:__dirname+'/../../../'})
+		this.agent = spawn('python', ['-m', 'InforGo.main', 'run', '-tt', 'minimax', '--n_playout=50', '--play_first=False'],{ cwd:__dirname+'/../../../'})
 		this.agent.stdout.setEncoding('utf-8')
         console.log(__dirname+'/../../../')
         let that = this
@@ -191,7 +191,7 @@ function Room(roomName, mode){
 		if (winnerId == 3) this.gameOver({'endWay': 3})
 		if (winnerId == 0){
 			this.turn = (this.turn == 1)? 2 : 1
-			this.announce('refreshState', { stat: this.stat_1D, turn: this.turn })
+			this.announce('refreshState', { stat: this.stat_1D, turn: this.turn, last: num })
 		}
 		else {
 			// check if game is over
@@ -228,7 +228,7 @@ function Room(roomName, mode){
 		if (winnerId == 3) this.gameOver({'endWay': 3})
 		if (winnerId == 0){
 			this.turn = (this.turn == 1)? 2 : 1
-			this.announce('refreshState', { stat: this.stat_1D, turn: this.turn })
+			this.announce('refreshState', { stat: this.stat_1D, turn: this.turn, last : num })
 		    if (this.mode == 'com'){
                 let writeString = (num % 4).toString() + ' ' + (Math.floor(num / 4) % 4).toString() + ' ' + (Math.floor(num / 16)).toString() + '\n'
                 this.agent.stdin.write(writeString)

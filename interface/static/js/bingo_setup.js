@@ -24,6 +24,8 @@ var TransBlue  = new THREE.MeshLambertMaterial({color: 0x0000ff, opacity: 0.6, t
 var colorRed   = new THREE.MeshLambertMaterial({color: 0xff0000});
 var TransRed   = new THREE.MeshLambertMaterial({color: 0xff0000, opacity: 0.6, transparent: true});
 var colorGray  = new THREE.MeshLambertMaterial({color: 0x222222});
+var redShine   = new THREE.MeshLambertMaterial({color: 0xff0000, opacity: 0, transparent: true});
+var blueShine  = new THREE.MeshLambertMaterial({color: 0x0000ff, opacity: 0, transparent: true});
 var color = [colorInvis , colorBlue , colorRed , colorClickable , TransBlue , TransRed];
 
 // set up basic(called cube)
@@ -92,7 +94,7 @@ var turn = 3;
 // set up raycaster
 var raycaster = new THREE.Raycaster();
 var firstVisibleObject, selected, intersects;
-
+var t = 0, savedOpacity;
 render();
 
 function render(){
@@ -156,6 +158,10 @@ function render(){
         p2Icon1.rotation.y += 0.1;
         p2Icon2.rotation.y += 0.1;
     }
+    t+=0.03
+    savedOpacity = (Math.sin(t)+1)/2
+    redShine.opacity = savedOpacity
+    blueShine.opacity = savedOpacity
     renderer.render(scene, camera);
 }
 
@@ -202,9 +208,13 @@ function onDocumentWheel(event){
 }
 
 function renderRefresh(gameStat){
-        for(let i = 0; i < 64; ++i){
-        cubes[i].material = color[gameStat[i]];
-        cubes[i].situation = gameStat[i];
+    for(let i = 0; i < 64; ++i){
+        cubes[i].material = color[gameStat.stat[i]];
+        cubes[i].situation = gameStat.stat[i];
+    }
+    if(typeof(gameStat.last) != 'undefined'){
+        if(gameStat.stat[gameStat.last] == 1) cubes[gameStat.last].material = blueShine
+        else cubes[gameStat.last].material = redShine
     }
 }
 
@@ -234,7 +244,7 @@ socket.on('playerAnnounce',function(playerNum){
 socket.on('refreshState',function(data){
     console.log("get refreshState command")
     console.log(data)
-    renderRefresh(data.stat);
+    renderRefresh(data);
     turn = data.turn;
 })
 socket.on('gameOver',function(gameInfo){
