@@ -1,4 +1,3 @@
-import InforGo
 from InforGo.util import decode_action
 from InforGo.environment.global_var import DEBUG
 from InforGo.model.neural_net import NeuralNetwork as NN
@@ -19,7 +18,9 @@ class InforGo(object):
         self.eps = eps
         self.lamda = lamda
         self.playout_depth = playout_depth
+        self.n_playout = n_playout
         self.c = c
+        self.tree_type = tree_type
         player = 1 if self.play_first else -1
         self.tree = minimax(search_depth, self.nn, eps) if tree_type == 'minimax' else mcts(lamda, c, n_playout, self.nn, playout_depth, player)
         
@@ -28,8 +29,7 @@ class InforGo(object):
         return decode_action(self.tree.get_action(state, player))
 
     def refresh(self):
-        tree_type = type(self.tree)
         self.tree = None
         player = 1 if self.play_first else -1
-        self.tree = minimax(self.search_depth, self.nn, self.eps) if tree_type == InforGo.tree.Minimax \
+        self.tree = minimax(self.search_depth, self.nn, self.eps) if self.tree_type == 'minimax' \
                                                                   else mcts(self.lamda, self.c, self.n_playout, self.nn, self.playout_depth, player)

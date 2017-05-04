@@ -122,7 +122,7 @@ class Bingo(object):
         flag = True
         for i in range(4): flag = False if self.board[3 - i][i][i] != player else flag
         if flag: return True
-
+        if player == 0: return self.full()
         return False
 
     def restart(self):
@@ -153,28 +153,21 @@ class Bingo(object):
         if opponent win: return -50
         else return pattern: corner * 1 + two * 2 + three * 3
         """
-        """
-        np_state = np.reshape(np.array(state), [4, 4, 4]) 
-        pattern = get_pattern(np_state, player)
-        if flag == 3: return 0
-        if flag == player: return 50
-        if flag != player and flag != 0: return -50
+        pattern = get_pattern(Bingo(state), player)
+        if flag == player: return 1
+        if flag != player and flag != 0: return -1
         reward = 0
         for i in range(6):
             if i % 2 == 0: reward += (i // 2 + 1) * pattern[0, i]
             else: reward -= (i // 2 + 1) * pattern[0, i]
-        return reward
-        """
-        n_state = Bingo(state)
-        if n_state.win(player): return 1
-        if n_state.win(-player): return -1
-        return 0
+        return reward / 50
 
     def take_action(self, row, col):
+        player = self.player
         """Take action and Return whether the action is valid, whether the player win or not, new state and the reward"""
         flag = self.place(row, col)
         new_state = self.get_state()
-        reward = self.get_reward(new_state, flag, -self.player)
+        reward = self.get_reward(new_state, flag, player)
         return flag, new_state, reward
 
     def __getitem__(self, tup):

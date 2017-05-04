@@ -6,7 +6,7 @@ from InforGo.process.schema import Schema as schema
 from InforGo.environment.bingo import Bingo as State
 from InforGo.util import get_pattern, TD
 from InforGo.environment.global_var import *
-from InforGo.util import logger
+from InforGo.util import logger, log_state
 
 
 class SupervisedTrainer(schema):
@@ -53,77 +53,85 @@ class SupervisedTrainer(schema):
         filename['./Data/record/generator'] = []
         for i in range(self.n_generator):
             game_id = random.randint(0, self.MAX)
-            while game_id in s or not os.path.exists('./Data/record/generator/{}'.format(game_id)) or game_id % 10 != 0: game_id = random.randint(0,self. MAX)
+            while game_id in s or not os.path.exists('./Data/record/generator/{}'.format(game_id)) or game_id % 10 != 0: 
+                game_id = random.randint(0,self. MAX)
             s.add(game_id)
             filename['./Data/record/generator'].append('{}'.format(game_id))
         logger.info('[Supervised] Done Collecting Record')
         return filename
 
     def train(self, logfile):
+        """Supervised training """
         percentage = 0
         record = self.get_record()
         log = open(logfile, 'w') if logfile else None
         env = State()
         logger.info('[Supervised] Start Training')
-        logger.debug('[Supervised] Training Complete: 0%')
+        logger.info('[Supervised] Training Complete: 0%')
+        errors = []
+        tmp = open('./error.log', 'w')
         for epoch in range(self.n_epoch):
             loss_sum = 0
             update = 0
             for directory in record.keys():
                 for file_name in record[directory]:
                     for rotate_time in range(4):
-                        f = open('{}/{}'.format(directory, file_name), 'r')
-                        s = env.get_initial_state()
-                        if logfile: log.write("New Game\n")
-                        while True:
-                            try: height, row, col = map(int, f.readline().split())
-                            except:
-                                logger.error('Invalid file format or context {}'.format(file_name))
-                                break
-                            if (height, row, col) == (-1, -1, -1): break
-
-                            height, row, col = self.rotate_data(height, row, col, rotate_time)
-                            # Value of the current state
-                            v = self.AI.nn.predict(s, 1, get_pattern(s, 1))
-                            v_ = self.AI.nn.predict(s, -1, get_pattern(s, -1))
-                            flag, new_s, R = env.take_action(row, col)
-                            # Value of the successive state
-                            new_v = self.AI.nn.predict(new_s, 1, get_pattern(new_s, 1))
-                            new_v_ = self.AI.nn.predict(new_s, -1, get_pattern(new_s, -1))
-                            
-                            self.AI.nn.update(s, 1, get_pattern(s, 1), TD(v, new_v, R, self.AI.alpha, self.AI.gamma))
-                            self.AI.nn.update(s, -1, get_pattern(s, -1), TD(v_, new_v_, -R, self.AI.alpha, self.AI.gamma))
-                            
+                        try: f = open('{}/{}'.format(directory, file_name), 'r')
+                        except:
+                            logger.error('[Error] No such file or directory: {}/{}'.format(directory, file_name))
+                            continue
+                        # state, actions, winner = self.read_game_file(f)
+                        # log_state(state.get_state(), tmp)
+                        state = State()
+                        c_player = 1
+                        s = state.get_initial_state()
+                        tmp.write('New Game\n')
+                        while not state.terminate():
+                            height, row, col = map(int, f.readline().split())
+                            flag, new_s, R = state.take_action(row, col)
+                            for p in [1, -1]:
+                                tmp.write("Current State for player {}: \n".format(c_player * p))
+                                log_state(s, tmp)
+                                v = self.AI.nn.predict(s, c_player * p, get_pattern(s, c_player * p))
+                                tmp.write("v = {}\n".format(v))
+                                new_v = self.AI.nn.predict(new_s, c_player * p, get_pattern(new_s, c_player * p))
+                                tmp.write("new_v = {}\n".format(new_v))
+                                tmp.write("R = {}\n".format(R * p))
+                                err = self.AI.nn.update(s, c_player * p, get_pattern(s, c_player * p), TD(v, new_v, R * p, self.AI.alpha, self.AI.gamma))
+                                tmp.write("TD = {}\n".format(TD(v, new_v, R * p, self.AI.alpha, self.AI.gamma)))
+                                errors.append(err)
+                                tmp.write('[Supervised] error = {}\n'.format(err))
                             s = new_s
+                            c_player *= -1
 
-                            try: height, row, col = map(int, f.readline().split())
-                            except:
-                                logger.error('Invalid file format or context {}'.format(file_name))
-                                break
-                            if (height, row, col) == (-1, -1, -1): break
-
-                            height, row, col = self.rotate_data(height, row, col, rotate_time)
-
-                            # Value of the current state
-                            v = self.AI.nn.predict(s, -1, get_pattern(s, -1))
-                            v_ = self.AI.nn.predict(s, 1, get_pattern(s, 1))
-                            flag, new_s, R = env.take_action(row, col)
-                            # Value of the successive state
-                            new_v = self.AI.nn.predict(new_s, -1, get_pattern(new_s, -1))
-                            new_v_ = self.AI.nn.predict(new_s, 1, get_pattern(new_s, 1))
+                        """for act in actions:
+                            R = 1 if state.terminate() else 0
+                            new_s = state.get_state()
+                            state.undo_action(act[0], act[1])
+                            s = state.get_state()
+                            for p in [1, -1]:
+                                tmp.write("Current State for player {}: \n".format(winner * p))
+                                log_state(s, tmp)
+                                v = self.AI.nn.predict(s, winner * p, get_pattern(s, winner * p))
+                                tmp.write("v = {}\n".format(v))
+                                new_v = self.AI.nn.predict(new_s, winner * p, get_pattern(new_s, winner * p))
+                                tmp.write("new_v = {}\n".format(new_v))
+                                tmp.write("R = {}\n".format(R * p))
+                                err = self.AI.nn.update(s, winner * p, get_pattern(s, winner * p), TD(v, new_v, R * p, self.AI.alpha, self.AI.gamma))
+                                tmp.write("TD = {}\n".format(TD(v, new_v, R * p, self.AI.alpha, self.AI.gamma)))
+                                errors.append(err)
+                                tmp.write("error = {}\n".format(err))"""
                             
-                            self.AI.nn.update(s, -1, get_pattern(s, -1), TD(v, new_v, R, self.AI.alpha, self.AI.gamma))
-                            self.AI.nn.update(s, 1, get_pattern(s, 1), TD(v_, new_v_, -R, self.AI.alpha, self.AI.gamma))
-                            s = new_s
-
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)
-                logger.debug('[Supervised] Training Complete: {}%'.format(percentage))
+                logger.info('[Supervised] Training Complete: {}%'.format(percentage))
             if percentage % 10 == 0: self.AI.nn.store()
 
-        logger.debug('[Supervised] Training Complete: 100%')
+        logger.info('[Supervised] Training Complete: 100%')
         self.AI.nn.store()
+        tmp.close()
         if logfile is not None: log.close()
+        return errors
 
     def rotate_data(self, height, row, col, t):
         """Rotate the board 90 x t degree clockwise"""
@@ -132,3 +140,13 @@ class SupervisedTrainer(schema):
             col = 3 - col
         return height, row, col
 
+    def read_game_file(self, f):
+        state = State()
+        actions = []
+        while not state.terminate():
+            height, row, col = map(int, f.readline().split())
+            state.take_action(row, col)
+            actions.append((row, col))
+        winner = 1 if state.win(1) else -1 if state.win(-1) else 0
+        actions = actions[::-1]
+        return state, actions, winner
