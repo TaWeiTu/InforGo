@@ -6,6 +6,7 @@ Data/*
 log/*
 */log
 tmp
+*.log
 */a.out
 *.pem
 ubuntu*

@@ -1,4 +1,3 @@
-import InforGo
 from InforGo.process.schema import Schema as schema
 from InforGo.environment.bingo import Bingo as State
 from InforGo.util import encode_action
@@ -19,11 +18,12 @@ class Runner(schema):
         state = State()
         while True:
             action = self.get_action(state, state.player)
-            if type(self.AI.tree) is InforGo.tree.mcts.MCTS: self.AI.tree.step(encode_action(action))
+            self.AI.tree.step(encode_action(action))
             logger.debug("position: {} {}".format(action[0], action[1]))
             flag, s, R = state.take_action(*action)
-            if flag == -state.player: break
-        return -state.player
+            if state.terminate(): break
+        for i in [-1, 0, 1]:
+            if state.win(i): return i
 
     def get_action(self, state, player):
         n_state = State(state)

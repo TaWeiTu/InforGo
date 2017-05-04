@@ -1,4 +1,5 @@
 import numpy as np
+
 from InforGo.environment.global_var import LOGGER, DEBUG
 
 
@@ -15,7 +16,7 @@ def log_state(state, logfile):
     for r in range(4):
         output = ""
         for h in range(4):
-            for c in range(4): output += str(int(state[h][r][c][0][0]))
+            for c in range(4): output += str(int(state[h][r][c]))
             output += " | "
         logfile.write(output + "\n")
 
@@ -153,7 +154,8 @@ def encode_action(action_pair):
 
 def TD(v, v_, R, alpha, gamma):
     """TD(0)"""
-    return v + alpha * (R + gamma * v_ - v)
+    td = v + alpha * (R + gamma * v_ - v)
+    return min(td, 1.0) if td >= 0 else max(td, -1.0)
 
 
 def emit_action(action):

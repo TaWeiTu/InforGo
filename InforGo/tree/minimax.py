@@ -45,3 +45,6 @@ class Minimax(object):
         else: beta = min(beta, val)
         prune = True if alpha >= beta else False
         return alpha, beta, prune
+    
+    def step(self, action):
+        pass

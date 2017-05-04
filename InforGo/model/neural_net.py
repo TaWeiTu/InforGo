@@ -4,6 +4,7 @@ import os
 
 from InforGo.environment.global_var import *
 from InforGo.util import logger
+from InforGo.environment.bingo import Bingo as State
 
 
 class NeuralNetwork(object):
@@ -46,7 +47,10 @@ class NeuralNetwork(object):
 
         self.v = tf.tanh(tf.add(tf.matmul(self.hidden_layer[n_hidden_layer - 1]['activate'], self.weight[n_hidden_layer]), self.bias[n_hidden_layer]))
         self.v_ = tf.placeholder(shape=[1, 1], dtype=tf.float64)
-        self.error = tf.reduce_sum(tf.square(self.v_ - self.v))
+        # self.error = tf.reduce_sum(tf.square(self.v_ - self.v))
+        # self.error = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.v, labels=self.v_))
+        # self.error = -(self.v_[0, 0] * tf.log(self.v[0, 0]))
+        self.error = tf.reduce_sum(tf.square(self.v - self.v_))
         self.trainer = tf.train.GradientDescentOptimizer(learning_rate)
         self.opt_model = self.trainer.minimize(self.error)
 
@@ -81,6 +85,8 @@ class NeuralNetwork(object):
         return lambda x: x
 
     def predict(self, state, player, pattern):
+        tmp_state = State(state)
+        if tmp_state.terminate(): return 0
         player_node = np.reshape(np.array([player for i in range(self.player_len)]), [1, self.player_len])
         v = self.sess.run(self.v, feed_dict={self.input_state: state, self.player_node: player_node, self.pattern: pattern})
         return v[0, 0]
@@ -88,7 +94,8 @@ class NeuralNetwork(object):
     def update(self, state, player, pattern, v_):
         player_node = np.reshape(np.array([player for i in range(self.player_len)]), [1, self.player_len])
         v_placeholder = np.reshape(np.array(v_), [1, 1])
-        self.sess.run(self.opt_model, feed_dict={self.input_state: state, self.player_node: player_node, self.pattern: pattern, self.v_: v_placeholder})
+        err, _ = self.sess.run([self.error, self.opt_model], feed_dict={self.input_state: state, self.player_node: player_node, self.pattern: pattern, self.v_: v_placeholder})
+        return err
 
     def store(self):
         if not os.path.exists(self.directory):
