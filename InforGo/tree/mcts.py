@@ -95,7 +95,7 @@ class MCTS(object):
             random.shuffle(actions)
             state.take_action(*decode_action(actions[0]))
         if state.win(self.player): return 1
-        if state.win(-self.player): return -1;
+        if state.win(-self.player): return -1
         return 0
 
     def release_mem(self):
