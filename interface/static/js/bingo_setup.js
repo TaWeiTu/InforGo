@@ -266,11 +266,11 @@ socket.on('gameOver',function(gameInfo){
         p2Icon2.material = color[gameInfo.winnerId];
     }
     p1Icon1.geometry = iconBox_big;
-});
     p1Icon2.geometry = iconBox_big;
     p2Icon1.geometry = iconBox_big;
     p2Icon2.geometry = iconBox_big;
     selfId = null;
+});
 
 // declare room variables
 var nowRoomId = null;

@@ -141,7 +141,7 @@ function Room(roomName, mode){
 		if (DEBUG) console.log("[Debug] Called comstart function")
         // setup variables, stat and agent
         console.log(__dirname)
-		this.agent = spawn('python', ['-m', 'InforGo.main', 'run', '-tt', 'minimax', '--n_playout=50', '--play_first=False'],{ cwd:__dirname+'/../../../'})
+		this.agent = spawn('python', ['-m', 'InforGo.main', 'run', '-tt', 'minimax', '--n_playout=50', '--play_first=False', '--directory=./Data/s_train_0/'],{ cwd:__dirname+'/../../../'})
 		this.agent.stdout.setEncoding('utf-8')
         console.log(__dirname+'/../../../')
         let that = this
