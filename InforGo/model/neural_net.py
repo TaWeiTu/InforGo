@@ -24,6 +24,7 @@ class NeuralNetwork(object):
         self.player_len = player_len
         self.pattern = tf.placeholder(shape=[1, pattern_len], dtype=tf.float64)
         self.activation_fn = self.get_fn(activation_fn)
+        # Initialize weights and biases
         self.weight = [None for i in range(n_hidden_layer + 1)]
         self.bias = [None for i in range(n_hidden_layer + 1)]
         self.directory = directory
@@ -44,17 +45,14 @@ class NeuralNetwork(object):
             self.hidden_layer[i - 1]['activate'] = self.activation_fn(self.hidden_layer[i - 1]['output'])
             self.hidden_layer[i]['output'] = tf.add(tf.matmul(self.hidden_layer[i - 1]['activate'], self.weight[i]), self.bias[i])
         self.hidden_layer[n_hidden_layer - 1]['activate'] = self.activation_fn(self.hidden_layer[n_hidden_layer - 1]['output'])
-
+        # Apply tanh to the output layer, which maps R to [-1, 1]
         self.v = tf.tanh(tf.add(tf.matmul(self.hidden_layer[n_hidden_layer - 1]['activate'], self.weight[n_hidden_layer]), self.bias[n_hidden_layer]))
         self.v_ = tf.placeholder(shape=[1, 1], dtype=tf.float64)
-        # self.error = tf.reduce_sum(tf.square(self.v_ - self.v))
-        # self.error = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.v, labels=self.v_))
-        # self.error = -(self.v_[0, 0] * tf.log(self.v[0, 0]))
+        # square difference of the prediction and label
         self.error = tf.reduce_sum(tf.square(self.v - self.v_))
+        # Apply gradient descent to the neural net
         self.trainer = tf.train.GradientDescentOptimizer(learning_rate)
         self.opt_model = self.trainer.minimize(self.error)
-
-        # self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
         logger.info('[NeuralNetwork] Done Building Neural Network')
