@@ -158,8 +158,8 @@ function render(){
         p2Icon1.rotation.y += 0.1;
         p2Icon2.rotation.y += 0.1;
     }
-    t+=0.03
-    savedOpacity = (Math.sin(t)+1)/2
+    t+=0.05
+    savedOpacity = Math.sin(t) / 4 + 0.75
     redShine.opacity = savedOpacity
     blueShine.opacity = savedOpacity
     renderer.render(scene, camera);
@@ -271,7 +271,6 @@ socket.on('gameOver',function(gameInfo){
     p2Icon2.geometry = iconBox_big;
     selfId = null;
 });
-
 // declare room variables
 var nowRoomId = null;
 var ridList = [];

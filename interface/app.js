@@ -6,7 +6,7 @@ var app        = require('express')()
 var server     = require('http').Server(app)
 var io         = require('socket.io')(server)
 var http       = require('http')
-var bingo      = require('./static/js/bingo.js')
+var bingo      = require('./static/js/bingo_server.js')
 var config     = require("./config.json")
 var DEBUG = true
 
