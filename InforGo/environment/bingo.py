@@ -147,28 +147,30 @@ class Bingo(object):
         self.__init__()
         return np.zeros(shape=[4, 4, 4])
 
-    def get_reward(self, state, flag, player):
+    def get_reward(self, state, player):
         """
         if player win: return 50
         if opponent win: return -50
         else return pattern: corner * 1 + two * 2 + three * 3
         """
         pattern = get_pattern(Bingo(state), player)
-        if flag == player: return 1
-        if flag != player and flag != 0: return -1
+        tmp_state = Bingo(state)
+        if tmp_state.win(player): return 1
+        if tmp_state.win(-player): return -1
         reward = 0
         for i in range(6):
             if i % 2 == 0: reward += (i // 2 + 1) * pattern[0, i]
             else: reward -= (i // 2 + 1) * pattern[0, i]
-        return reward / 50
+        return reward / 10
 
     def take_action(self, row, col):
         player = self.player
         """Take action and Return whether the action is valid, whether the player win or not, new state and the reward"""
+        origin_reward = self.get_reward(self.get_state(), player)
         flag = self.place(row, col)
         new_state = self.get_state()
-        reward = self.get_reward(new_state, flag, player)
-        return flag, new_state, reward
+        new_reward = self.get_reward(new_state, player)
+        return flag, new_state, new_reward - origin_reward
 
     def __getitem__(self, tup):
         """operator overload"""

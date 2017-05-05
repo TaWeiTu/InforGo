@@ -80,8 +80,6 @@ class SupervisedTrainer(schema):
                         except:
                             logger.error('[Error] No such file or directory: {}/{}'.format(directory, file_name))
                             continue
-                        # state, actions, winner = self.read_game_file(f)
-                        # log_state(state.get_state(), tmp)
                         state = State()
                         c_player = 1
                         s = state.get_initial_state()
@@ -106,24 +104,6 @@ class SupervisedTrainer(schema):
                                 tmp.write('[Supervised] error = {}\n'.format(err))
                             s = new_s
                             c_player *= -1
-
-                        """for act in actions:
-                            R = 1 if state.terminate() else 0
-                            new_s = state.get_state()
-                            state.undo_action(act[0], act[1])
-                            s = state.get_state()
-                            for p in [1, -1]:
-                                tmp.write("Current State for player {}: \n".format(winner * p))
-                                log_state(s, tmp)
-                                v = self.AI.nn.predict(s, winner * p, get_pattern(s, winner * p))
-                                tmp.write("v = {}\n".format(v))
-                                new_v = self.AI.nn.predict(new_s, winner * p, get_pattern(new_s, winner * p))
-                                tmp.write("new_v = {}\n".format(new_v))
-                                tmp.write("R = {}\n".format(R * p))
-                                err = self.AI.nn.update(s, winner * p, get_pattern(s, winner * p), TD(v, new_v, R * p, self.AI.alpha, self.AI.gamma))
-                                tmp.write("TD = {}\n".format(TD(v, new_v, R * p, self.AI.alpha, self.AI.gamma)))
-                                errors.append(err)
-                                tmp.write("error = {}\n".format(err))"""
                             
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)

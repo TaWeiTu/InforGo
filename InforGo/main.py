@@ -90,8 +90,10 @@ def main():
     if args.method == 's_train': 
         errors = SupervisedTrainer(**vars(args)).train(args.logfile)
         x = [i for i in range(len(errors))]
-        plt.plot(x, errors)
-        plt.show()
+        try:
+            plt.plot(x, errors)
+            plt.show()
+        except: pass
     elif args.method == 'r_train': ReinforcementTrainer(**vars(args)).train()
     elif args.method == 'run': Runner(**vars(args)).run()
     elif args.method == 'debug': Debugger(**vars(args)).debug()

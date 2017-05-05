@@ -28,7 +28,6 @@ class ReinforcementTrainer(schema):
             tmp = '\n'
             while True:
                 action = self.get_action(state, state.player)
-                tmp += str(action[0]) + ' ' + str(action[1]) + '\n'
                 v = self.AI.nn.predict(s, 1, get_pattern(s, 1))
                 v_ = self.AI.nn.predict(s, -1, get_pattern(s, -1))
                 flag, new_s, R = state.take_action(*action)
@@ -41,7 +40,6 @@ class ReinforcementTrainer(schema):
                 if state.terminate(): break
                 s = new_s
                 action = self.get_action(state, state.player)
-                tmp += str(action[0]) + ' ' + str(action[1]) + '\n'
                 v = self.AI.nn.predict(s, -1, get_pattern(s, -1))
                 v_ = self.AI.nn.predict(s, 1, get_pattern(s, 1))
                 flag, new_s, R = state.take_action(*action)
@@ -53,9 +51,7 @@ class ReinforcementTrainer(schema):
                 self.opponent.tree.step(encode_action(action))
                 if state.terminate(): break
                 s = new_s
-            logger.debug('[Reinforcement] Record: {}'.format(tmp))
             winner = 1 if state.win(1) else -1 if state.win(-1) else 0
-            logger.debug('[Reinforcement] Winner: {}'.format(winner))
             if epoch / self.n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self.n_epoch * 100)
                 logger.info('[Reinforcement] Training Complete: {}%'.format(percentage))
