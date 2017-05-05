@@ -87,7 +87,10 @@ class SupervisedTrainer(schema):
                         s = state.get_initial_state()
                         tmp.write('New Game\n')
                         while not state.terminate():
-                            height, row, col = map(int, f.readline().split())
+                            try: height, row, col = map(int, f.readline().split())
+                            except:
+                                logger.error("[Error] Invalid file input")
+                                break
                             flag, new_s, R = state.take_action(row, col)
                             for p in [1, -1]:
                                 tmp.write("Current State for player {}: \n".format(c_player * p))
