@@ -1,8 +1,9 @@
-node_modules/
+/interface/node_modules/
+/interface/Data/record/*
+/interface/config.json
 *.swp
 .*.swp
 .key/
-Data/*
 log/*
 */log
 tmp
@@ -14,3 +15,4 @@ ubuntu*
 */*.log
 __pycache__
 */*/__pycache__
+Data/*

@@ -10,16 +10,19 @@ var io         = require('socket.io')(server);
 var http       = require('http');
 var colors     = require('colors/safe');
 var rdmString  = require('randomstring');
+var spawn = require('child_process').spawn,
+    py    = spawn('python', ['../py/bingo.py', 'n_hidden_layer', '3', 'n_node_hidden', '32', '16', '8']);
+    // py = spawn('python',['AI.py']);
 
 // variables
 var fs = require('fs');
-var recordRoot = __dirname + "/Data/record/" + rdmString.generate(16) + '/';
+var recordRoot = __dirname + "/saves/" + rdmString.generate(16) + '/';
 var fileNum = 0;
 var record = "";
 fs.mkdir(recordRoot, function (err) {
 	if(err) throw err;
 });
-var port = 9003;
+var port = 9004;
 colors.setTheme ({
 	setup : ['green', 'underline'],
 	info  : ['grey', 'underline'],
@@ -33,14 +36,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/', function (req, res) {
 	console.log( colors.title("[System] ") + "Get request to '/'" );
-	res.sendFile(__dirname + '/main.html', function () {
+	res.sendFile(__dirname + '/pages/main.html', function () {
 		res.end();
 	});
 });
 
 function getTime () {
 	let now = new Date();
-	return now.toLocaleDateString() + ' ' + now.toLocaleTimeString()	
+	return now.toLocaleDateString() + ' ' + now.toLocaleTimeString()
 }
 
 // Bingo part
@@ -49,7 +52,7 @@ function getTime () {
 var playerList = [];
 var waitingList = [];
 var onlineList = [];
-var player = 1;
+var player = 2;
 var playing = false;
 var stat_1D = []; //creating 1D array
 var stat_3D = []; //creating 3D array
@@ -101,10 +104,9 @@ function checkWinner ( id ) {
 }
 
 function tryStart () {
-	if (waitingList.length < 2 || playing) return;
+	if (waitingList.length < 1 || playing) return;
 	//renew player list
 	playerList[0] = waitingList.shift(1);
-	playerList[1] = waitingList.shift(1);
 	//setup variables and stats
 	record = "";
 	playing = true;
@@ -114,7 +116,6 @@ function tryStart () {
 	io.emit('restart');
 	io.emit('refreshState', stat_1D, player);
 	io.to( playerList[0]["id"] ).emit( 'youare', 1 );
-	io.to( playerList[1]["id"] ).emit( 'youare', 2 );
 	console.log(colors.title("[Bingo] ") + "Game start!");
 }
 
@@ -127,6 +128,8 @@ function gameOver (gameInfo){
 	setTimeout( tryStart, 10000);
 	if (gameInfo.endWay != 0) writeRecord();
 	console.log(colors.title("[Bingo] ")+colors.info("Game over."));
+	py.stdin.write('-1 -1 -1');
+	py.stdin.end();
 }
 
 function appendRecord ( num ){
@@ -136,11 +139,14 @@ function appendRecord ( num ){
 	record += '\n';
 }
 
-function downReq (player_id, num) {
+function downReq (num, reqPlayer) {
 	// filter
 	if (!playing) return;
-	if (player_id != playerList[player - 1]["id"]) return;
-	if (stat_1D[num] != 3) return;
+	// if (player_id != playerList[0]["id"]) return;
+	if (stat_1D[num] != 3)return;
+	if (reqPlayer == player)return;
+	console.log("downReq sucess");
+
 	// update stat_1D and record
 	stat_1D[num] = player;
 	if ( (num % 4) != 3 ) stat_1D[num + 1] = 3;
@@ -152,18 +158,26 @@ function downReq (player_id, num) {
 	if (winnerId == 0){
 		player = (player == 1) ? 2 : 1;
 		io.emit('refreshState', stat_1D, player);
+		py.stdin.write((num / 4).toString() + ' ' + (num / 4 % 4).toString() + ' ' + (num / 16).toString() + '\n');
 	}
 	else {
 		// check if game is over
+		let winnerName;
+		if(winnerId == 1) winnerName = playerList[0].name;
+		else winnerName = 'Beta Cat';
 		gameOver({
 			'endWay': winnerId,
 			'winnerId': winnerId,
-			'winnerName': playerList[winnerId - 1].name
+			'winnerName': winnerName
 		});
-		waitingList.push(playerList[1]);
 		waitingList.push(playerList[0]);
 	}
 }
+
+py.stdout.on('data', function(data){
+	console.log("get output")
+	downReq(parseInt(data), 2)
+});
 
 function writeRecord (){
 	record += "-1 -1 -1\n"
@@ -199,8 +213,7 @@ io.sockets.on('connection', function(socket){
 	})
 	socket.on('downReq', function ( num ) {
 		if (typeof(num) != 'number') return;
-		downReq(socket.id, num);
-		
+		downReq(num, 1);
 	});
 	socket.on('disconnect',function(){
 		console.log(colors.title("[Bingo] ") + colors.info("Someone has discennected"));
@@ -222,12 +235,7 @@ io.sockets.on('connection', function(socket){
 		// if player leave
 		if (playing){
 			if (playerList[0]["id"] == socket.id){
-				gameOver({ 'endWay': 0, 'winnerId': 2, 'winnerName':playerList[1].name })
-				waitingList.push(playerList[1]);
-			}
-			if (playerList[1]["id"] == socket.id){
-				gameOver({ 'endWay': 0, 'winnerId': 1, 'winnerName':playerList[0].name });
-				waitingList.push(playerList[0]);
+				gameOver({ 'endWay': 0, 'winnerId': 2, 'winnerName':'Beta Cat' })
 			}
 		}
 	});
@@ -247,5 +255,5 @@ server.listen(port, function () {
 // may affect : wrong index with player-1
 
 // sockets document
-// 'gameOver': { endWay[, winnerId, winnerName ]} , 
+// 'gameOver': { endWay[, winnerId, winnerName ]} ,
 //		endWay: 0 = leave, 1,2 = player wins, 3 = draw

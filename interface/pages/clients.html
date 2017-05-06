@@ -1,0 +1,46 @@
+<!DOCTYPE <html>
+<html>
+	<head>
+        <title>test</title>
+        <link rel="stylesheet" href="/static/css/main.css" />
+        <link rel="stylesheet" href="/static/css/custom.css" />
+    </head>
+	<body>
+        <button id="joinButton" class="special" onclick="joinGame()" disabled>Join!!</button>
+		<div id="info">
+			<div class="table-wrapper animated fadeInUp">
+				<table style="width:100%">
+					<thead>
+						<tr>
+							<th style="padding-top:10px" colspan="3">
+								<input type="text" id="name" placeholder="Enter your name">
+								<div class="12u$" style="padding-top:10px">
+									<input type="checkbox" id="mode">
+									<!-- <label for="mode" onclick="spawnMessage('Sorry, this mode is not available now.')">Play with AI</label> -->
+									<label for="mode">Play with AI</label>
+								</div>
+								<ul class="actions">
+									<li style="width:100%">
+										<a class="button fit" onclick="createRoom()">createRoom</a>
+									</li>
+								</ul>
+							</th>
+						</tr>
+						<tr>
+							<th>Name</th>
+							<th>Mode</th>
+							<th>Playing</th>
+						</tr>
+					</thead>
+					<tbody id="room-info" style="word-wrap:break-word;"></tbody>
+				</table>
+			</div>
+		</div>
+		<div id="gameBoard"></div>
+		<!--<div id="gameInfo"></div>-->
+		<div id="messageBox"></div>
+	</body>
+</html>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/static/js/three.min.js"></script>
+<script src="/static/js/bingo_client.js"></script>

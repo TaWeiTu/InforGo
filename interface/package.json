@@ -9,12 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "body-parser": "^1.15.1",
+    "body-parser": "^1.17.1",
+    "child_process": "^1.0.2",
     "colors": "^1.1.2",
-    "express": "^4.13.4",
-    "jquery": "^2.2.4",
-    "noty": "^2.3.8",
+    "express": "^4.15.2",
     "randomstring": "^1.1.5",
-    "socket.io": "^1.7.2"
+    "socket.io": "^1.7.3"
   }
 }
