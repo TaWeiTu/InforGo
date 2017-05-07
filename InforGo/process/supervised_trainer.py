@@ -98,10 +98,11 @@ class SupervisedTrainer(schema):
                                 v = self._evaluate(s, c_player * p)
                                 new_v = self._evaluate(new_s, c_player * p)
                                 err = self._update(s, c_player * p, TD(v, new_v, R * p, self._AI.alpha, self._AI.gamma))
-                                error, t = error + err, t + 1
+                                error += err
+                                t += 1
                             s = new_s
                             c_player *= -1
-                        errors.append(error / t)
+                        if t: errors.append(error / t)
                             
             if epoch / self._n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self._n_epoch * 100)
