@@ -84,6 +84,7 @@ class SupervisedTrainer(schema):
                         c_player = 1
                         s = state.get_initial_state()
                         tmp.write('New Game\n')
+                        error, t = 0, 0
                         while not state.terminate():
                             try: 
                                 height, row, col = map(int, f.readline().split())
@@ -93,19 +94,14 @@ class SupervisedTrainer(schema):
                                 break
                             flag, new_s, R = state.take_action(row, col)
                             for p in [1, -1]:
-                                # tmp.write("Current State for player {}: \n".format(c_player * p))
                                 log_state(s, tmp)
                                 v = self._evaluate(s, c_player * p)
-                                # tmp.write("v = {}\n".format(v))
                                 new_v = self._evaluate(new_s, c_player * p)
-                                # tmp.write("new_v = {}\n".format(new_v))
-                                # tmp.write("R = {}\n".format(R * p))
                                 err = self._update(s, c_player * p, TD(v, new_v, R * p, self._AI.alpha, self._AI.gamma))
-                                # tmp.write("TD = {}\n".format(TD(v, new_v, R * p, self.AI.alpha, self.AI.gamma)))
-                                errors.append(err)
-                                # tmp.write('[Supervised] error = {}\n'.format(err))
+                                error, t = error + err, t + 1
                             s = new_s
                             c_player *= -1
+                        errors.append(error / t)
                             
             if epoch / self._n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self._n_epoch * 100)

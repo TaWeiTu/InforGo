@@ -51,7 +51,11 @@ class NeuralNetwork(object):
         # square difference of the prediction and label
         self.error = tf.reduce_sum(tf.square(self.v - self.v_))
         # Apply gradient descent to the neural net
-        self.trainer = tf.train.GradientDescentOptimizer(learning_rate)
+        # self.trainer = tf.train.GradientDescentOptimizer(learning_rate)
+        # self.trainer = tf.train.AdamOptimizer(learning_rate)
+        # self.trainer = tf.train.AdadeltaOptimizer(learning_rate)
+        self.trainer = tf.train.AdagradOptimizer(learning_rate)
+        # self.trainer = tf.train.RMSPropOptimizer(learning_rate)
         self.opt_model = self.trainer.minimize(self.error)
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
