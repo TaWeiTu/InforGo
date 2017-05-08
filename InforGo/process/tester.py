@@ -17,9 +17,9 @@ class Bot(object):
 
     def generate_action(self, state):
         move = get_winning_move(state, self._player)
-        if len(move) > 0: return encode_action((move[0][1], move[0][2]))
+        if len(move) > 0: return move[0][1], move[0][2]
         move = get_winning_move(state, self._opponent)
-        if len(move) > 0: return encode_action((move[0][1], move[0][2]))
+        if len(move) > 0: return move[0][1], move[0][2]
         env = State(state)
         actions = [i for i in range(16) if env.valid_action(*decode_action(i))]
         random.shuffle(actions)
