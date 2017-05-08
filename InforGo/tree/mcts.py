@@ -1,7 +1,7 @@
 import random
 import numpy as np
 
-from InforGo.util import decode_action, get_pattern, plot_state
+from InforGo.util import decode_action, get_pattern, plot_state, get_winning_move, encode_action
 from InforGo.environment.bingo import Bingo as State
 
 
@@ -102,15 +102,10 @@ class MCTS(object):
         return self._evaluator.predict(state, player, get_pattern(state, player))
 
     def _rollout_policy(self, state, player):
+        move = get_winning_move(state, player)
+        if len(move) > 0: return encode_action((move[0][1], move[0][2]))
+        move = get_winning_move(state, -player)
+        if len(move) > 0: return encode_action((move[0][1], move[0][2]))
         valid_action = [i for i in range(16) if state.valid_action(*decode_action(i))]
-        for act in valid_action:
-            n_state = State(state)
-            n_state.take_action(*decode_action(act))
-            if n_state.win(player): return act
-        for act in valid_action:
-            n_state = State(state)
-            n_state.player = -n_state.player
-            n_state.take_action(*decode_action(act))
-            if n_state.win(-player): return act
         random.shuffle(valid_action)
         return valid_action[0]

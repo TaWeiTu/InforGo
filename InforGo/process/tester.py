@@ -5,7 +5,7 @@ import InforGo
 from InforGo.environment.global_var import *
 from InforGo.process.schema import Schema as schema
 from InforGo.environment.bingo import Bingo as State
-from InforGo.util import decode_action, logger, encode_action
+from InforGo.util import decode_action, logger, encode_action, get_winning_move
 
 
 class Bot(object):
@@ -16,19 +16,10 @@ class Bot(object):
         self._opponent = -player
 
     def generate_action(self, state):
-        for i in range(4):
-            for j in range(4):
-                env = State(state)
-                if env.valid_action(i, j):
-                    env.place(i, j)
-                    if env.win(self._player): return i, j
-        for i in range(4):
-            for j in range(4):
-                env = State(state)
-                env.player *= -1
-                if env.valid_action(i, j):
-                    env.place(i, j)
-                    if env.win(self._opponent): return i, j
+        move = get_winning_move(state, self._player)
+        if len(move) > 0: return encode_action((move[0][1], move[0][2]))
+        move = get_winning_move(state, self._opponent)
+        if len(move) > 0: return encode_action((move[0][1], move[0][2]))
         env = State(state)
         actions = [i for i in range(16) if env.valid_action(*decode_action(i))]
         random.shuffle(actions)
