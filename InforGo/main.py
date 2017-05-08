@@ -63,7 +63,7 @@ def main():
     # Tree
     parser.add_argument('--eps', '-e', default=0.1, type=float, help='Probability of choosing random action in minimax')
     parser.add_argument('--n_playout', '-np', default=10000, type=int, help='Number of playouts at each action selection')
-    parser.add_argument('--playout_depth', '-pd', default=10, type=int, help='Depth of playout')
+    parser.add_argument('--playout_depth', '-pd', default=3, type=int, help='Depth of playout')
     parser.add_argument('--tree_type', '-tt', default='minimax', type=str, help='minimax/mcts')
     parser.add_argument('--search_depth', '-sd', default=3, type=int, help='Maximum search depth')
     parser.add_argument('--c', '-c', default=1.0, type=float, help='Exploration/Exploitation')

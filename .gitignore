@@ -18,3 +18,5 @@ __pycache__
 Data/*
 Images/
 .DS_Store
+result
+plot

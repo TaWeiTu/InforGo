@@ -48,7 +48,7 @@ class ReinforcementTrainer(schema):
             self._AI.refresh()
             self._opponent.refresh()
         logger.debug('[Reinforcement] Training Complete: 100%')
-        self.AI.nn.store()
+        self._store()
 
     def _store(self):
         self._AI.nn.store()
