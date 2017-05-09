@@ -125,11 +125,13 @@ function Room(roomName, mode){
 		if (DEBUG) console.log("[Debug] Tried to start with \"mode {0}, player count {1}\".".format(this.mode, this.playerList.length))
 	}
 	this.pvpStart = function(){
-		//setup variables and stats
+
+		// setup variables and stats
 		this.playing = true
 		this.turn = 1
 		this.initialize()
-		//send messages to clients
+
+		// send messages to clients
 		this.announce('restart')
 		this.announce('refreshState', { stat: this.stat_1D, turn: this.turn })
 		io.emit('refreshRoomInfo', { 'list':getSimpleRoomList() });
@@ -138,31 +140,31 @@ function Room(roomName, mode){
 		console.log("[Bingo] Room", this.name, "game start!")
 	}
 	this.comStart = function(){
-		if (DEBUG) console.log("[Debug] Called comstart function")
-        // setup variables, stat and agent
-        console.log(__dirname)
-		this.agent = spawn('python', ['-m', 'InforGo.main', 'run', '-tt', 'minimax', '--n_playout=50', '--play_first=False', '--directory=./Data/s_train_0/'],{ cwd:__dirname+'/../../../'})
-		this.agent.stdout.setEncoding('utf-8')
-        console.log(__dirname+'/../../../')
+		
+        if (DEBUG) console.log("[Debug] Called comstart function")
         let that = this
+        
+        // set up agent
+        this.agent = spawn('python', ['-m', 'InforGo.main', 'run', '-tt', 'mcts', '--n_playout=500', '--play_first=False', '--directory=./Data/3_64_32_16/'],{ cwd:__dirname+'/../../../'})
+		this.agent.stdout.setEncoding('utf-8')
         this.agent.stdout.on('data', function(data){
-			if (DEBUG) console.log("[Debug] agent print", data)
-			if (typeof(data) == 'string' && DEBUG) console.log("[DEBUG] agent output a string")
             let agentDownId = checkRow(that.stat_1D, parseInt(data[0]), parseInt(data[2]))
-            if (DEBUG) console.log("[Debug] AI down at {0} after parse".format(agentDownId))
+            if (DEBUG) console.log("[Debug] AI down at {0}".format(agentDownId))
             that.agentDown(agentDownId) 
         })
         this.agent.stderr.on('data', (data) => {
-            console.log(data)
+            console.log("[Agent] Std error:",data)
         })
         this.agent.on('close', (code) => {
-            console.log("exitttttt",code)
+            console.log("[Agent] exit with code",code)
         })
         this.agent.on('error', (err) => {
-            console.log('errrrrrrr',err)
+            console.log("[Agent] Got output error:",err)
         })
+
+        // setup variables, stat and agent
         this.playing = true
-		this.turn = 1
+		this.turn = 1 // set to 2 if agent play first
 		this.initialize()
 		this.announce('restart')
 		this.announce('refreshState', { stat: this.stat_1D, turn: this.turn })
