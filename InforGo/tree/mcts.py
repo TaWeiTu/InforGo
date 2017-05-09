@@ -82,10 +82,13 @@ class MCTS(object):
                 node._expand()
             action = node._select()
             node = node._children[action]
+            # print("action: {}, {}".format(decode_action(action)[0], decode_action(action)[1]))
             state.take_action(*decode_action(action))
         v = self._evaluate(state.get_state(), self._player) if self._lamda < 1 else 0
         z = self._rollout(state) if self._lamda > 0 else 0
+        # print("simulation: {}".format(z))
         leaf_value = (1 - self._lamda) * v + self._lamda * z
+        # print("leaf value: {}".format(leaf_value)) 
         node._back_prop(leaf_value, self._c)
 
     def _rollout(self, state):
