@@ -1,5 +1,6 @@
 import random
 import math
+import time
 
 import InforGo
 from InforGo.environment.global_var import *
@@ -41,6 +42,7 @@ class Tester(schema):
         result = {1: 0, -1: 0}
         percentage = 0
         logger.info("[Test] Testing Complete: 0%")
+        t0 = time.time()
         for epoch in range(self._n_epoch):
             state = State()
             while True:
@@ -55,7 +57,7 @@ class Tester(schema):
                 logger.info("[Test] Testing Complete: {}%".format(percentage))
             self._AI.refresh()
         logger.info("[Test] Testing Complete: 100%")
-        return result[1], result[-1]
+        return result[1], result[-1], time.time() - t0
 
     def _get_action(self, state, player):
         n_state = State(state)

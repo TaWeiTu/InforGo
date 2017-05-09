@@ -98,9 +98,10 @@ def main():
     elif args.method == 'run': Runner(**vars(args)).run()
     elif args.method == 'debug': Debugger(**vars(args)).debug()
     elif args.method == 'test': 
-        win, loss = Tester(**vars(args)).test()
+        win, loss, t = Tester(**vars(args)).test()
         logger.info('[Test] Win: {}/{}'.format(win, args.n_epoch))
         logger.info('[Test] Loss: {}/{}'.format(loss, args.n_epoch))
+        logger.info('[Test] Total time: {}s'.format(t))
 
 
 if __name__ == '__main__':
