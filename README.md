@@ -52,4 +52,4 @@ Valid argument are the following:
 * **\-\-player_len:** Number of player nodes in neural network
 * **\-\-pattern_len:** Length of pattern recognition
 * **\-\-directory, -dir:** Directory to store weight and bias
-* **\-\-training_directory, -td:** [s_train] Directory to be trained, if not specified, train all of the avaible directory **training_directory:** Directory to be trained, if not specified, train all of the avaible directory
+* **\-\-training_directory, -td:** [s_train] Directory to be trained, if not specified, train all of the avaible directory

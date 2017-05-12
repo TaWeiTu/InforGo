@@ -137,7 +137,7 @@ class SupervisedTrainer(schema):
         self._AI.nn.store()
 
     def _update(self, state, player, value):
-        return self._AI.nn.update(state, player, get_pattern(state, player), value)
+        return self._AI.nn.update(state, player, value)
 
     def _evaluate(self, state, player):
-        return self._AI.nn.predict(state, player, get_pattern(state, player))
+        return self._AI.nn.predict(state, player)

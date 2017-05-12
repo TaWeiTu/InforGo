@@ -7,7 +7,7 @@ from InforGo.environment.bingo import Bingo as State
 
 
 class ReinforcementTrainer(schema):
-
+    """Reinforcement trainer, make n_epoch self-play"""
     def __init__(self, **kwargs):
         super().__init__(kwargs['n_epoch'], kwargs['player_len'], kwargs['pattern_len'], kwargs['n_hidden_layer'], kwargs['n_node_hidden'],
                          kwargs['activation_fn'], kwargs['learning_rate'], kwargs['directory'], kwargs['alpha'], kwargs['gamma'], kwargs['lamda'],
@@ -39,8 +39,7 @@ class ReinforcementTrainer(schema):
                 if state.terminate(): break
                 s = new_s
                 c_player *= -1
-            
-            winner = 1 if state.win(1) else -1 if state.win(-1) else 0
+            # winner = 1 if state.win(1) else -1 if state.win(-1) else 0
             if epoch / self._n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self._n_epoch * 100)
                 logger.info('[Reinforcement] Training Complete: {}%'.format(percentage))
@@ -59,7 +58,7 @@ class ReinforcementTrainer(schema):
         else: return self._opponent.get_action(state)
 
     def _evaluate(self, state, player):
-        return self._AI.nn.predict(state, player, get_pattern(state, player))
+        return self._AI.nn.predict(state, player)
 
     def _update(self, state, player, value):
-        self._AI.nn.update(state, player, get_pattern(state, player), value)
+        self._AI.nn.update(state, player, value)
