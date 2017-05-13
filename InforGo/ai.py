@@ -7,7 +7,7 @@ from InforGo.tree.mcts import MCTS as mcts
 
 class InforGo(object):
 
-    def __init__(self, player_len=1, pattern_len=6, n_hidden_layer=1, n_node_hidden=[32], activation_fn='tanh', learning_rate=0.001, directory='../../Data/default/', alpha=0.1, gamma=0.99, lamda=0.85, search_depth=3, c=1, n_playout=10000, playout_depth=10, play_first=True, tree_type='minimax', eps=0.1):
+    def __init__(self, player_len=1, pattern_len=6, n_hidden_layer=1, n_node_hidden=[32], activation_fn='tanh', learning_rate=0.001, directory='./Data/default/', alpha=0.1, gamma=0.99, lamda=0.85, search_depth=3, c=1, n_playout=100, playout_depth=1, play_first=True, tree_type='minimax', eps=0.1):
         self._play_first = play_first
         self.alpha = alpha
         # Discount factor between 0 to 1
