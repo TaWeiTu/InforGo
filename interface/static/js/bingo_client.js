@@ -242,8 +242,7 @@ socket.on('playerAnnounce',function(playerNum){
     }
 })
 socket.on('refreshState',function(data){
-    console.log("get refreshState command")
-    console.log(data)
+    //console.log(data)
     renderRefresh(data);
     turn = data.turn;
 })

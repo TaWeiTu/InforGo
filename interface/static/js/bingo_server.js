@@ -15,6 +15,10 @@ function init(data){
 	DEBUG = data.DEBUG
 }
 
+function setConfig(data){
+    AIConfig = data
+}
+
 function Player(socket, name){
 	this.socket = socket;
 	this.name = name;
@@ -422,4 +426,6 @@ module.exports = {
 	getRoomByRid,
 	//getRoomByPlayer,
 	getSimpleRoomList,
+    AIConfig,
+    setConfig,
 }

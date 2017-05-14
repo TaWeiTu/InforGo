@@ -31,8 +31,6 @@ app.get('/simulate', function(req, res){
 	})
 })
 
-
-
 //start.js
 
 io.sockets.on('connection', function(socket){
@@ -72,7 +70,8 @@ io.sockets.on('connection', function(socket){
 	})
 
 	socket.on('AIConfigReq', function(data){
-		bingo.AIConfig = data.config
+        bingo.setConfig(data.config)
+        if(DEBUG) console.log("[Debug] Config changed:", bingo.AIConfig)
 	})
 
 	// for admin
