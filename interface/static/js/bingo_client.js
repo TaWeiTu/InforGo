@@ -233,11 +233,11 @@ socket.on('restart', function(){
 socket.on('playerAnnounce',function(playerNum){
     selfId = playerNum;
     if (selfId == 1){
-        alert("遊戲開始~~藍方先下子");
+        alert("遊戲開始~~您為藍方");
         renderer.setClearColor(0xbbbbdd);
     }
     if (selfId == 2){
-        alert("遊戲開始~~紅方請稍候");
+        alert("遊戲開始~~您為紅方");
         renderer.setClearColor(0xddbbbb);
     }
 })
@@ -301,12 +301,15 @@ socket.on('joinGameRes', function(data){
 socket.on('createRoomRes', function(data){
     if(data.status == 'success') socket.emit('joinGameReq')
 })
+socket.on('AIConfigRes', function(data){
+    console.log("Start game with AI config: ", data.config)
+})
 
 function spawnMessage(text, id){
     if(!id) id = Math.random().toString(36).substring(8)
     let textBox = document.createElement('div');
     textBox.id = id;
-    console.log(id);
+    // console.log(id);
     textBox.className = 'messageBoxText fadeInUp animated';
     textBox.innerHTML = '{0}'.format(text);
     messageBox.appendChild(textBox);
@@ -366,6 +369,24 @@ function joinRoom(rid){
 
 function joinGame(){
     socket.emit('joinGameReq')
+}
+
+function sendConfig(){
+    let confList = [
+        { id:"--tree_type",     default:"mcts" },
+        { id:"--search_depth",  default:"3"    },
+        { id:"--lamda",         default:"0.7"  },
+        { id:"--c",             default:"0.3"  },
+        { id:"--n_playout",     default:"100"  },
+        { id:"--playout_depth", default:"3"    }
+    ]
+    let config = []
+    for (let i = 0; i < confList.length; i++){
+        config.push(confList[i].id)
+        if (document.getElementById(confList[i].id).value) config.push(document.getElementById(confList[i].id).value)
+        else config.push(confList[i].default)
+    }
+    socket.emit('AIConfigReq',{ 'config': config })
 }
 
 // string format function

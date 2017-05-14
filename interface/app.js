@@ -67,8 +67,12 @@ io.sockets.on('connection', function(socket){
 		bingo.playerDisconnect(player)
 	})
 
-	socket.on('downReq',function(num){
+	socket.on('downReq', function(num){
 		if(player.rid) bingo.getRoomByRid(player.rid).downReq(player.id, num)
+	})
+
+	socket.on('AIConfigReq', function(data){
+		bingo.AIConfig = data.config
 	})
 
 	// for admin

@@ -39,6 +39,23 @@
 		<div id="gameBoard"></div>
 		<!--<div id="gameInfo"></div>-->
 		<div id="messageBox"></div>
+		<div id="AIConfig">
+			<div class="row">
+				<div class="6u">
+					<input type="text" id="--tree_type" placeholder="--tree_type">
+					<input type="text" id="--search_depth" placeholder="--search_depth">
+					<input type="text" id="--lamda" placeholder="--lamda">
+				</div>
+				<div class="6u$">
+					<input type="text" id="--c" placeholder="--c">
+					<input type="text" id="--n_playout" placeholder="--n_playout">
+					<input type="text" id="--playout_depth" placeholder="--playout_depth">
+				</div>
+			</div>
+			<ul class="actions">
+				<li><a id="configButton" class="button" onclick="sendConfig()">Send</a></li>
+			</ul>
+		</div>
 	</body>
 </html>
 <script src="/socket.io/socket.io.js"></script>

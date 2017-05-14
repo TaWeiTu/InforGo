@@ -3,6 +3,7 @@ var spawn = require('child_process').spawn
 var fs = require('fs')
 var roomList = [];
 var io,config,DEBUG;
+var AIConfig = ['-tt', 'mcts', '--n_playout', '100']
 var fileNum = 0, recordRoot = __dirname + "/../../Data/record/" + rdmString.generate(16) + '/';
 fs.mkdir(recordRoot, function (err) {
 	if(err) throw err;
@@ -91,7 +92,8 @@ function Room(roomName, mode){
 	this.stat_1D = []
 	this.stat_3D = []
 	this.playing = false
-	this.turn = 0;
+	this.turn = 0
+	this.first = 1
 	for (let i = 0; i < 4; ++i){
 		this.stat_3D[i] = []
 		for (let j = 0; j < 4; ++j) this.stat_3D[i][j] = [0, 0, 0, 0]
@@ -143,9 +145,20 @@ function Room(roomName, mode){
 		
         if (DEBUG) console.log("[Debug] Called comstart function")
         let that = this
-        
+
+    	// set AI arguments
+    	let option = ['-m', 'InforGo.main', 'run', '--directory=./Data/3_64_32_16/']
+        option = option.concat(AIConfig)
+        if (this.first == 1) option.push('--play_first=False')
+        else option.push('--play_first=True')
+        if (DEBUG){
+        	console.log("[Debug] Start with option :", option)
+        	this.announce('AIConfigRes', { 'config': option })
+        }
+
         // set up agent
-        this.agent = spawn('python', ['-m', 'InforGo.main', 'run', '-tt', 'mcts', '--n_playout=500', '--play_first=False', '--directory=./Data/3_64_32_16/'],{ cwd:__dirname+'/../../../'})
+
+        this.agent = spawn('python', option ,{ cwd:__dirname+'/../../../'})
 		this.agent.stdout.setEncoding('utf-8')
         this.agent.stdout.on('data', function(data){
             let agentDownId = checkRow(that.stat_1D, parseInt(data[0]), parseInt(data[2]))
@@ -164,7 +177,7 @@ function Room(roomName, mode){
 
         // setup variables, stat and agent
         this.playing = true
-		this.turn = 1 // set to 2 if agent play first
+		this.turn = this.first
 		this.initialize()
 		this.announce('restart')
 		this.announce('refreshState', { stat: this.stat_1D, turn: this.turn })
@@ -265,6 +278,7 @@ function Room(roomName, mode){
 		//set variables
 		this.playing = false;
 		this.turn = 3;
+		this.first = this.first == 1 ? 2 : 1
 
 		// announce game info
 		gameInfo.mode = this.mode
