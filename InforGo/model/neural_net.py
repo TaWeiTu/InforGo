@@ -1,9 +1,10 @@
+"""Basic Neural Network setup"""
+import os
 import tensorflow as tf
 import numpy as np
-import os
 
 from InforGo.environment.global_var import *
-from InforGo.util import logger
+from InforGo.util import logger, get_pattern
 from InforGo.environment.bingo import Bingo as State
 
 
@@ -15,8 +16,9 @@ class NeuralNetwork(object):
     output layer: value of the input state for current player
     weight and bias are stored in directory
     learning rate = learning_rate
-    """ 
-    def __init__(self, player_len=1, pattern_len=6, n_hidden_layer=1, n_node_hidden=[32], activation_fn='tanh', learning_rate=0.001, directory='../Data/default/'):
+    """
+    def __init__(self, player_len=1, pattern_len=6, n_hidden_layer=1, n_node_hidden=[32],
+                 activation_fn='tanh', learning_rate=0.001, directory='../Data/default/'):
         logger.info('[NeuralNetwork] Start Building Neural Network')
         self.input_state = tf.placeholder(shape=[4, 4, 4], dtype=tf.float64)
         self.state = tf.reshape(self.input_state, [1, 64])
@@ -50,8 +52,7 @@ class NeuralNetwork(object):
         self.v_ = tf.placeholder(shape=[1, 1], dtype=tf.float64)
         # square difference of the prediction and label
         self.error = tf.reduce_sum(tf.square(self.v - self.v_))
-        # Apply gradient descent to the neural net
-        self.trainer = tf.train.GradientDescentOptimizer(learning_rate)
+        self.trainer = tf.train.AdagradOptimizer(learning_rate)
         self.opt_model = self.trainer.minimize(self.error)
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
@@ -60,54 +61,71 @@ class NeuralNetwork(object):
     def initialize_weight(self, n, m, _id):
         if os.path.exists(self.directory + 'weight{}'.format(_id)):
             with open(self.directory + 'weight{}'.format(_id), 'r') as f:
-                w = np.zeros([n, m])
+                weight = np.zeros([n, m])
                 for i in range(n):
-                    for j in range(m): w[i, j] = float(f.readline())
+                    for j in range(m): 
+                        try: weight[i, j] = float(f.readline())
+                        except: 
+                            f.close()
+                            return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.01, dtype=tf.float64))
                 f.close()
-                return tf.Variable(tf.cast(w, dtype=tf.float64))
+                return tf.Variable(tf.cast(weight, dtype=tf.float64))
         return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.01, dtype=tf.float64))
 
     def initialize_bias(self, n, _id):
         if os.path.exists(self.directory + 'bias{}'.format(_id)):
             with open(self.directory + 'bias{}'.format(_id), 'r') as f:
-                b = np.zeros([1, n])
-                for i in range(n): b[0, i] = float(f.readline())
+                bias = np.zeros([1, n])
+                for i in range(n): 
+                    try: bias[0, i] = float(f.readline())
+                    except:
+                        f.close()
+                        return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.01, dtype=tf.float64))
                 f.close()
-                return tf.Variable(tf.cast(b, dtype=tf.float64))
+                return tf.Variable(tf.cast(bias, dtype=tf.float64))
         return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.01, dtype=tf.float64))
 
-    def get_fn(self, activation_fn):
+    def get_fn(self, activation_fn=''):
+        """return tensorflow function"""
         if activation_fn == 'tanh': return lambda x: tf.tanh(x)
         if activation_fn == 'relu': return lambda x: tf.nn.relu(x)
         if activation_fn == 'sigmoid': return lambda x: tf.sigmoid(x)
         return lambda x: x
 
-    def predict(self, state, player, pattern):
+    def predict(self, state, player):
+        """return the output value of state for player"""
+        pattern = get_pattern(state, player)
         tmp_state = State(state)
         if tmp_state.terminate(): return 0
-        player_node = np.reshape(np.array([player for i in range(self.player_len)]), [1, self.player_len])
-        v = self.sess.run(self.v, feed_dict={self.input_state: state, self.player_node: player_node, self.pattern: pattern})
-        return v[0, 0]
+        player_node = np.reshape(np.array([player for i in range(self.player_len)]),
+                                 [1, self.player_len])
+        value = self.sess.run(self.v, feed_dict={self.input_state: state,
+                              self.player_node: player_node, self.pattern: pattern})
+        return value[0, 0]
 
-    def update(self, state, player, pattern, v_):
+    def update(self, state, player, v_):
+        """update the value of state to v_"""
+        pattern = get_pattern(state, player)
         player_node = np.reshape(np.array([player for i in range(self.player_len)]), [1, self.player_len])
         v_placeholder = np.reshape(np.array(v_), [1, 1])
-        err, _ = self.sess.run([self.error, self.opt_model], feed_dict={self.input_state: state, self.player_node: player_node, self.pattern: pattern, self.v_: v_placeholder})
+        err, _ = self.sess.run([self.error, self.opt_model],
+                                feed_dict={self.input_state: state, self.player_node: player_node, self.pattern: pattern, self.v_: v_placeholder})
         return err
 
     def store(self):
+        """store weight and bias"""
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
         for _id in range(len(self.weight)):
             with open(self.directory + 'weight{}'.format(_id), 'w+') as f:
-                w = self.sess.run(self.weight[_id])
+                weight = self.sess.run(self.weight[_id])
                 shape = self.sess.run(tf.shape(self.weight[_id]))
                 for i in range(shape[0]):
-                    for j in range(shape[1]): f.write('{}\n'.format(w[i, j]))
+                    for j in range(shape[1]): f.write('{}\n'.format(weight[i, j]))
                 f.close()
             with open(self.directory + 'bias{}'.format(_id), 'w+') as f:
-                b = self.sess.run(self.bias[_id])
+                bias = self.sess.run(self.bias[_id])
                 shape = self.sess.run(tf.shape(self.bias[_id]))
-                for i in range(shape[1]): f.write('{}\n'.format(b[0, i]))
+                for i in range(shape[1]): f.write('{}\n'.format(bias[0, i]))
                 f.close()
 

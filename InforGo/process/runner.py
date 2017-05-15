@@ -18,7 +18,7 @@ class Runner(schema):
         state = State()
         while True:
             action = self.get_action(state, state.player)
-            self.AI.tree.step(encode_action(action))
+            self._AI._tree.step(encode_action(action))
             logger.debug("position: {} {}".format(action[0], action[1]))
             flag, s, R = state.take_action(*action)
             if state.terminate(): break
@@ -28,7 +28,7 @@ class Runner(schema):
     def get_action(self, state, player):
         n_state = State(state)
         if player == self.player:
-            action = self.AI.get_action(n_state)
+            action = self._AI.get_action(n_state)
             emit_action(action)
             return action
         return self.read_action()

@@ -16,3 +16,8 @@ ubuntu*
 __pycache__
 */*/__pycache__
 Data/*
+Images/
+.DS_Store
+result
+plot
+.vscode

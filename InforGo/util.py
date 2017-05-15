@@ -140,6 +140,98 @@ def get_pattern(state, player):
     return pattern
 
 
+def get_winning_move(state, player):
+    """Calculate corner position, two in a line, three in a line for both player"""
+    three = [0, 0]
+    f = lambda x: 0 if x == player else 1
+    position = []
+    for h in range(4):
+        for r in range(4):
+            cnt = [0, 0]
+            for c in range(4):
+                if state[h, r, c]: cnt[f(state[h, r, c])] += 1
+            if cnt[0] == 3 and cnt[1] == 0:
+                for c in range(4):
+                    if state[h, r, c] == 0: position.append((h, r, c))
+        for c in range(4):
+            cnt = [0, 0]
+            for r in range(4):
+                if state[h, r, c]: cnt[f(state[h, r, c])] += 1
+            if cnt[0] == 3 and cnt[1] == 0:
+                for r in range(4):
+                    if state[h, r, c] == 0: position.append((h, r, c))
+        cnt = [0, 0]
+        for i in range(4):
+            if state[h, i, i]: cnt[f(state[h, i, i])] += 1
+        if cnt[0] == 3 and cnt[1] == 0:
+            for i in range(4):
+                if state[h, i, i] == 0: position.append((h, i, i))
+        cnt = [0, 0]
+        for i in range(4):
+            if state[h, i, 3 - i]: cnt[f(state[h, i, 3 - i])] += 1
+        if cnt[0] == 3 and cnt[1] == 0:
+            for i in range(4):
+                if state[h, i, 3 - i] == 0: position.append((h, i, 3 - i))
+
+    for r in range(4):
+        for c in range(4):
+            cnt = [0, 0]
+            for h in range(4):
+                if state[h, r, c]: cnt[f(state[h, r, c])] += 1
+            if cnt[0] == 3 and cnt[1] == 0: 
+                for h in range(4):
+                    if state[h, r, c] == 0: position.append((h, r, c))
+        cnt = [0, 0]
+        for i in range(4):
+            if state[i, r, i]: cnt[f(state[i, r, i])] += 1
+        if cnt[0] == 3 and cnt[1] == 0:
+            for i in range(4):
+                if state[i, r, i] == 0: position.append((i, r, i))
+        cnt = [0, 0]
+        for i in range(4):
+            if state[i, r, 3 - i]: cnt[f(state[i, r, 3 - i])] += 1
+        if cnt[0] == 3 and cnt[1] == 0:
+            for i in range(4):
+                if state[i, r, 3 - i] == 0: position.append((i, r, 3 - i))
+    for c in range(4):
+        cnt = [0, 0]
+        for i in range(4):
+            if state[i, i, c]: cnt[f(state[i, i, c])] += 1
+        if cnt[0] == 3 and cnt[1] == 0: 
+            for i in range(4):
+                if state[i, i, c] == 0: position.append((i, i, c))
+        cnt = [0, 0]
+        for i in range(4):
+            if state[i, 3 - i, c]: cnt[f(state[i, 3 - i, c])] += 1
+        if cnt[0] == 3 and cnt[1] == 0: 
+            for i in range(4):
+                if state[i, 3 - i, c] == 0: position.append((i, 3 - i, c))
+    cnt = [0, 0]
+    for i in range(4):
+        if state[i, i, i]: cnt[f(state[i, i, i])] += 1
+    if cnt[0] == 3 and cnt[1] == 0:
+        for i in range(4):
+            if state[i, i, i] == 0: position.append((i, i, i))
+    cnt = [0, 0]
+    for i in range(4):
+        if state[i, i, 3 - i]: cnt[f(state[i, i, 3 - i])] += 1
+    if cnt[0] == 3 and cnt[1] == 0: 
+        for i in range(4):
+            if state[i, i, 3 - i] == 0: position.append((i, i, 3 - i))
+    cnt = [0, 0]
+    for i in range(4):
+        if state[3 - i, i, i]: cnt[f(state[3 - i, i, i])] += 1
+    if cnt[0] == 3 and cnt[1] == 0:
+        for i in range(4):
+            if state[3 - i, i, i] == 0: position.append((3 - i, i, i))
+    cnt = [0, 0]
+    for i in range(4):
+        if state[i, 3 - i, i]: cnt[f(state[i, 3 - i, i])] += 1
+    if cnt[0] == 3 and cnt[1] == 0:
+        for i in range(4):
+            if state[i, 3 - i, i] == 0: position.append((i, 3 - i, i))
+    return position
+
 def decode_action(action_num):
     action = [0, 0]
     for i in range(2):

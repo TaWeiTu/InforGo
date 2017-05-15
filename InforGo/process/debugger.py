@@ -1,3 +1,4 @@
+"""state evaluation debugger"""
 import numpy as np
 
 from InforGo.process.schema import Schema as schema
@@ -25,5 +26,5 @@ class Debugger(schema):
                 except: return
                 for h in range(4):
                     for c in range(4): board[r][h][r] = tmp_list[h * 4 + c]
-            logger.debug("[Debug] Evaluation for player 1: {}".format(self.AI.nn.predict(board, 1, get_pattern(State(board), 1))))
-            logger.debug("[Debug] Evaluation for player -1: {}".format(self.AI.nn.predict(board, -1, get_pattern(State(board), -1))))
+            logger.debug("[Debug] Evaluation for player 1: {}".format(self.AI.nn.predict(board, 1)))
+            logger.debug("[Debug] Evaluation for player -1: {}".format(self.AI.nn.predict(board, -1)))

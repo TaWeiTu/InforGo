@@ -1,103 +1,126 @@
+"""Monte-Carlo Tree Search Implementation"""
 import random
 import numpy as np
 
-from InforGo.util import decode_action, get_pattern, plot_state
+from InforGo.util import decode_action, get_winning_move, encode_action
 from InforGo.environment.bingo import Bingo as State
 
 
 class TreeNode(object):
+    """Nodes in MCTS, average value and UCT are maintained"""
+    def __init__(self, parent, state, c, h):
+        self._parent = parent
+        self._children = {}
+        self._visit = 0
+        self._v = 0
+        self._state = state
+        self._u = c * h
+        self._c = c
+        self._h = h
 
-    def __init__(self, parent, state):
-        self.parent = parent
-        self.children = {}
-        self.visit = 0
-        self.v = 0
-        self.state = state
-        self.u = 0
-
-    def expand(self):
-        actions = [i for i in range(16) if self.state.valid_action(*decode_action(i))]
+    def _expand(self):
+        """expand the node for all valid action"""
+        actions = [i for i in range(16) if self._state.valid_action(*decode_action(i))]
+        c_state = State(self._state)
+        height_sum = 0
+        for i in actions: height_sum += c_state.get_height(*decode_action(i))
         for i in actions:
-            if not i in self.children.keys():
-                n_state = State(self.state)
+            if not i in self._children.keys():
+                n_state = State(self._state)
+                h = 3 - n_state.get_height(*decode_action(i))
                 n_state.take_action(*decode_action(i))
-                self.children[i] = TreeNode(self, n_state)
+                self._children[i] = TreeNode(self, n_state, self._c, h / height_sum)
 
-    def select(self):
-        return max(self.children.items(), key=lambda child: child[1].get_value())[0]
+    def _select(self):
+        """select child with highest UCT"""
+        return max(self._children.items(), key=lambda child: child[1]._get_value())[0]
 
-    def get_value(self):
-        return self.v + self.u
+    def _get_value(self):
+        """compute UCT"""
+        return self._v + self._u
 
-    def update(self, leaf_value, c):
-        self.visit += 1
-        self.v += (leaf_value - self.v) / self.visit
+    def _update(self, leaf_value, c):
+        """update the average value and the number of visits"""
+        self._visit += 1
+        self._v += (leaf_value - self._v) / self._visit
         if not self.is_root():
-            self.u = 2 * c * np.sqrt(2 * np.log(self.parent.visit) / self.visit)
+            self._u = 2 * c * self._h * np.sqrt(2 * np.log(self._parent._visit) / self._visit)
 
-    def back_prop(self, leaf_value, c):
-        if self.parent:
-            self.parent.back_prop(leaf_value, c)
-        self.update(leaf_value, c)
+    def _back_prop(self, leaf_value, c):
+        """recursively back propagate the leaf value to the root"""
+        if self._parent:
+            self._parent._back_prop(leaf_value, c)
+        self._update(leaf_value, c)
 
     def is_root(self):
-        return self.parent is None
+        return self._parent is None
 
     def is_leaf(self):
-        return len(self.children) == 0
-
-    def release_mem(self):
-        for i in self.children.items(): i[1].release_mem()
-        del self
+        return len(self._children) == 0
 
 
 class MCTS(object):
-    
+    """Monte-Carlo Search Tree"""
     def __init__(self, lamda, c, n_playout, evaluator, playout_depth, player):
-        self.lamda = lamda
-        self.c = c
-        self.n_playout = n_playout
-        self.evaluator = evaluator
-        self.root = TreeNode(None, State(np.zeros([4, 4, 4])))
-        self.origin_root = self.root
-        self.playout_depth = playout_depth
-        self.player = player
+        self._lamda = lamda
+        self._c = c
+        self._n_playout = n_playout
+        self._evaluator = evaluator
+        self._root = TreeNode(None, State(np.zeros([4, 4, 4])), self._c)
+        self._playout_depth = playout_depth
+        self._player = player
 
     def step(self, last_action):
-        if not last_action in self.root.children:
-            self.root.expand()
-        self.root = self.root.children[last_action]
-        self.root.parent = None
+        """step to the child selected, release the reference to the previous root"""
+        if not last_action in self._root._children:
+            self._root._expand()
+        self._root = self._root._children[last_action]
+        self._root._parent = None
 
     def get_action(self, state, player):
-        for n in range(self.n_playout):
+        """play n_playout playouts, choose action greedily on the basis of visits"""
+        for n in range(self._n_playout):
             n_state = State(state)
-            self.playout(n_state)
-        return max(self.root.children.items(), key=lambda child: child[1].visit)[0]
+            self._playout(n_state)
+        return max(self._root._children.items(), key=lambda child: child[1]._visit)[0]
 
-    def playout(self, state):
-        node = self.root
-        for d in range(self.playout_depth):
+    def _playout(self, state):
+        """walking down playout_depth step using node.select(), simulate the game result with rollout policy"""
+        node = self._root
+        for d in range(self._playout_depth):
             if node.is_leaf():
                 if state.terminate(): break
-                node.expand()
-            action = node.select()
-            node = node.children[action]
+                node._expand()
+            action = node._select()
+            node = node._children[action]
             state.take_action(*decode_action(action))
-        v = self.evaluator.predict(state.get_state(), self.player, get_pattern(state, self.player)) if self.lamda < 1 else 0
-        z = self.rollout(state) if self.lamda > 0 else 0
-        leaf_value = (1 - self.lamda) * v + self.lamda * z
-        node.back_prop(leaf_value, self.c)
+        # v = TD(0) z = eligibility trace
+        v = self._evaluate(state.get_state(), self._player) if self._lamda < 1 else 0
+        z = self._rollout(state) if self._lamda > 0 else 0
+        leaf_value = (1 - self._lamda) * v + self._lamda * z
+        node._back_prop(leaf_value, self._c)
 
-    def rollout(self, state):
+    def _rollout(self, state):
+        """play simulation with _rollout_policy"""
+        c_player = state.player
         while not state.terminate():
-            actions = [i for i in range(16) if state.valid_action(*decode_action(i))]
-            random.shuffle(actions)
-            state.take_action(*decode_action(actions[0]))
-        if state.win(self.player): return 1
-        if state.win(-self.player): return -1
+            act = self._rollout_policy(state, c_player)
+            state.take_action(*decode_action(act))
+            c_player *= -1
+        if state.win(self._player): return 1
+        if state.win(-self._player): return -1
         return 0
 
-    def release_mem(self):
-        self.origin_root.release_mem()
-        self.root = TreeNode(None, State(np.zeros([4, 4, 4])))
+    def _evaluate(self, state, player):
+        """state evluation"""
+        return self._evaluator.predict(state, player)
+
+    def _rollout_policy(self, state, player):
+        """randomized rollout"""
+        move = get_winning_move(state, player)
+        if len(move) > 0: return encode_action((move[0][1], move[0][2]))
+        move = get_winning_move(state, -player)
+        if len(move) > 0: return encode_action((move[0][1], move[0][2]))
+        valid_action = [i for i in range(16) if state.valid_action(*decode_action(i))]
+        random.shuffle(valid_action)
+        return valid_action[0]
