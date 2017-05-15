@@ -178,5 +178,5 @@ class Bingo(object):
         return self.board[i][j][k]
 
     def get_height(self, row, col):
-        """return height of (row, col)"""
-        return self.height[row][col]
+        """return height of (row, col), plus 1 to avoid ZeroDevisionError"""
+        return self.height[row][col] + 1
