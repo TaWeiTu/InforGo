@@ -66,7 +66,7 @@ class MCTS(object):
         self._c = c
         self._n_playout = n_playout
         self._evaluator = evaluator
-        self._root = TreeNode(None, State(np.zeros([4, 4, 4])), self._c)
+        self._root = TreeNode(None, State(np.zeros([4, 4, 4])), self._c, 1)
         self._playout_depth = playout_depth
         self._player = player
 
