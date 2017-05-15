@@ -177,3 +177,6 @@ class Bingo(object):
         i, j, k = tup
         return self.board[i][j][k]
 
+    def get_height(self, row, col):
+        """return height of (row, col)"""
+        return self.height[row][col]

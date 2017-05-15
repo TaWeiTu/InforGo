@@ -94,7 +94,6 @@ class SupervisedTrainer(schema):
                                 break
                             flag, new_s, R = state.take_action(row, col)
                             for p in [1, -1]:
-                                log_state(s, tmp)
                                 v = self._evaluate(s, c_player * p)
                                 new_v = self._evaluate(new_s, c_player * p)
                                 err = self._update(s, c_player * p, TD(v, new_v, R * p, self._AI.alpha, self._AI.gamma))

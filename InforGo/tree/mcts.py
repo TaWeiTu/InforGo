@@ -8,23 +8,28 @@ from InforGo.environment.bingo import Bingo as State
 
 class TreeNode(object):
     """Nodes in MCTS, average value and UCT are maintained"""
-    def __init__(self, parent, state, c):
+    def __init__(self, parent, state, c, h):
         self._parent = parent
         self._children = {}
         self._visit = 0
         self._v = 0
         self._state = state
-        self._u = c * 3
+        self._u = c * h
         self._c = c
+        self._h = h
 
     def _expand(self):
         """expand the node for all valid action"""
         actions = [i for i in range(16) if self._state.valid_action(*decode_action(i))]
+        c_state = State(self._state)
+        height_sum = 0
+        for i in actions: height_sum += c_state.get_height(*decode_action(i))
         for i in actions:
             if not i in self._children.keys():
                 n_state = State(self._state)
+                h = 3 - n_state.get_height(*decode_action(i))
                 n_state.take_action(*decode_action(i))
-                self._children[i] = TreeNode(self, n_state, self._c)
+                self._children[i] = TreeNode(self, n_state, self._c, h / height_sum)
 
     def _select(self):
         """select child with highest UCT"""
@@ -39,7 +44,7 @@ class TreeNode(object):
         self._visit += 1
         self._v += (leaf_value - self._v) / self._visit
         if not self.is_root():
-            self._u = 2 * c * np.sqrt(2 * np.log(self._parent._visit) / self._visit)
+            self._u = 2 * c * self._h * np.sqrt(2 * np.log(self._parent._visit) / self._visit)
 
     def _back_prop(self, leaf_value, c):
         """recursively back propagate the leaf value to the root"""

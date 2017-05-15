@@ -63,7 +63,11 @@ class NeuralNetwork(object):
             with open(self.directory + 'weight{}'.format(_id), 'r') as f:
                 weight = np.zeros([n, m])
                 for i in range(n):
-                    for j in range(m): weight[i, j] = float(f.readline())
+                    for j in range(m): 
+                        try: weight[i, j] = float(f.readline())
+                        except: 
+                            f.close()
+                            return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.01, dtype=tf.float64))
                 f.close()
                 return tf.Variable(tf.cast(weight, dtype=tf.float64))
         return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.01, dtype=tf.float64))
@@ -72,7 +76,11 @@ class NeuralNetwork(object):
         if os.path.exists(self.directory + 'bias{}'.format(_id)):
             with open(self.directory + 'bias{}'.format(_id), 'r') as f:
                 bias = np.zeros([1, n])
-                for i in range(n): bias[0, i] = float(f.readline())
+                for i in range(n): 
+                    try: bias[0, i] = float(f.readline())
+                    except:
+                        f.close()
+                        return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.01, dtype=tf.float64))
                 f.close()
                 return tf.Variable(tf.cast(bias, dtype=tf.float64))
         return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.01, dtype=tf.float64))
