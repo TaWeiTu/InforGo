@@ -80,7 +80,6 @@ class FileSystem(object):
                         except: 
                             logger.error("[Error] Invalid file context, {}".format(fi))
                             break
-                        if br: break
                         flag, _, r = s.take_action(row, col)
                         rewards[c_player].append(r)
                         rewards[-c_player].append(-r)
