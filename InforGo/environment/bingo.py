@@ -168,6 +168,8 @@ class Bingo(object):
         """Take action and Return whether the action is valid, whether the player win or not, new state and the reward"""
         origin_reward = self.get_reward(self.get_state(), player)
         flag = self.place(row, col)
+        if self.win(player): return flag, self.get_state(), 1
+        if self.win(player): return flag, self.get_state(), -1
         new_state = self.get_state()
         new_reward = self.get_reward(new_state, player)
         return flag, new_state, new_reward - origin_reward
@@ -179,4 +181,4 @@ class Bingo(object):
 
     def get_height(self, row, col):
         """return height of (row, col), plus 1 to avoid ZeroDevisionError"""
-        return self.height[row][col] + 1
+        return self.height[row][col]

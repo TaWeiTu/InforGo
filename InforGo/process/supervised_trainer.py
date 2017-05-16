@@ -23,6 +23,7 @@ class SupervisedTrainer(schema):
         self._MAX = kwargs['MAX']
 
     def _get_record(self):
+        # for dirs in self._training_directory: print(dirs)
         logger.info('[Supervised] Start Collecting Record')
         directory = [x[0] for x in os.walk('./Data/record')]
         directory = directory[1:]
@@ -40,6 +41,7 @@ class SupervisedTrainer(schema):
             if d == './Data/record/generator': continue
             tmp = [x[2] for x in os.walk(d)]
             filename[d] = [x for x in tmp[0]]
+        if self._training_directory[0]: return filename
         if self._n_test > 0:
             random.shuffle(test)
             filename['./Data/record/test'] = test[:min(self._n_test, len(test))]
@@ -94,6 +96,7 @@ class SupervisedTrainer(schema):
                                 logger.error("[Error] Invalid file input")
                                 break
                             flag, new_s, R = state.take_action(row, col)
+                            # print(R)
                             for p in [1, -1]:
                                 v = self._evaluate(s, c_player * p)
                                 new_v = self._evaluate(new_s, c_player * p)
