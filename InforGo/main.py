@@ -26,7 +26,7 @@ def main():
     parser.add_argument('--logdir', '-lg', default='tensorboard', help='Tensorboard log directory')
 
     # Training parameter
-    parser.add_argument('--learning_rate', '-lr', default=0.001, type=float, help='learning rate for the neural network')
+    parser.add_argument('--learning_rate', '-lr', default=0.1, type=float, help='learning rate for the neural network')
     parser.add_argument('--gamma', '-g', default=0.99, type=float, help='discount factor')
     parser.add_argument('--alpha', '-a', default=0.1, type=float, help='learning rate for TD(0)-learning')
     parser.add_argument('--lamda', '-ld', default=0.5, type=float, help='TD(lambda)')
@@ -64,7 +64,7 @@ def main():
     parser.add_argument('--eps', '-e', default=0.1, type=float, help='Probability of choosing random action in minimax')
     parser.add_argument('--n_playout', '-np', default=30, type=int, help='Number of playouts at each action selection')
     parser.add_argument('--playout_depth', '-pd', default=1, type=int, help='Depth of playout')
-    parser.add_argument('--tree_type', '-tt', default='minimax', type=str, help='minimax/mcts')
+    parser.add_argument('--tree_type', '-tt', default='mcts', type=str, help='minimax/mcts')
     parser.add_argument('--search_depth', '-sd', default=3, type=int, help='Maximum search depth')
     parser.add_argument('--c', '-c', default=0.5, type=float, help='Exploration/Exploitation')
     
@@ -79,6 +79,8 @@ def main():
     global_var.__dict__['VERBOSE'] = args.verbose
     
     if args.directory[-1] != '/': args.directory += '/'
+    for i in range(len(args.training_directory)):
+        if args.training_directory[i][-1] == '/': args.training_directory[i] = args.training_directory[i][:len(args.training_directory[i]) - 1]
     if args.debug: logger.info('[Main] Done Collecting Arguments')
 
     from InforGo.process.supervised_trainer import SupervisedTrainer
@@ -93,8 +95,8 @@ def main():
         try:
             plt.plot(x, errors)
             plt.show()
-        except:
-            for i in errors: print(i)
+        except: pass
+        for i in errors: print(i)
     elif args.method == 'r_train': ReinforcementTrainer(**vars(args)).train()
     elif args.method == 'run': Runner(**vars(args)).run()
     elif args.method == 'debug': Debugger(**vars(args)).debug()
