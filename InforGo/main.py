@@ -79,8 +79,9 @@ def main():
     global_var.__dict__['VERBOSE'] = args.verbose
     
     if args.directory[-1] != '/': args.directory += '/'
-    for i in range(len(args.training_directory)):
-        if args.training_directory[i][-1] == '/': args.training_directory[i] = args.training_directory[i][:len(args.training_directory[i]) - 1]
+    if args.training_directory[0]:
+        for i in range(len(args.training_directory)):
+            if args.training_directory[i][-1] == '/': args.training_directory[i] = args.training_directory[i][:len(args.training_directory[i]) - 1]
     if args.debug: logger.info('[Main] Done Collecting Arguments')
 
     from InforGo.process.supervised_trainer import SupervisedTrainer
