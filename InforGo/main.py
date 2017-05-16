@@ -93,7 +93,8 @@ def main():
         try:
             plt.plot(x, errors)
             plt.show()
-        except: pass
+        except:
+            for i in errors: print(i)
     elif args.method == 'r_train': ReinforcementTrainer(**vars(args)).train()
     elif args.method == 'run': Runner(**vars(args)).run()
     elif args.method == 'debug': Debugger(**vars(args)).debug()

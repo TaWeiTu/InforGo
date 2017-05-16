@@ -73,6 +73,7 @@ class SupervisedTrainer(schema):
         for epoch in range(self._n_epoch):
             loss_sum = 0
             update = 0
+            error, t = 0, 0
             for directory in record.keys():
                 for file_name in record[directory]:
                     for rotate_time in range(4):
@@ -84,7 +85,7 @@ class SupervisedTrainer(schema):
                         c_player = 1
                         s = state.get_initial_state()
                         tmp.write('New Game\n')
-                        error, t = 0, 0
+                        # error, t = 0, 0
                         while not state.terminate():
                             try: 
                                 height, row, col = map(int, f.readline().split())
@@ -101,8 +102,8 @@ class SupervisedTrainer(schema):
                                 t += 1
                             s = new_s
                             c_player *= -1
-                        if t: errors.append(error / t)
-                            
+                        # if t: errors.append(error / t)
+            if t: errors.append(error / t)
             if epoch / self._n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self._n_epoch * 100)
                 logger.info('[Supervised] Training Complete: {}%'.format(percentage))
