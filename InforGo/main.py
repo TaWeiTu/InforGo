@@ -47,15 +47,16 @@ def main():
     parser.add_argument('--play_first', '-pf', default=True, type=distutils.util.strtobool, help='Play first')
 
     # Supervised Training
-    parser.add_argument('--n_generator', '-ng', default=1000, type=int, help='Train the model with n_generator auto-generated game')
+    parser.add_argument('--n_generator', '-ng', default=0, type=int, help='Train the model with n_generator auto-generated game')
     parser.add_argument('--MAX', default=12877521, type=int, help='Maximum generated game id')
     parser.add_argument('--training_directory', '-td', default=[None], type=str, nargs='+', help='Specify training data directory')
     parser.add_argument('--logfile', '-lf', default=None, type=str, help='Log file')
-    parser.add_argument('--n_test', '-nt', default=1000, type=int, help='Number of test file to train')
-    parser.add_argument('--n_self_play', '-ns', default=1000, type=int, help='Number of self-play to train')
+    parser.add_argument('--n_test', '-nt', default=0, type=int, help='Number of test file to train')
+    parser.add_argument('--n_self_play', '-ns', default=0, type=int, help='Number of self-play to train')
     parser.add_argument('--player_len', default=1, type=int, help='Number of player nodes in neural network')
     parser.add_argument('--pattern_len', default=6, type=int, help='Number of patterns')
     parser.add_argument('--directory', '-dir', default='./Data/default/', type=str, help='Directory to store weight and bias')
+    parser.add_argument('--batch', '-b', default=1, type=int, help='Number of file in each batch')
     
     # Reinforcement Training
     parser.add_argument('--opponent_tree_type', '-ott', default='minimax', help='Tree type for opponent in reinforcement learning')
@@ -97,7 +98,7 @@ def main():
             plt.plot(x, errors)
             plt.show()
         except: pass
-        for i in errors: print(i)
+        # for i in errors: print(i)
     elif args.method == 'r_train': ReinforcementTrainer(**vars(args)).train()
     elif args.method == 'run': Runner(**vars(args)).run()
     elif args.method == 'debug': Debugger(**vars(args)).debug()

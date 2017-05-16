@@ -23,6 +23,8 @@ def log_state(state, logfile):
 
 def get_pattern(state, player):
     """Calculate corner position, two in a line, three in a line for both player"""
+    # print("player = ", player)
+    # plot_state(state)
     opponent = -player
     corner = [0, 0]
     two = [0, 0]
