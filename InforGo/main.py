@@ -99,7 +99,7 @@ def main():
             plt.show()
         except: pass
         with open("error.log", "w") as f:
-            for i in erroes: f.write("{} ".format(i))
+            for i in errors: f.write("{} ".format(i))
             f.close()
         # for i in errors: print(i)
     elif args.method == 'r_train': ReinforcementTrainer(**vars(args)).train()

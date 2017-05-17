@@ -26,8 +26,8 @@ class Debugger(schema):
                 except: return
                 for h in range(4):
                     for c in range(4): board[r][h][r] = tmp_list[h * 4 + c]
-            logger.debug("[Debug] Evaluation for player 1: {}".format(self._evaluate(board, 1)))
-            logger.debug("[Debug] Evaluation for player -1: {}".format(self._evaluate(board, -1)))
+            logger.debug("[Debug] Evaluation for player 1: {}".format(self._evaluate([board], [1])))
+            logger.debug("[Debug] Evaluation for player -1: {}".format(self._evaluate([board], [-1])))
 
     def _evaluate(self, state, player):
         return self._AI.nn.predict(state, player)
