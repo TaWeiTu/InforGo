@@ -54,7 +54,7 @@ def main():
     parser.add_argument('--n_test', '-nt', default=0, type=int, help='Number of test file to train')
     parser.add_argument('--n_self_play', '-ns', default=0, type=int, help='Number of self-play to train')
     parser.add_argument('--player_len', default=1, type=int, help='Number of player nodes in neural network')
-    parser.add_argument('--pattern_len', default=6, type=int, help='Number of patterns')
+    parser.add_argument('--pattern_len', default=8, type=int, help='Number of patterns')
     parser.add_argument('--directory', '-dir', default='./Data/default/', type=str, help='Directory to store weight and bias')
     parser.add_argument('--batch', '-b', default=1, type=int, help='Number of file in each batch')
     
@@ -98,6 +98,9 @@ def main():
             plt.plot(x, errors)
             plt.show()
         except: pass
+        with open("error.log", "w") as f:
+            for i in erroes: f.write("{} ".format(i))
+            f.close()
         # for i in errors: print(i)
     elif args.method == 'r_train': ReinforcementTrainer(**vars(args)).train()
     elif args.method == 'run': Runner(**vars(args)).run()

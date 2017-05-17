@@ -17,7 +17,7 @@ class NeuralNetwork(object):
     weight and bias are stored in directory
     learning rate = learning_rate
     """
-    def __init__(self, player_len=1, pattern_len=6, n_hidden_layer=1, n_node_hidden=[32],
+    def __init__(self, player_len=1, pattern_len=8, n_hidden_layer=1, n_node_hidden=[32],
                  activation_fn='tanh', learning_rate=0.001, directory='../Data/default/'):
         logger.info('[NeuralNetwork] Start Building Neural Network')
         self.input_state = tf.placeholder(shape=[None, 4, 4, 4], dtype=tf.float64)
@@ -102,7 +102,7 @@ class NeuralNetwork(object):
         player_node = np.reshape(players, [len(players), 1])
         # states = np.shape()
         states = np.reshape(states, [len(states), 4, 4, 4])
-        pattern = np.reshape(pattern, [len(pattern), 6])
+        pattern = np.reshape(pattern, [len(pattern), 8])
         value = self.sess.run(self.v, feed_dict={self.input_state: states,
                               self.player_node: player_node, self.pattern: pattern})
         return value[:, 0]
@@ -111,7 +111,7 @@ class NeuralNetwork(object):
         """update the value of state to v_"""
         pattern = [get_pattern(state, player) for state, player in zip(states, players)]
         # player_node = np.reshape(np.array([player for i in range(self.player_len)]), [1, self.player_len])
-        pattern = np.reshape(pattern, [len(pattern), 6])
+        pattern = np.reshape(pattern, [len(pattern), 8])
         player_node = np.reshape(players, [len(players), 1])
         # v_placeholder = np.reshape(np.array(v_), [1, 1])
         v_placeholder = np.reshape(v_, [len(v_), 1])

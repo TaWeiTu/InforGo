@@ -26,15 +26,15 @@ class SupervisedTrainer(schema):
         self._batch = kwargs['batch']
 
     def train(self, logfile):
-        """Supervised training """
+        """Supervised training"""
         percentage = 0
         log = open(logfile, 'w') if logfile else None
         logger.info('[Supervised] Start Training')
         logger.info('[Supervised] Training Complete: 0%')
         errors = []
         for epoch in range(self._n_epoch):
-            # c = input()
             x, y = self.fs.get_next_batch(self._batch)
+            # print("get batch")
             v = self._evaluate(x)
             err = self._update(x, v + self._AI.alpha * (y - v))
             errors.append(err)
@@ -45,11 +45,11 @@ class SupervisedTrainer(schema):
 
         logger.info('[Supervised] Training Complete: 100%')
         self._store()
-        # tmp.close()
         if logfile is not None: log.close()
         return errors
     
     def _store(self):
+        """store weight and bias"""
         self._AI.nn.store()
 
     def _update(self, data, value):

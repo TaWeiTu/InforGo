@@ -59,55 +59,56 @@ class FileSystem(object):
     def get_next_batch(self, number):
         random.shuffle(self.shuffle)
         files = [self.files[i] for i in self.shuffle[:number]]
-        # for f in files: print(f)
-        x, y = self.read_file(files)
+        data = self._read_file(files)
+        x, y = self._get_value(data)
         return x, y
 
-    def read_file(self, files):
-        x, y = [], []
+    def _read_file(self, files):
+        data = []
         for fi in files:
+            data.append([])
+            with open(fi, 'r') as f:
+                while True:
+                    try: 
+                        height, row, col = map(int, f.readline().split())
+                        if (height, row, col) == (-1, -1, -1): break
+                        data[-1].append((height, row, col))
+                    except:
+                        logger.error("[Error] Invalid file context, {}".format(fi))
+                        break
+                f.close()
+        return data
+
+    def _get_value(self, data):
+        x, y = [], []
+        for dat in data:
             for rotate_time in range(4):
                 states, rewards = [], {1: [], -1: []}
-                # if not os.path.exists(fi): continue
-                with open(fi, 'r') as f:
-                    s = State()
-                    c_player = 1
-                    while not s.terminate():
-                        states.append(s.get_state())
-                        try: 
-                            height, row, col = map(int, f.readline().split())
-                            height, row, col = self._rotate_data(height, row, col, rotate_time)
-                        except: 
-                            logger.error("[Error] Invalid file context, {}".format(fi))
-                            break
-                        flag, _, r = s.take_action(row, col)
-                        rewards[c_player].append(r)
-                        rewards[-c_player].append(-r)
-                        c_player *= -1
-                    reward_sum = {1: [0 for i in range(len(rewards[1]) + 1)], -1: [0 for i in range(len(rewards[-1]) + 1)]}
-                    for i in range(len(rewards[1])):
-                        reward_sum[1][len(rewards[1]) - i - 1] = reward_sum[1][len(rewards[1]) - i] * self.gamma + rewards[1][len(rewards[1]) - i - 1]
-                        reward_sum[-1][len(rewards[-1]) - i - 1] = reward_sum[-1][len(rewards[-1]) - i] * self.gamma + rewards[-1][len(rewards[-1]) - i - 1]
-                    f.close()
-                # if not os.path.exists(fi): continue
-                with open(fi, 'r') as f:
-                    s = State()
-                    ind = 0
-                    while not s.terminate():
-                        try: 
-                            height, row, col = map(int, f.readline().split())
-                            height, row, col = self._rotate_data(height, row, col, rotate_time)
-                        except: 
-                            logger.error("[Error] Invalid file context, {}".format(fi))
-                            break
-                        x.append((np.array(s.get_state()), 1))
-                        y.append(reward_sum[1][ind])
-                        x.append((np.array(s.get_state()), -1))
-                        y.append(reward_sum[-1][ind])
-                        s.take_action(row, col)
-                        ind += 1
-                    f.close()
-        # print("len: ", len(x))
+                s = State()
+                c_player = 1
+                for (height, row, col) in dat:
+                    height, row, col = self._rotate_data(height, row, col, rotate_time)
+                    flag, _, r = s.take_action(row, col)
+                    rewards[c_player].append(r)
+                    rewards[-c_player].append(-r)
+                    c_player *= -1
+                reward_sum = {1: [0 for i in range(len(rewards[1]) + 1)], -1: [0 for i in range(len(rewards[1]) + 1)]}
+                for i in range(len(rewards[1])):
+                    reward_sum[1][len(rewards[1]) - i - 1] = reward_sum[1][len(rewards[1]) - i] * self.gamma + \
+                                                                rewards[1][len(rewards[1]) - i - 1]
+                    reward_sum[-1][len(rewards[-1]) - i - 1] = reward_sum[-1][len(rewards[-1]) - i] * self.gamma + \
+                                                                rewards[-1][len(rewards[-1]) - i - 1]
+                s = State()
+                c_player = 1
+                ind = 0
+                for (height, row, col) in dat:
+                    height, row, col = self._rotate_data(height, row, col, rotate_time)
+                    x.append((np.array(s.get_state()), 1))
+                    y.append(reward_sum[1][ind])
+                    x.append((np.array(s.get_state()), -1))
+                    y.append(reward_sum[-1][ind])
+                    s.take_action(row, col)
+                    ind += 1
         return x, y
                 
     def _rotate_data(self, height, row, col, t):

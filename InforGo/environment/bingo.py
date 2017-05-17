@@ -154,9 +154,8 @@ class Bingo(object):
         else return pattern: corner * 1 + two * 2 + three * 3
         """
         pattern = get_pattern(Bingo(state), player)
-        tmp_state = Bingo(state)
-        if tmp_state.win(player): return 1
-        if tmp_state.win(-player): return -1
+        if pattern[0, 6]: return 1
+        if pattern[0, 7]: return -1
         reward = 0
         for i in range(6):
             if i % 2 == 0: reward += (i // 2 + 1) * pattern[0, i]
