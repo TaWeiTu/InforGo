@@ -33,37 +33,8 @@ class SupervisedTrainer(schema):
         logger.info('[Supervised] Training Complete: 0%')
         errors = []
         for epoch in range(self._n_epoch):
+            # c = input()
             x, y = self.fs.get_next_batch(self._batch)
-            """for directory in record.keys():
-                for file_name in record[directory]:
-                    for rotate_time in range(4):
-                        try: f = open('{}/{}'.format(directory, file_name), 'r')
-                        except:
-                            logger.error('[Error] No such file or directory: {}/{}'.format(directory, file_name))
-                            continue
-                        state = State()
-                        c_player = 1
-                        s = state.get_initial_state()
-                        tmp.write('New Game\n')
-                        # error, t = 0, 0
-                        while not state.terminate():
-                            try: 
-                                height, row, col = map(int, f.readline().split())
-                                height, row, col = self._rotate_data(height, row, col, rotate_time)
-                            except:
-                                logger.error("[Error] Invalid file input")
-                                break
-                            flag, new_s, R = state.take_action(row, col)
-                            # print(R)
-                            for p in [1, -1]:
-                                v = self._evaluate(s, c_player * p)
-                                new_v = self._evaluate(new_s, c_player * p)
-                                err = self._update(s, c_player * p, TD(v, new_v, R * p, self._AI.alpha, self._AI.gamma))
-                                error += err
-                                t += 1
-                            s = new_s
-                            c_player *= -1
-                        # if t: errors.append(error / t)"""
             v = self._evaluate(x)
             err = self._update(x, v + self._AI.alpha * (y - v))
             errors.append(err)

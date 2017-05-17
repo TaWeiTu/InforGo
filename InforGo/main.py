@@ -29,7 +29,7 @@ def main():
     parser.add_argument('--learning_rate', '-lr', default=0.1, type=float, help='learning rate for the neural network')
     parser.add_argument('--gamma', '-g', default=0.99, type=float, help='discount factor')
     parser.add_argument('--alpha', '-a', default=0.1, type=float, help='learning rate for TD(0)-learning')
-    parser.add_argument('--lamda', '-ld', default=0.5, type=float, help='TD(lambda)')
+    parser.add_argument('--lamda', '-ld', default=0.7, type=float, help='TD(lambda)')
 
     # Model parameter
     parser.add_argument('--n_epoch', '-ne', default=100, type=int, help='number of epochs')
@@ -67,7 +67,7 @@ def main():
     parser.add_argument('--playout_depth', '-pd', default=1, type=int, help='Depth of playout')
     parser.add_argument('--tree_type', '-tt', default='mcts', type=str, help='minimax/mcts')
     parser.add_argument('--search_depth', '-sd', default=3, type=int, help='Maximum search depth')
-    parser.add_argument('--c', '-c', default=0.5, type=float, help='Exploration/Exploitation')
+    parser.add_argument('--c', '-c', default=0.3, type=float, help='Exploration/Exploitation')
     
     # GPU
     parser.add_argument('--gpu', default=False, const=True, nargs='?', help='Run Tensorflow with/without GPUs')

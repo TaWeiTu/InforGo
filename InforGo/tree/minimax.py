@@ -24,7 +24,7 @@ class Minimax(object):
             if c_state.win(player): return 1, None
             if c_state.win(-player): return -1, None
             return 0, None
-        if depth == 0: return self._evaluate(c_state.get_state(), player), None
+        if depth == 0: return self._evaluate([c_state.get_state()], [player]), None
         comp = (lambda a, b: max(a, b)) if max_level else (lambda a, b: min(a, b))
         return_val = -np.inf if max_level else np.inf
         return_action = -1

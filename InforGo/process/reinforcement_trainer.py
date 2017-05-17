@@ -30,16 +30,15 @@ class ReinforcementTrainer(schema):
             while True:
                 action = self._get_action(state, c_player)
                 flag, new_s, R = state.take_action(*action)
-                for p in [1, -1]:
-                    v = self._evaluate(s, c_player * p)
-                    new_v = self._evaluate(new_s, c_player * p)
-                    self._update(s, c_player * p, TD(v, new_v, R * p, self._AI.alpha, self._AI.gamma))
+                v = self._evaluate([s, s], [c_player, -c_player])
+                new_v = self._evaluate([new_s, new_s], [c_player, -c_player])
+                self._update([s, s,], [1, -1],
+                             [TD(v[0], new_v[0], R, self._AI.alpha, self._AI.gamma), TD(v[1], new_v[1], -R, self._AI.alpha, self._AI.gamma)])
                 self._AI.step(encode_action(action))
                 self._opponent.step(encode_action(action))
                 if state.terminate(): break
                 s = new_s
                 c_player *= -1
-            # winner = 1 if state.win(1) else -1 if state.win(-1) else 0
             if epoch / self._n_epoch > percentage / 100:
                 percentage = math.ceil(epoch / self._n_epoch * 100)
                 logger.info('[Reinforcement] Training Complete: {}%'.format(percentage))

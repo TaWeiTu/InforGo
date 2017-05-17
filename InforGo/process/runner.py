@@ -1,7 +1,6 @@
 from InforGo.process.schema import Schema as schema
 from InforGo.environment.bingo import Bingo as State
-from InforGo.util import encode_action
-from InforGo.util import emit_action, logger
+from InforGo.util import encode_action, TD, emit_action, logger
 
 
 class Runner(schema):
@@ -16,12 +15,20 @@ class Runner(schema):
 
     def run(self):
         state = State()
+        s = state.get_state()
+        c_player = 1
         while True:
             action = self.get_action(state, state.player)
             self._AI._tree.step(encode_action(action))
             logger.debug("position: {} {}".format(action[0], action[1]))
-            flag, s, R = state.take_action(*action)
+            flag, new_s, R = state.take_action(*action)
+            v = self._evaluate([s, s], [c_player, -c_player])
+            new_v = self._evaluate([new_s, new_s], [c_player, -c_player])
+            self._update([s, s,], [1, -1],
+                         [TD(v[0], new_v[0], R, self._AI.alpha, self._AI.gamma), TD(v[1], new_v[1], -R, self._AI.alpha, self._AI.gamma)])
             if state.terminate(): break
+            s = new_s
+            c_player *= -1
         for i in [-1, 0, 1]:
             if state.win(i): return i
 
@@ -38,3 +45,8 @@ class Runner(schema):
         height, row, col = map(int, input().split())
         return row, col
 
+    def _update(self, state, player, value):
+        self._AI.nn.update(state, player, value)
+    
+    def _evaluate(self, state, player):
+        return self._AI.nn.predict(state, player)

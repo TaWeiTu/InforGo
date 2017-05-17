@@ -97,7 +97,7 @@ class MCTS(object):
             node = node._children[action]
             state.take_action(*decode_action(action))
         # v = TD(0) z = eligibility trace
-        v = self._evaluate(state.get_state(), self._player) if self._lamda < 1 else 0
+        v = self._evaluate([state.get_state()], [self._player]) if self._lamda < 1 else 0
         z = self._rollout(state) if self._lamda > 0 else 0
         leaf_value = (1 - self._lamda) * v + self._lamda * z
         node._back_prop(leaf_value, self._c)
