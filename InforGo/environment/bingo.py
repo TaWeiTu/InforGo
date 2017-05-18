@@ -154,9 +154,8 @@ class Bingo(object):
         else return pattern: corner * 1 + two * 2 + three * 3
         """
         pattern = get_pattern(Bingo(state), player)
-        tmp_state = Bingo(state)
-        if tmp_state.win(player): return 1
-        if tmp_state.win(-player): return -1
+        if pattern[0, 6]: return 1
+        if pattern[0, 7]: return -1
         reward = 0
         for i in range(6):
             if i % 2 == 0: reward += (i // 2 + 1) * pattern[0, i]
@@ -168,6 +167,8 @@ class Bingo(object):
         """Take action and Return whether the action is valid, whether the player win or not, new state and the reward"""
         origin_reward = self.get_reward(self.get_state(), player)
         flag = self.place(row, col)
+        if self.win(player): return flag, self.get_state(), 1
+        if self.win(player): return flag, self.get_state(), -1
         new_state = self.get_state()
         new_reward = self.get_reward(new_state, player)
         return flag, new_state, new_reward - origin_reward
@@ -179,4 +180,4 @@ class Bingo(object):
 
     def get_height(self, row, col):
         """return height of (row, col), plus 1 to avoid ZeroDevisionError"""
-        return self.height[row][col] + 1
+        return self.height[row][col]
