@@ -8,10 +8,9 @@ from InforGo.environment.bingo import Bingo as State
 
 class Minimax(object):
     """Minimax search tree"""
-    def __init__(self, search_depth, evaluator, eps):
+    def __init__(self, search_depth, evaluator):
         self._search_depth = search_depth
         self._evaluator = evaluator
-        self._eps = eps
 
     def get_action(self, c_state, player):
         """return action which minimize opponent's maximum reward"""

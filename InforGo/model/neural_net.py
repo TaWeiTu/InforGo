@@ -95,12 +95,7 @@ class NeuralNetwork(object):
     def predict(self, states, players):
         """return the output value of state for player"""
         pattern = [get_pattern(state, player) for state, player in zip(states, players)]
-        # tmp_state = State(state)
-        # if tmp_state.terminate(): return 0
-        # player_node = np.reshape(np.array([player for i in range(self.player_len)]),
-                                 # [1, self.player_len])
         player_node = np.reshape(players, [len(players), 1])
-        # states = np.shape()
         states = np.reshape(states, [len(states), 4, 4, 4])
         pattern = np.reshape(pattern, [len(pattern), 8])
         value = self.sess.run(self.v, feed_dict={self.input_state: states,
@@ -110,10 +105,8 @@ class NeuralNetwork(object):
     def update(self, states, players, v_):
         """update the value of state to v_"""
         pattern = [get_pattern(state, player) for state, player in zip(states, players)]
-        # player_node = np.reshape(np.array([player for i in range(self.player_len)]), [1, self.player_len])
         pattern = np.reshape(pattern, [len(pattern), 8])
         player_node = np.reshape(players, [len(players), 1])
-        # v_placeholder = np.reshape(np.array(v_), [1, 1])
         v_placeholder = np.reshape(v_, [len(v_), 1])
         states = np.reshape(states, [len(states), 4, 4, 4])
         err, _ = self.sess.run([self.error, self.opt_model],

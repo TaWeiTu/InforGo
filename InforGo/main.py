@@ -16,7 +16,6 @@ def main():
     logger = logging.getLogger('InforGo')
     coloredlogs.install(level='DEBUG')
 
-    # logger.info('[Main] Start Collecting Arguments')
     parser = argparse.ArgumentParser(description='Execution argument')
 
     # Method
@@ -29,7 +28,6 @@ def main():
     parser.add_argument('--learning_rate', '-lr', default=0.1, type=float, help='learning rate for the neural network')
     parser.add_argument('--gamma', '-g', default=0.99, type=float, help='discount factor')
     parser.add_argument('--alpha', '-a', default=0.1, type=float, help='learning rate for TD(0)-learning')
-    parser.add_argument('--lamda', '-ld', default=0.7, type=float, help='TD(lambda)')
 
     # Model parameter
     parser.add_argument('--n_epoch', '-ne', default=100, type=int, help='number of epochs')
@@ -62,15 +60,17 @@ def main():
     parser.add_argument('--opponent_tree_type', '-ott', default='minimax', help='Tree type for opponent in reinforcement learning')
 
     # Tree
-    parser.add_argument('--eps', '-e', default=0.1, type=float, help='Probability of choosing random action in minimax')
     parser.add_argument('--n_playout', '-np', default=30, type=int, help='Number of playouts at each action selection')
     parser.add_argument('--playout_depth', '-pd', default=1, type=int, help='Depth of playout')
     parser.add_argument('--tree_type', '-tt', default='mcts', type=str, help='minimax/mcts')
     parser.add_argument('--search_depth', '-sd', default=3, type=int, help='Maximum search depth')
     parser.add_argument('--c', '-c', default=0.3, type=float, help='Exploration/Exploitation')
+    parser.add_argument('--lamda', '-ld', default=0.7, type=float, help='TD(lambda)')
+    parser.add_argument('--rollout_limit', '-rl', default=20, type=int, help='Limit depth of rollout')
     
     # GPU
     parser.add_argument('--gpu', default=False, const=True, nargs='?', help='Run Tensorflow with/without GPUs')
+
     args = parser.parse_args()
 
     global_var.__dict__['LOG_DIR'] = '../log/' + args.logdir
@@ -101,7 +101,6 @@ def main():
         with open("error.log", "w") as f:
             for i in errors: f.write("{} ".format(i))
             f.close()
-        # for i in errors: print(i)
     elif args.method == 'r_train': ReinforcementTrainer(**vars(args)).train()
     elif args.method == 'run': Runner(**vars(args)).run()
     elif args.method == 'debug': Debugger(**vars(args)).debug()
