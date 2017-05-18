@@ -63,7 +63,7 @@ class TreeNode(object):
 
 class MCTS(object):
     """Monte-Carlo Search Tree"""
-    def __init__(self, lamda, c, n_playout, evaluator, playout_depth, player):
+    def __init__(self, lamda, c, n_playout, evaluator, playout_depth, rollout_limit, player):
         self._lamda = lamda
         self._c = c
         self._n_playout = n_playout
@@ -71,6 +71,7 @@ class MCTS(object):
         self._root = TreeNode(None, State(np.zeros([4, 4, 4])), self._c, 3)
         self._playout_depth = playout_depth
         self._player = player
+        self._rollout_limit = rollout_limit
 
     def step(self, last_action):
         """step to the child selected, release the reference to the previous root"""
@@ -105,10 +106,13 @@ class MCTS(object):
     def _rollout(self, state):
         """play simulation with _rollout_policy"""
         c_player = state.player
+        step = 0
         while not state.terminate():
+            if step > self._rollout_limit: return 0
             act = self._rollout_policy(state, c_player)
             state.take_action(*decode_action(act))
             c_player *= -1
+            step += 1
         if state.win(self._player): return 1
         if state.win(-self._player): return -1
         return 0

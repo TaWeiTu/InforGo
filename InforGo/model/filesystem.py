@@ -15,7 +15,6 @@ class FileSystem(object):
         for d, files in dirs.items():
             for f in files: self.files.append('{}/{}'.format(d, f))
         self.shuffle = [i for i in range(len(self.files))]
-        # print(len(self.files))
 
     def _get_record(self, training_directory, n_test, n_self_play, n_generator, MAX):
         logger.info('[Filesystem] Start Collecting Record')
