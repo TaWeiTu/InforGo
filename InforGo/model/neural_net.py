@@ -129,4 +129,3 @@ class NeuralNetwork(object):
                 shape = self.sess.run(tf.shape(self.bias[_id]))
                 for i in range(shape[1]): f.write('{}\n'.format(bias[0, i]))
                 f.close()
-
