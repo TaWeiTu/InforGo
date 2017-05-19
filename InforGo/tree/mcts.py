@@ -29,7 +29,7 @@ class TreeNode(object):
                 n_state = State(self._state)
                 h = n_state.get_height(*decode_action(i))
                 n_state.take_action(*decode_action(i))
-                p = c_state.get_height(*decode_action(i)) / total
+                p = self._get_priority(c_state.get_height(*decode_action(i))) / total
                 self._children[i] = TreeNode(self, n_state, self._c, p)
 
     def _select(self):
