@@ -26,7 +26,7 @@ class SupervisedTrainer(schema):
         self._batch = kwargs['batch']
 
     def train(self, logfile):
-        """Supervised training"""
+        """Supervised training process"""
         percentage = 0
         log = open(logfile, 'w') if logfile else None
         logger.info('[Supervised] Start Training')
@@ -34,7 +34,6 @@ class SupervisedTrainer(schema):
         errors = []
         for epoch in range(self._n_epoch):
             x, y = self.fs.get_next_batch(self._batch)
-            # print("get batch")
             v = self._evaluate(x)
             err = self._update(x, v + self._AI.alpha * (y - v))
             errors.append(err)
@@ -45,7 +44,7 @@ class SupervisedTrainer(schema):
 
         logger.info('[Supervised] Training Complete: 100%')
         self._store()
-        if logfile is not None: log.close()
+        if logfile: log.close()
         return errors
     
     def _store(self):
@@ -53,11 +52,13 @@ class SupervisedTrainer(schema):
         self._AI.nn.store()
 
     def _update(self, data, value):
+        """neural network optimize"""
         states = [state for state, player in data]
         players = [player for state, player in data]
         return self._AI.nn.update(states, players, value)
 
     def _evaluate(self, data):
+        """state evalutation"""
         states = [state for state, player in data]
         players = [player for state, player in data] 
         return self._AI.nn.predict(states, players)

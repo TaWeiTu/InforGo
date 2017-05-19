@@ -19,11 +19,11 @@ class ReinforcementTrainer(schema):
                          kwargs['opponent_tree_type'], kwargs['rollout_limit'])
 
     def train(self):
+        """reinforcement training process"""
         percentage = 0
         logger.info("[Reinforcement] Start Training")
         logger.info("[Reinforcement] Training Complete: 0%")
         for epoch in range(self._n_epoch):
-
             state = State()
             s = state.get_initial_state()
             c_player = 1

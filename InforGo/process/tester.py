@@ -12,7 +12,7 @@ from InforGo.util import decode_action, logger, encode_action, get_winning_move
 class Bot(object):
     """Simple AI that first choose to win then prevent loss, finally play randomly"""
     def __init__(self, player):
-        random.seed(7122)
+        # random.seed(7122)
         self._player = player
         self._opponent = -player
 

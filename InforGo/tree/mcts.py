@@ -8,30 +8,29 @@ from InforGo.environment.bingo import Bingo as State
 
 class TreeNode(object):
     """Nodes in MCTS, average value and UCT are maintained"""
-    def __init__(self, parent, state, c, h):
+    def __init__(self, parent, state, c, p):
         self._parent = parent
         self._children = {}
         self._visit = 0
         self._v = 0
         self._state = state
-        self._u = c * h
+        self._u = p
         self._c = c
-        self._h = h
+        self._p = p
 
     def _expand(self):
         """expand the node for all valid action"""
         actions = [i for i in range(16) if self._state.valid_action(*decode_action(i))]
         c_state = State(self._state)
-        height_sum = 0
-        # for i in actions: height_sum += c_state.get_height(*decode_action(i))
+        total = 0
+        for i in actions: total += self._get_priority(c_state.get_height(*decode_action(i)))
         for i in actions:
             if not i in self._children.keys():
                 n_state = State(self._state)
                 h = n_state.get_height(*decode_action(i))
                 n_state.take_action(*decode_action(i))
-                # self._children[i] = TreeNode(self, n_state, self._c, h / height_sum)
-                # self._children[i] = TreeNode(self, n_state, self._c, 2 - (h // 2))
-                self._children[i] = TreeNode(self, n_state, self._c, 3)
+                p = c_state.get_height(*decode_action(i)) / total
+                self._children[i] = TreeNode(self, n_state, self._c, p)
 
     def _select(self):
         """select child with highest UCT"""
@@ -46,13 +45,18 @@ class TreeNode(object):
         self._visit += 1
         self._v += (leaf_value - self._v) / self._visit
         if not self.is_root():
-            self._u = 2 * c * np.sqrt(2 * np.log(self._parent._visit) / self._visit)
+            self._u = 2 * c * self._p * np.sqrt(2 * np.log(self._parent._visit) / self._visit)
 
     def _back_prop(self, leaf_value, c):
         """recursively back propagate the leaf value to the root"""
         if self._parent:
             self._parent._back_prop(leaf_value, c)
         self._update(leaf_value, c)
+
+    def _get_priority(self, height):
+        if height == 0 or height == 1: return 4
+        if height == 2: return 3
+        return 2
 
     def is_root(self):
         return self._parent is None
@@ -68,7 +72,7 @@ class MCTS(object):
         self._c = c
         self._n_playout = n_playout
         self._evaluator = evaluator
-        self._root = TreeNode(None, State(np.zeros([4, 4, 4])), self._c, 3)
+        self._root = TreeNode(None, State(np.zeros([4, 4, 4])), self._c, 1)
         self._playout_depth = playout_depth
         self._player = player
         self._rollout_limit = rollout_limit
@@ -119,7 +123,7 @@ class MCTS(object):
 
     def _evaluate(self, state, player):
         """state evluation"""
-        return self._evaluator.predict(state, player)
+        return self._evaluator.predict(state, player)[0]
 
     def _rollout_policy(self, state, player):
         """randomized rollout"""
