@@ -117,8 +117,8 @@ class MCTS(object):
             state.take_action(*decode_action(act))
             c_player *= -1
             step += 1
-        if state.win(self._player): return 1
-        if state.win(-self._player): return -1
+        if state.win(self._player): return 1 - step * 2 / self._rollout_limit
+        if state.win(-self._player): return -1 + step * 2 / self._rollout_limit
         return 0
 
     def _evaluate(self, state, player):
