@@ -59,7 +59,7 @@ def main():
     # Reinforcement Training
     parser.add_argument('--opponent_tree_type', '-ott', default='minimax', help='Tree type for opponent in reinforcement learning')
 
-    # Tree
+    # Policy Search
     parser.add_argument('--n_playout', '-np', default=30, type=int, help='Number of playouts at each action selection')
     parser.add_argument('--playout_depth', '-pd', default=1, type=int, help='Depth of playout')
     parser.add_argument('--tree_type', '-tt', default='mcts', type=str, help='minimax/mcts')
