@@ -193,7 +193,6 @@ function Room(roomName, mode){
 			console.log("[Bingo] WTFFFFFFFFFFFFFFFFFFFFFF, computer down at invalid place")
 			return
 		}
-		if (DEBUG) console.log("[Debug] agent downed at", num)
 	
 		// update stat_1D and record
 		this.stat_1D[num] = this.turn
@@ -203,7 +202,6 @@ function Room(roomName, mode){
 
 		// check winner
 		let winnerId = this.checkWinner(num)
-		if (DEBUG) console.log("[Debug] winner check result", winnerId);
 		if (winnerId == 3) this.gameOver({'endWay': 3})
 		if (winnerId == 0){
 			this.turn = (this.turn == 1)? 2 : 1
@@ -227,10 +225,10 @@ function Room(roomName, mode){
 
 		// filter
 		if (!this.playing) return
-        if (DEBUG) console.log("[Debug] now turn is", this.turn)
+        if (DEBUG) console.log("[Debug] turn =", this.turn)
 		if (!this.playerList[this.turn-1] || playerId != this.playerList[this.turn - 1].id) return
 		if (this.stat_1D[num] != 3) return
-		if (DEBUG) console.log("[Debug]", playerId, "downed")
+		if (DEBUG) console.log("[Bingo]", "Player", this.playerList[this.turn - 1].name, "downed at", num)
 	
 		// update stat_1D and record
 		this.stat_1D[num] = this.turn
@@ -240,7 +238,6 @@ function Room(roomName, mode){
 
 		// check winner
 		let winnerId = this.checkWinner(num)
-		if (DEBUG) console.log("[Debug] winner check result", winnerId);
 		if (winnerId == 3) this.gameOver({'endWay': 3})
 		if (winnerId == 0){
 			this.turn = (this.turn == 1)? 2 : 1
@@ -248,7 +245,6 @@ function Room(roomName, mode){
 		    if (this.mode == 'com'){
                 let writeString = (num % 4).toString() + ' ' + (Math.floor(num / 4) % 4).toString() + ' ' + (Math.floor(num / 16)).toString() + '\n'
                 this.agent.stdin.write(writeString)
-                if (DEBUG) console.log("[Debug] Write input '{0}'".format(writeString))
             }
         }
 		else {
@@ -398,7 +394,6 @@ function getSimpleRoomList(){
 
 function checkRow(stat,x, y){
     let rowId = x*4 + y*16
-    if (DEBUG) console.log("[Debug] Call checkRow with x={0},y={1}".format(x, y))
     for (let i = 0; i<4;i++){
         if (stat[rowId + i] == 3) return rowId + i
     }
