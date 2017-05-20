@@ -59,9 +59,9 @@ for(let i = 0; i < 64; ++i){
     scene.add(cubes[i]);
     cubes[i].situation = 0;
     cubes[i].Num = i;
-    cubes[i].position.x += ((i - i % 16) / 16) + 1;
-    cubes[i].position.y += i % 4 + 0.4;
-    cubes[i].position.z += (i % 16 - i % 4)/4 + 1;
+    cubes[i].position.x = 4 - Math.floor(i / 16)
+    cubes[i].position.y = i % 4 + 0.4;
+    cubes[i].position.z = Math.floor(i % 16 / 4)   + 1;
     if(i % 4 == 0){
         cubes[i].material = colorClickable;
         cubes[i].situation = 3;
@@ -69,33 +69,33 @@ for(let i = 0; i < 64; ++i){
 }
 
 // set up light
-var ambientLight = new THREE.AmbientLight(0x888888 ,0.5);
-scene.add(ambientLight);
-var directionalLight = new THREE.DirectionalLight(0xcccccc);
-directionalLight.position.set(1, 2, 2).normalize();
-scene.add(directionalLight);
+var ambientLight = new THREE.AmbientLight(0x888888 ,0.5)
+scene.add(ambientLight)
+var directionalLight = new THREE.DirectionalLight(0xcccccc)
+directionalLight.position.set(1, 2, 2).normalize()
+scene.add(directionalLight)
 
 // camera controll
-var manualControl = false;
-var longitude = 0;
-var latitude = 0;
-var savedX;
-var savedY;
-var savedLongitude;
-var savedLatitude;
-var scale = 60;
-var mouse = new THREE.Vector2();
-camera.target = new THREE.Vector3(0, 0, 0);
+var manualControl = false
+var longitude = 0
+var latitude = 0
+var savedX
+var savedY
+var savedLongitude
+var savedLatitude
+var scale = 60
+var mouse = new THREE.Vector2()
+camera.target = new THREE.Vector3(0, 0, 0)
 
 // variable declar
 var selfId;
-var turn = 3;
+var turn = 3
 
 // set up raycaster
-var raycaster = new THREE.Raycaster();
-var firstVisibleObject, selected, intersects;
-var t = 0, savedOpacity;
-render();
+var raycaster = new THREE.Raycaster()
+var firstVisibleObject, selected, intersects
+var t = 0, savedOpacity
+render()
 
 function render(){
 
@@ -208,15 +208,15 @@ function onDocumentWheel(event){
 }
 
 function restoreIcon(){
-    p1Icon1.material = colorBlue
-    p1Icon2.material = colorBlue
-    p2Icon1.material = colorRed
-    p2Icon2.material = colorRed
-    p1Icon1.geometry = iconBox_small
-    p1Icon2.geometry = iconBox_small
-    p2Icon1.geometry = iconBox_small
-    p2Icon2.geometry = iconBox_small
-    renderer.setClearColor(0xbbbbbb)
+    p1Icon1.material = colorBlue;
+    p1Icon2.material = colorBlue;
+    p2Icon1.material = colorRed;
+    p2Icon2.material = colorRed;
+    p1Icon1.geometry = iconBox_small;
+    p1Icon2.geometry = iconBox_small;
+    p2Icon1.geometry = iconBox_small;
+    p2Icon2.geometry = iconBox_small;
+    renderer.setClearColor(0xbbbbbb);
 }
 
 function renderRefresh(gameStat){
@@ -231,7 +231,7 @@ function renderRefresh(gameStat){
 }
 
 socket.on('restart', function(){
-    restoreIcon()    
+    restoreIcon()  
 })
 socket.on('playerAnnounce',function(playerNum){
     selfId = playerNum;
@@ -343,7 +343,7 @@ function createRoom(){
 
 // refresh sidebar room info
 function refreshRoomInfo(list){
-    document.getElementById('room-info').innerHTML = "";
+    document.getElementById('room-info').innerHTML = "";    
     for (let i = 0; i < list.length; i++){
         let flag = true
         for (let j = 0; j < ridList.length; j++){

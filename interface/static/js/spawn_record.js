@@ -1,9 +1,6 @@
 var info = document.getElementById("info")
 var gameBoard = document.getElementById("gameBoard")
-var messageBox = document.getElementById("messageBox")
-var recInput = document.getElementById("recInput")
-var autorun = document.getElementById("auto")
-var startButton = document.getElementById("startButton")
+var rec = document.getElementById("record")
 
 // set up the renderer
 var scene = new THREE.Scene();
@@ -31,7 +28,7 @@ var color = [colorInvis , colorBlue , colorRed , colorClickable , TransBlue , Tr
 
 // set up basic(called cube)
 var cube = new THREE.Mesh(basicGeometry, colorGray);
-scene.add(cube);
+scene.add( cube );
 cube.position.x = 2.5;
 cube.position.z = 2.5;
 
@@ -63,10 +60,10 @@ for(let i = 0; i < 64; ++i){
     cubes[i].position.x = 4 - Math.floor(i / 16)
     cubes[i].position.y = i % 4 + 0.4;
     cubes[i].position.z = Math.floor(i % 16 / 4)   + 1;
-    // if(i % 4 == 0){
-    //     cubes[i].material = colorClickable;
-    //     cubes[i].situation = 3;
-    // }
+    if(i % 4 == 0){
+        cubes[i].material = colorClickable;
+        cubes[i].situation = 3;
+    }
 }
 
 // set up light
@@ -90,7 +87,7 @@ camera.target = new THREE.Vector3(0, 0, 0);
 
 // variable declar
 var selfId;
-var turn = 3;
+var turn = 1;
 
 // set up raycaster
 var raycaster = new THREE.Raycaster();
@@ -115,6 +112,35 @@ function render(){
     camera.position.y = -camera.target.y / scale + 1;
     camera.position.z = -camera.target.z / scale +2.5;
 
+    //set raycaster
+    raycaster.setFromCamera(mouse, camera);
+    intersects = raycaster.intersectObjects(scene.children);
+
+    //check firstVisibleObject
+    firstVisibleObject=null;
+    for(let k = 0; k < intersects.length; k++){
+        if(intersects[k].object.material != colorInvis && intersects[k].object.geometry != basicGeometry){
+            firstVisibleObject = intersects[k].object;
+            break;
+        }
+    }
+
+    //player's actions  ///Note: could be edit
+    if(firstVisibleObject){
+        if(selected != firstVisibleObject){
+            if(selected && selected.situation == 3)selected.material = colorClickable;
+            selected = firstVisibleObject;
+            if(selected.situation == 3){
+                if(turn == 1)selected.material = TransBlue;
+                if(turn == 2)selected.material = TransRed;
+            }
+        }
+    }
+    else{
+        if(selected && selected.situation == 3)selected.material = colorClickable;
+        selected = null;
+    }
+
     //rotate icon
     if(turn == 1){
         p1Icon1.rotation.y += 0.1;
@@ -130,128 +156,13 @@ function render(){
         p2Icon1.rotation.y += 0.1;
         p2Icon2.rotation.y += 0.1;
     }
-    t+=0.04
+    t+=0.05
     savedOpacity = Math.sin(t) / 4 + 0.75
     redShine.opacity = savedOpacity
     blueShine.opacity = savedOpacity
     renderer.render(scene, camera);
 }
 
-var step = 0, splitedInput, record, steps, run, interval = 3.5, keeprun = true
-
-
-function loadInput(){
-
-    // initialize
-    splitedInput = recInput.value.split('\n')
-    for (let i = 0; i < splitedInput.length;){
-        for(let j = 0; j < splitedInput[i].length;){
-            if (splitedInput[i][j] == ' '){
-                splitedInput[i] = splitedInput[i].splice(j, 1)
-            }
-            else j++
-        }
-        if(splitedInput[i].length != 2){
-            splitedInput.splice(i, 1)
-        }
-        else i++
-    }
-    record = []
-    steps = []
-    for(let i = 0; i < splitedInput.length; i++){
-        record.push([])
-    }
-    // load input
-    for(let i = 0; i < 64; i++){
-        record[0].push(0)
-    }
-    steps[0] = convert(record[0], splitedInput[0])
-    record[0][steps[0]] = 1
-    for(let i = 1; i < splitedInput.length; i++){
-        record[i] = record[i-1].slice()
-        steps[i] = convert(record[i], splitedInput[i])
-        record[i][steps[i]] = (i % 2 == 0)? 1:2
-    }
-}
-
-function convert(stat, inp){
-    let rowId = parseInt(inp[0])*4 + parseInt(inp[1])*16
-    for (let i = 0; i < 4; i++){
-        if (stat[rowId + i] == 0){
-            return rowId + i
-        }
-    }
-    console.log("[Bingo] WTFFFFFFFFFFFFF Full row checked!!")
-    return
-}
-
-function reset(){
-    for (let i = 0; i < 64; i++) cubes[i].material = colorInvis
-    record = []
-    recInput.disabled = false
-    startButton.className = "button special"
-    keeprun = false
-}
-
-function start(){
-    if  (startButton.disabled) return
-    step = 0
-    recInput.disabled = true
-    startButton.className = "button special disabled"
-    loadInput()
-    draw(record[step],steps[step])
-    setTimeout(run, interval*1000)
-}
-
-function run(){
-    if (keeprun){
-        setTimeout(run,interval*1000)
-        if(autorun.checked && step < splitedInput.length-1){
-            next()
-        }
-    }
-    else keeprun = true
-}
-
-function next(){
-    if (step == splitedInput.length-1 ){
-        spawnMessage("It's finsl step!!")
-        return
-    }
-    step++
-    draw(record[step],steps[step])
-}
-
-function prev(){
-    if (step == 0){
-        spawnMessage("It's first step!!")
-        return
-    }
-    step--
-    draw(record[step],steps[step])
-}
-
-
-
-function draw(stat, last){
-    for(let i = 0; i < 64; ++i){
-        cubes[i].material = color[stat[i]];
-        cubes[i].situation = stat[i];
-    }
-    if(stat[last] == 1) cubes[last].material = blueShine
-    else cubes[last].material = redShine
-}
-
-function renderRefresh(gameStat){
-    for(let i = 0; i < 64; ++i){
-        cubes[i].material = color[gameStat.stat[i]];
-        cubes[i].situation = gameStat.stat[i];
-    }
-    if(typeof(gameStat.last) != 'undefined'){
-        if(gameStat.stat[gameStat.last] == 1) cubes[gameStat.last].material = blueShine
-        else cubes[gameStat.last].material = redShine
-    }
-}
 
 
 // listeners
@@ -260,8 +171,6 @@ gameBoard.addEventListener("mousemove", onDocumentMouseMove, false);
 gameBoard.addEventListener("mouseup", onDocumentMouseUp, false);
 gameBoard.addEventListener("wheel", onDocumentWheel, false);
 
-
-
 function onDocumentMouseDown(event){
     manualControl = true;
 
@@ -269,6 +178,11 @@ function onDocumentMouseDown(event){
     savedY = event.clientY;
     savedLongitude = longitude;
     savedLatitude = latitude;
+
+    if(firstVisibleObject && firstVisibleObject.situation == 3){
+        down(firstVisibleObject.Num);
+    }
+    rec.innerHTML = getRecord()
 }
 
 function onDocumentMouseMove(event){
@@ -292,12 +206,138 @@ function onDocumentWheel(event){
     scale = Math.min(scale, 80);
 }
 
+var steps = []
+
+function reset(){
+    for(let i = 0; i < 64; ++i){
+        cubes[i].situation = 0;
+        cubes[i].material = color[0]
+        if(i % 4 == 0){
+            cubes[i].material = colorClickable;
+            cubes[i].situation = 3;
+        }
+    }
+    rec.innerHTML = getRecord()
+    steps = []
+    turn = 1
+}
+reset()
+
+function prev(){
+    steps.pop()
+    for(let i = 0; i < 64; ++i){
+        cubes[i].situation = 0
+        cubes[i].material = color[0]
+        if(i % 4 == 0){
+            cubes[i].material = colorClickable;
+            cubes[i].situation = 3;
+        }
+    }
+    turn = 1
+    for(let i = 0; i < steps.length; i++){
+        cubes[steps[i]].situation = turn
+        cubes[steps[i]].material = color[turn]
+        if (steps[i] % 4 != 3){
+            cubes[steps[i] + 1].situation = 3
+            cubes[steps[i] + 1].material = color[3]
+        }
+        turn = turn == 1? 2:1
+    }
+    rec.innerHTML = getRecord()
+}
+
+function down(id){
+    steps.push(id)
+    cubes[id].situation = turn
+    cubes[id].material = color[turn]
+    if (id % 4 != 3){
+        cubes[id + 1].situation = 3
+        cubes[id + 1].material = color[3]
+    }
+    turn = turn == 1? 2:1
+    let way = checkWinner(id)
+    if(way != 0) gameOver(way)
+}
+
+function gameOver(way){
+    alert("gameOver")
+    for(let i = 0; i < 64; i++){
+        if(cubes[i].situation == 3){
+            cubes[i].situation = 0
+            cubes[i].material = color[0]
+        }
+    }
+}
+
+var stat_3D = []
+for (let i = 0; i < 4; ++i){
+    this.stat_3D[i] = []
+    for (let j = 0; j < 4; ++j) this.stat_3D[i][j] = [0, 0, 0, 0]
+}
+
+function checkWinner(id){
+    for(let i = 0; i < 64; i++){
+        stat_3D[i % 4][Math.floor(i / 4) % 4][Math.floor(i / 16)] = cubes[i].situation
+    }
+    // check if the game is over.
+    let x = id % 4
+    let y = Math.floor(id / 4) % 4
+    let z = Math.floor(id / 16)
+    let value = 1;
+    let sum = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    for (let i = 0; i < 4; ++i, value *= 2){
+        let point = [
+            stat_3D[x][y][i], stat_3D[x][i][z], stat_3D[i][y][z], // 1D
+            stat_3D[x][i][i], stat_3D[i][y][i], stat_3D[i][i][z], // 2D
+            stat_3D[x][i][3-i],  stat_3D[i][y][3-i], stat_3D[i][3-i][z], //2D_inverse
+            stat_3D[i][i][i], stat_3D[i][i][3-i], stat_3D[3-i][i][i], // 3D
+            stat_3D[3-i][i][3-i]
+        ]
+        for (let line = 0; line < point.length; ++line){
+            if (point[line] == 1) sum[line] += value
+            if (point[line] == 2) sum[line] -= value
+        }
+    }
+
+    // return 1 if there is a line with value "15", ortherwise return 2 if got value"-15". if not, return 0.
+    for (let i = 0; i < sum.length; ++i){
+        if(sum[i] == 15) return 1;
+        if(sum[i] ==-15) return 2;
+    }
+    // return 0 if the game could keep going on.
+    for (let i = 0; i < 64; ++i){
+        if(cubes[i].situation == 3) return 0;
+    }
+    // return 3 if there is no empty place.
+    return 3;
+} 
+
+function getRecord(){
+    let record = ""
+    let n, s
+    for(let i = 0; i < 4; i++){
+        for(let j = 0; j < 4; j++){
+            for(let k = 0; k < 4; k++){
+                n = i * 16 + j + k * 4
+                if (cubes[n].situation == 1) s = '1'
+                else if (cubes[n].situation == 2) s = '-1'
+                else if (cubes[n].situation == 0 || cubes[n].situation == 3) s = '0'
+                record += s
+                if(j != 4 ) record += ' '
+            }
+        }
+        record += '<br>'
+    }
+    return record
+}
+
 function spawnMessage(text, id){
     if(!id) id = Math.random().toString(36).substring(8)
     let textBox = document.createElement('div');
     textBox.id = id;
+    console.log(id);
     textBox.className = 'messageBoxText fadeInUp animated';
-    textBox.innerHTML = text;
+    textBox.innerHTML = '{0}'.format(text);
     messageBox.appendChild(textBox);
     setTimeout(function(){
         document.getElementById(id).className += ' fadeOutUp';
@@ -307,6 +347,9 @@ function spawnMessage(text, id){
     },6000);
 }
 
-String.prototype.splice = function (i,j){
-    return this.slice(0,i) + this.slice(i+j, this.length) 
-}
+// string format function
+String.prototype.format = function(){
+    let s = this, i = arguments.length;
+    while(i--)s = s.replace(new RegExp('\\{'+i+'\\}', 'gm'), arguments[i]);
+    return s;
+};
