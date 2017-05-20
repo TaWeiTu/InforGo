@@ -207,6 +207,18 @@ function onDocumentWheel(event){
     scale = Math.min(scale, 80);
 }
 
+function restoreIcon(){
+    p1Icon1.material = colorBlue
+    p1Icon2.material = colorBlue
+    p2Icon1.material = colorRed
+    p2Icon2.material = colorRed
+    p1Icon1.geometry = iconBox_small
+    p1Icon2.geometry = iconBox_small
+    p2Icon1.geometry = iconBox_small
+    p2Icon2.geometry = iconBox_small
+    renderer.setClearColor(0xbbbbbb)
+}
+
 function renderRefresh(gameStat){
     for(let i = 0; i < 64; ++i){
         cubes[i].material = color[gameStat.stat[i]];
@@ -218,17 +230,8 @@ function renderRefresh(gameStat){
     }
 }
 
-
 socket.on('restart', function(){
-    p1Icon1.material = colorBlue;
-    p1Icon2.material = colorBlue;
-    p2Icon1.material = colorRed;
-    p2Icon2.material = colorRed;
-    p1Icon1.geometry = iconBox_small;
-    p1Icon2.geometry = iconBox_small;
-    p2Icon1.geometry = iconBox_small;
-    p2Icon2.geometry = iconBox_small;
-    renderer.setClearColor(0xbbbbbb);
+    restoreIcon()    
 })
 socket.on('playerAnnounce',function(playerNum){
     selfId = playerNum;
@@ -286,6 +289,7 @@ socket.on('joinRoomRes', function(data){
     if(data.status == 'success'){
         nowRoomId = data.rid
         document.getElementById('joinButton').disabled = !data.joinable
+        restoreIcon()
     }
 })
 socket.on('joinGameRes', function(data){
@@ -334,7 +338,7 @@ function createRoom(){
     document.getElementById('name').disabled = true;
     let mode = 'pvp';
     if (document.getElementById('mode').checked) mode = 'com';
-    socket.emit('createRoomReq',{ 'playerName':document.getElementById('name').value, 'roomName':roomName, 'mode':mode });
+    socket.emit('createRoomReq',{ 'playerName':document.getElementById('name').value, 'roomName':roomName, 'mode':mode, 'config': getConfig() });
 }
 
 // refresh sidebar room info
@@ -370,7 +374,7 @@ function joinGame(){
     socket.emit('joinGameReq')
 }
 
-function sendConfig(){
+function getConfig(){
     let confList = [
         { id:"--tree_type",     default:"mcts" },
         { id:"--search_depth",  default:"3"    },
@@ -382,10 +386,18 @@ function sendConfig(){
     let config = []
     for (let i = 0; i < confList.length; i++){
         config.push(confList[i].id)
-        if (document.getElementById(confList[i].id).value) config.push(document.getElementById(confList[i].id).value)
+        if (document.getElementById(confList[i].id).value){
+            let val = document.getElementById(confList[i].id).value 
+            if (document.getElementById(confList[i].id).step == '1') val = Math.floor(val)
+            config.push(val.toString())
+        }
         else config.push(confList[i].default)
     }
-    socket.emit('AIConfigReq',{ 'config': config })
+    return config
+}
+
+function sendConfig(){
+    socket.emit('AIConfigReq', { 'config': getConfig() })
 }
 
 // string format function

@@ -1945,7 +1945,8 @@
 	input[type="tel"],
 	input[type="search"],
 	input[type="url"],
-	select,
+	input[type="number"],
+    select,
 	textarea {
 		-moz-appearance: none;
 		-webkit-appearance: none;
@@ -2024,7 +2025,8 @@
 	input[type="tel"],
 	input[type="search"],
 	input[type="url"],
-	select {
+	input[type="number"],
+    select {
 		height: 2.75em;
 	}
 

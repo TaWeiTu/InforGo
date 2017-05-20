@@ -3,7 +3,6 @@ var spawn = require('child_process').spawn
 var fs = require('fs')
 var roomList = [];
 var io,config,DEBUG;
-var AIConfig = ['-tt', 'mcts', '--n_playout', '100']
 var fileNum = 0, recordRoot = __dirname + "/../../Data/record/" + rdmString.generate(16) + '/';
 fs.mkdir(recordRoot, function (err) {
 	if(err) throw err;
@@ -13,10 +12,6 @@ function init(data){
 	io = data.io
 	config = data.config
 	DEBUG = data.DEBUG
-}
-
-function setConfig(data){
-    AIConfig = data
 }
 
 function Player(socket, name){
@@ -98,6 +93,7 @@ function Room(roomName, mode){
 	this.playing = false
 	this.turn = 0
 	this.first = 1
+    this.AIConfig = []
 	for (let i = 0; i < 4; ++i){
 		this.stat_3D[i] = []
 		for (let j = 0; j < 4; ++j) this.stat_3D[i][j] = [0, 0, 0, 0]
@@ -152,9 +148,10 @@ function Room(roomName, mode){
 
     	// set AI arguments
     	let option = ['-m', 'InforGo.main', 'run', '--directory=./Data/3_64_32_16/']
-        option = option.concat(AIConfig)
+        option = option.concat(this.AIConfig)
         if (this.first == 1) option.push('--play_first=False')
         else option.push('--play_first=True')
+        
         if (DEBUG){
         	console.log("[Debug] Start with option :", option)
         	this.announce('AIConfigRes', { 'config': option })
@@ -426,6 +423,4 @@ module.exports = {
 	getRoomByRid,
 	//getRoomByPlayer,
 	getSimpleRoomList,
-    AIConfig,
-    setConfig,
 }
