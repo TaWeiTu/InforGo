@@ -39,26 +39,6 @@
 		<div id="gameBoard"></div>
 		<!--<div id="gameInfo"></div>-->
 		<div id="messageBox"></div>
-		<div id="AIConfig">
-			<div class="row">
-				<div class="6u">
-					<select id="--tree_type">
-                        <option style="color: black"value="mcts">mcts</option>
-                        <option style="color: black"value="minimax">minimax</option>
-                    </select>
-                    <input type="number" min="0" step="1" id="--search_depth" placeholder="--search_depth=3">
-					<input type="number" min="0" max ="1" id="--lamda" placeholder="--lamda=0.7">
-				</div>
-				<div class="6u$">
-					<input type="number" min="0" max ="1" id="--c" placeholder="--c=0.3">
-					<input type="number" min="0" step="1" id="--n_playout" placeholder="--n_playout=100">
-					<input type="number" min="0" step="1" id="--playout_depth" placeholder="--playout_depth=3">
-				</div>
-			</div>
-			<ul class="actions">
-				<li><a id="configButton" class="button" onclick="sendConfig()">Send</a></li>
-			</ul>
-		</div>
 	</body>
 </html>
 <script src="/socket.io/socket.io.js"></script>
