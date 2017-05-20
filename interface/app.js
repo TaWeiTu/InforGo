@@ -30,12 +30,8 @@ app.get('/simulate', function(req, res){
 		res.end()
 	})
 })
-app.get('/spawn', function(req, res){
-	res.sendFile(__dirname + '/pages/spawn_record.html', function(){
-		res.end()
-	})
-})
 
+//start.js
 
 io.sockets.on('connection', function(socket){
 	
@@ -49,7 +45,7 @@ io.sockets.on('connection', function(socket){
 		if (!data.playerName || !data.roomName || !data.mode) return
 		if (!player.name) player.name = escape(data.playerName.toString())
 		data.roomName = escape(data.roomName.toString())
-		createRoom(player, data.roomName, data.mode)
+		createRoom(player, data)
 	})
 
 	socket.on('joinRoomReq', function(name, rid){
@@ -69,9 +65,20 @@ io.sockets.on('connection', function(socket){
 		bingo.playerDisconnect(player)
 	})
 
-	socket.on('downReq',function(num){
+	socket.on('downReq', function(num){
 		if(player.rid) bingo.getRoomByRid(player.rid).downReq(player.id, num)
 	})
+
+	socket.on('AIConfigReq', function(data){
+        if (!player.rid) return    
+        let room = bingo.getRoomByRid(player.rid)
+        if(room.playerList[0]!=player){
+            console.log('Permission denied')
+            return
+        }
+        room.AIConfig = data.config
+        if(DEBUG) console.log("[Debug] Config changed:", room.AIConfig)
+    })
 
 	// for admin
 	socket.on('removeRoom', function(rid, passwd){
@@ -80,6 +87,16 @@ io.sockets.on('connection', function(socket){
 		bingo.getRoomByRid(rid).removeRoom(bingo.roomList)
 		io.emit('refreshRoomInfo', { 'list':bingo.getSimpleRoomList() })		
 	})
+    socket.on('set', function(params, value){
+        if (params == 'DEBUG'){
+            DEBUG = value
+            bingo.init({
+                'io':io,
+                'config':config,
+                'DEBUG':DEBUG
+            })
+        }
+    })
 	socket.on('check', function(params){
 		if (params == 'roomList') console.log(bingo.getSimpleRoomList())
 		if (params == 'id') console.log(player.id)
@@ -91,14 +108,15 @@ function joinRoom(player, rid){
 	player.socket.emit('message', {'message':'Join room successfully.', 'msgId':bingo.randomString(8)})
 }
 
-function createRoom(player, roomName, mode){
-	if (mode != 'pvp' && mode != 'com') return
-	let newRoom = new bingo.Room(roomName, mode)
+function createRoom(player, data){
+	if (data.mode != 'pvp' && data.mode != 'com') return
+	let newRoom = new bingo.Room(data.roomName, data.mode)
+    if(data.config) newRoom.AIConfig = data.config
 	bingo.roomList.push(newRoom)
 	player.joinRoom(newRoom);
 	player.socket.emit('createRoomRes', {'status':'success','rid':newRoom.rid})
 	io.emit('refreshRoomInfo', { 'list':bingo.getSimpleRoomList() })
-	if (DEBUG) console.log("[Bingo] Player", player.name, "created room", roomName)
+	if (DEBUG) console.log("[Bingo] Player", player.name, "created room", data.roomName)
 }
 
 function searchPlayerInRoomList(socket){

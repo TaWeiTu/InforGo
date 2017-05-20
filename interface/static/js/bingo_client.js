@@ -59,9 +59,9 @@ for(let i = 0; i < 64; ++i){
     scene.add(cubes[i]);
     cubes[i].situation = 0;
     cubes[i].Num = i;
-    cubes[i].position.x = 4 - Math.floor(i / 16)
-    cubes[i].position.y = i % 4 + 0.4;
-    cubes[i].position.z = Math.floor(i % 16 / 4)   + 1;
+    cubes[i].position.x += ((i - i % 16) / 16) + 1;
+    cubes[i].position.y += i % 4 + 0.4;
+    cubes[i].position.z += (i % 16 - i % 4)/4 + 1;
     if(i % 4 == 0){
         cubes[i].material = colorClickable;
         cubes[i].situation = 3;
@@ -69,33 +69,33 @@ for(let i = 0; i < 64; ++i){
 }
 
 // set up light
-var ambientLight = new THREE.AmbientLight(0x888888 ,0.5)
-scene.add(ambientLight)
-var directionalLight = new THREE.DirectionalLight(0xcccccc)
-directionalLight.position.set(1, 2, 2).normalize()
-scene.add(directionalLight)
+var ambientLight = new THREE.AmbientLight(0x888888 ,0.5);
+scene.add(ambientLight);
+var directionalLight = new THREE.DirectionalLight(0xcccccc);
+directionalLight.position.set(1, 2, 2).normalize();
+scene.add(directionalLight);
 
 // camera controll
-var manualControl = false
-var longitude = 0
-var latitude = 0
-var savedX
-var savedY
-var savedLongitude
-var savedLatitude
-var scale = 60
-var mouse = new THREE.Vector2()
-camera.target = new THREE.Vector3(0, 0, 0)
+var manualControl = false;
+var longitude = 0;
+var latitude = 0;
+var savedX;
+var savedY;
+var savedLongitude;
+var savedLatitude;
+var scale = 60;
+var mouse = new THREE.Vector2();
+camera.target = new THREE.Vector3(0, 0, 0);
 
 // variable declar
 var selfId;
-var turn = 3
+var turn = 3;
 
 // set up raycaster
-var raycaster = new THREE.Raycaster()
-var firstVisibleObject, selected, intersects
-var t = 0, savedOpacity
-render()
+var raycaster = new THREE.Raycaster();
+var firstVisibleObject, selected, intersects;
+var t = 0, savedOpacity;
+render();
 
 function render(){
 
@@ -208,15 +208,15 @@ function onDocumentWheel(event){
 }
 
 function restoreIcon(){
-    p1Icon1.material = colorBlue;
-    p1Icon2.material = colorBlue;
-    p2Icon1.material = colorRed;
-    p2Icon2.material = colorRed;
-    p1Icon1.geometry = iconBox_small;
-    p1Icon2.geometry = iconBox_small;
-    p2Icon1.geometry = iconBox_small;
-    p2Icon2.geometry = iconBox_small;
-    renderer.setClearColor(0xbbbbbb);
+    p1Icon1.material = colorBlue
+    p1Icon2.material = colorBlue
+    p2Icon1.material = colorRed
+    p2Icon2.material = colorRed
+    p1Icon1.geometry = iconBox_small
+    p1Icon2.geometry = iconBox_small
+    p2Icon1.geometry = iconBox_small
+    p2Icon2.geometry = iconBox_small
+    renderer.setClearColor(0xbbbbbb)
 }
 
 function renderRefresh(gameStat){
@@ -230,23 +230,22 @@ function renderRefresh(gameStat){
     }
 }
 
-
 socket.on('restart', function(){
-    restoreIcon()  
+    restoreIcon()    
 })
 socket.on('playerAnnounce',function(playerNum){
     selfId = playerNum;
     if (selfId == 1){
-        alert("遊戲開始~~藍方先下子");
+        alert("遊戲開始~~您為藍方");
         renderer.setClearColor(0xbbbbdd);
     }
     if (selfId == 2){
-        alert("遊戲開始~~紅方請稍候");
+        alert("遊戲開始~~您為紅方");
         renderer.setClearColor(0xddbbbb);
     }
 })
 socket.on('refreshState',function(data){
-    console.log(data)
+    //console.log(data)
     renderRefresh(data);
     turn = data.turn;
 })
@@ -305,12 +304,15 @@ socket.on('joinGameRes', function(data){
 socket.on('createRoomRes', function(data){
     if(data.status == 'success') socket.emit('joinGameReq')
 })
+socket.on('AIConfigRes', function(data){
+    console.log("Start game with AI config: ", data.config)
+})
 
 function spawnMessage(text, id){
     if(!id) id = Math.random().toString(36).substring(8)
     let textBox = document.createElement('div');
     textBox.id = id;
-    console.log(id);
+    // console.log(id);
     textBox.className = 'messageBoxText fadeInUp animated';
     textBox.innerHTML = '{0}'.format(text);
     messageBox.appendChild(textBox);
@@ -336,12 +338,12 @@ function createRoom(){
     document.getElementById('name').disabled = true;
     let mode = 'pvp';
     if (document.getElementById('mode').checked) mode = 'com';
-    socket.emit('createRoomReq',{ 'playerName':document.getElementById('name').value, 'roomName':roomName, 'mode':mode });
+    socket.emit('createRoomReq',{ 'playerName':document.getElementById('name').value, 'roomName':roomName, 'mode':mode, 'config': getConfig() });
 }
 
 // refresh sidebar room info
 function refreshRoomInfo(list){
-    document.getElementById('room-info').innerHTML = "";    
+    document.getElementById('room-info').innerHTML = "";
     for (let i = 0; i < list.length; i++){
         let flag = true
         for (let j = 0; j < ridList.length; j++){
@@ -370,6 +372,32 @@ function joinRoom(rid){
 
 function joinGame(){
     socket.emit('joinGameReq')
+}
+
+function getConfig(){
+    let confList = [
+        { id:"--tree_type",     default:"mcts" },
+        { id:"--search_depth",  default:"3"    },
+        { id:"--lamda",         default:"0.7"  },
+        { id:"--c",             default:"0.3"  },
+        { id:"--n_playout",     default:"100"  },
+        { id:"--playout_depth", default:"3"    }
+    ]
+    let config = []
+    for (let i = 0; i < confList.length; i++){
+        config.push(confList[i].id)
+        if (document.getElementById(confList[i].id).value){
+            let val = document.getElementById(confList[i].id).value 
+            if (document.getElementById(confList[i].id).step == '1') val = Math.floor(val)
+            config.push(val.toString())
+        }
+        else config.push(confList[i].default)
+    }
+    return config
+}
+
+function sendConfig(){
+    socket.emit('AIConfigReq', { 'config': getConfig() })
 }
 
 // string format function

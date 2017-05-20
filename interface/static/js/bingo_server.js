@@ -91,7 +91,9 @@ function Room(roomName, mode){
 	this.stat_1D = []
 	this.stat_3D = []
 	this.playing = false
-	this.turn = 0;
+	this.turn = 0
+	this.first = 1
+    this.AIConfig = []
 	for (let i = 0; i < 4; ++i){
 		this.stat_3D[i] = []
 		for (let j = 0; j < 4; ++j) this.stat_3D[i][j] = [0, 0, 0, 0]
@@ -143,9 +145,21 @@ function Room(roomName, mode){
 		
         if (DEBUG) console.log("[Debug] Called comstart function")
         let that = this
+
+    	// set AI arguments
+    	let option = ['-m', 'InforGo.main', 'run', '--directory=./Data/3_64_32_16/']
+        option = option.concat(this.AIConfig)
+        if (this.first == 1) option.push('--play_first=False')
+        else option.push('--play_first=True')
         
+        if (DEBUG){
+        	console.log("[Debug] Start with option :", option)
+        	this.announce('AIConfigRes', { 'config': option })
+        }
+
         // set up agent
-        this.agent = spawn('python', ['-m', 'InforGo.main', 'run', '-tt', 'mcts', '--n_playout=500', '--play_first=False', '--directory=./Data/3_64_32_16/'],{ cwd:__dirname+'/../../../'})
+
+        this.agent = spawn('python', option ,{ cwd:__dirname+'/../../../'})
 		this.agent.stdout.setEncoding('utf-8')
         this.agent.stdout.on('data', function(data){
             let agentDownId = checkRow(that.stat_1D, parseInt(data[0]), parseInt(data[2]))
@@ -164,7 +178,7 @@ function Room(roomName, mode){
 
         // setup variables, stat and agent
         this.playing = true
-		this.turn = 1 // set to 2 if agent play first
+		this.turn = this.first
 		this.initialize()
 		this.announce('restart')
 		this.announce('refreshState', { stat: this.stat_1D, turn: this.turn })
@@ -179,7 +193,6 @@ function Room(roomName, mode){
 			console.log("[Bingo] WTFFFFFFFFFFFFFFFFFFFFFF, computer down at invalid place")
 			return
 		}
-		if (DEBUG) console.log("[Debug] agent downed at", num)
 	
 		// update stat_1D and record
 		this.stat_1D[num] = this.turn
@@ -189,7 +202,6 @@ function Room(roomName, mode){
 
 		// check winner
 		let winnerId = this.checkWinner(num)
-		if (DEBUG) console.log("[Debug] winner check result", winnerId);
 		if (winnerId == 3) this.gameOver({'endWay': 3})
 		if (winnerId == 0){
 			this.turn = (this.turn == 1)? 2 : 1
@@ -213,10 +225,10 @@ function Room(roomName, mode){
 
 		// filter
 		if (!this.playing) return
-        if (DEBUG) console.log("[Debug] now turn is", this.turn)
+        if (DEBUG) console.log("[Debug] turn =", this.turn)
 		if (!this.playerList[this.turn-1] || playerId != this.playerList[this.turn - 1].id) return
 		if (this.stat_1D[num] != 3) return
-		if (DEBUG) console.log("[Debug]", playerId, "downed")
+		if (DEBUG) console.log("[Bingo]", "Player", this.playerList[this.turn - 1].name, "downed at", num)
 	
 		// update stat_1D and record
 		this.stat_1D[num] = this.turn
@@ -226,7 +238,6 @@ function Room(roomName, mode){
 
 		// check winner
 		let winnerId = this.checkWinner(num)
-		if (DEBUG) console.log("[Debug] winner check result", winnerId);
 		if (winnerId == 3) this.gameOver({'endWay': 3})
 		if (winnerId == 0){
 			this.turn = (this.turn == 1)? 2 : 1
@@ -234,7 +245,6 @@ function Room(roomName, mode){
 		    if (this.mode == 'com'){
                 let writeString = (num % 4).toString() + ' ' + (Math.floor(num / 4) % 4).toString() + ' ' + (Math.floor(num / 16)).toString() + '\n'
                 this.agent.stdin.write(writeString)
-                if (DEBUG) console.log("[Debug] Write input '{0}'".format(writeString))
             }
         }
 		else {
@@ -265,6 +275,7 @@ function Room(roomName, mode){
 		//set variables
 		this.playing = false;
 		this.turn = 3;
+		this.first = this.first == 1 ? 2 : 1
 
 		// announce game info
 		gameInfo.mode = this.mode
@@ -383,7 +394,6 @@ function getSimpleRoomList(){
 
 function checkRow(stat,x, y){
     let rowId = x*4 + y*16
-    if (DEBUG) console.log("[Debug] Call checkRow with x={0},y={1}".format(x, y))
     for (let i = 0; i<4;i++){
         if (stat[rowId + i] == 3) return rowId + i
     }

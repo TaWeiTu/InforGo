@@ -60,9 +60,9 @@ for(let i = 0; i < 64; ++i){
     scene.add(cubes[i]);
     cubes[i].situation = 0;
     cubes[i].Num = i;
-    cubes[i].position.x = 4 - Math.floor(i / 16)
-    cubes[i].position.y = i % 4 + 0.4;
-    cubes[i].position.z = Math.floor(i % 16 / 4)   + 1;
+    cubes[i].position.x += ((i - i % 16) / 16) + 1;
+    cubes[i].position.y += i % 4 + 0.4;
+    cubes[i].position.z += (i % 16 - i % 4)/4 + 1;
     // if(i % 4 == 0){
     //     cubes[i].material = colorClickable;
     //     cubes[i].situation = 3;

@@ -16,7 +16,6 @@ ubuntu*
 __pycache__
 */*/__pycache__
 Data/*
-InforGo/Data/*
 Images/
 .DS_Store
 result
