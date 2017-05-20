@@ -1,3 +1,4 @@
+"""Filesystem which handles file I/O in supervised training, data precaculating and batching"""
 import os
 import random
 import numpy as np
@@ -9,6 +10,16 @@ from InforGo.util import logger, plot_state
 class FileSystem(object):
 
     def __init__(self, gamma, training_directory=[None], n_test=0, n_self_play=0, n_generator=0, MAX=0):
+        """Constructor
+        
+        Arguments:
+        gamma -- discount factor when calculating rewards
+        training_directory -- specified directories to be trained, if None, all directories in ./Data/record will be trained
+        n_test -- number of test-generated data to be trained
+        n_self_play -- number of self-play-generated data to be trained
+        n_generator -- number of naive-generated data to be trained
+        MAX -- maximum id of naive-generated data
+        """
         dirs = self._get_record(training_directory, n_test, n_self_play, n_generator, MAX)
         self.files = []
         self.gamma = gamma
@@ -17,6 +28,18 @@ class FileSystem(object):
         self.shuffle = [i for i in range(len(self.files))]
 
     def _get_record(self, training_directory, n_test, n_self_play, n_generator, MAX):
+        """collecting record
+        
+        Arguments:
+        training_directory -- specified directories to be trained, if None, all directories in ./Data/record will be trained
+        n_test -- number of test-generated data to be trained
+        n_self_play -- number of self-play-generated data to be trained
+        n_generator -- number of naive-generated data to be trained
+        MAX -- maximum id of naive-generated data
+
+        Returns:
+        a list of string of filenames satisfied the given constraints
+        """
         logger.info('[Filesystem] Start Collecting Record')
         directory = [x[0] for x in os.walk('./Data/record')]
         directory = directory[1:]
@@ -56,6 +79,15 @@ class FileSystem(object):
         return filename
 
     def get_next_batch(self, number):
+        """get a batch of training data
+        
+        Arguments:
+        number -- number of training data in this batch
+
+        Returns:
+        x -- a list of tuple (state, player)
+        y -- expected value for each (state, player) tuple
+        """
         random.shuffle(self.shuffle)
         files = [self.files[i] for i in self.shuffle[:number]]
         data = self._read_file(files)
@@ -63,6 +95,14 @@ class FileSystem(object):
         return x, y
 
     def _read_file(self, files):
+        """file reading
+        
+        Arguments:
+        files -- a list of filenames to be read
+
+        Returns:
+        a list of rotated states series tuple from file reading
+        """
         data = []
         for fi in files:
             data.append([])
@@ -79,6 +119,15 @@ class FileSystem(object):
         return data
 
     def _get_value(self, data):
+        """calculate the value of states
+        
+        Arguments:
+        data -- a list of states series tuple
+
+        Returns:
+        x -- process the data into a list of (state, player) tuple
+        y -- expected value for each (state, player) tuple
+        """
         x, y = [], []
         for dat in data:
             for rotate_time in range(4):
@@ -111,7 +160,17 @@ class FileSystem(object):
         return x, y
                 
     def _rotate_data(self, height, row, col, t):
-        """Rotate the board 90 x t degree clockwise"""
+        """rotate the given action
+        
+        Arguments:
+        height -- height number of action
+        row -- row number of action
+        col -- column number of action
+        t -- degree of rotation
+
+        Returns:
+        (height, row, col) -- position of rotated action
+        """
         for i in range(t):
             row, col = col, row
             col = 3 - col
