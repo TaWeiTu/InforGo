@@ -89,7 +89,7 @@ class MCTS(object):
         for n in range(self._n_playout):
             n_state = State(state)
             self._playout(n_state)
-        return max(self._root._children.items(), key=lambda child: child[1]._visit)[0]
+        return max(self._root._children.items(), key=lambda child: child[1]._get_value())[0]
 
     def _playout(self, state):
         """walking down playout_depth step using node.select(), simulate the game result with rollout policy"""
