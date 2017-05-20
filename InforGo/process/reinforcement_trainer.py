@@ -1,3 +1,4 @@
+"""Reinforcement training with respect to TD(0) procedure"""
 import math
 
 from InforGo.util import logger, get_pattern, decode_action, TD, encode_action
@@ -7,8 +8,13 @@ from InforGo.environment.bingo import Bingo as State
 
 
 class ReinforcementTrainer(schema):
-    """Reinforcement trainer, make n_epoch self-play"""
+    
     def __init__(self, **kwargs):
+        """Constructor
+
+        Arguments:
+        kwargs -- command line execution arguments
+        """
         super().__init__(kwargs['n_epoch'], kwargs['player_len'], kwargs['pattern_len'], kwargs['n_hidden_layer'], kwargs['n_node_hidden'],
                          kwargs['activation_fn'], kwargs['learning_rate'], kwargs['directory'], kwargs['alpha'], kwargs['gamma'], kwargs['lamda'],
                          kwargs['search_depth'], kwargs['c'], kwargs['n_playout'], kwargs['playout_depth'], kwargs['play_first'], kwargs['tree_type'],
@@ -19,7 +25,14 @@ class ReinforcementTrainer(schema):
                          kwargs['opponent_tree_type'], kwargs['rollout_limit'])
 
     def train(self):
-        """reinforcement training process"""
+        """reinforcement training process
+        
+        Arguments:
+        None
+
+        Returns:
+        None
+        """
         percentage = 0
         logger.info("[Reinforcement] Start Training")
         logger.info("[Reinforcement] Training Complete: 0%")
@@ -48,32 +61,86 @@ class ReinforcementTrainer(schema):
         self._store()
 
     def _store(self):
-        """store weights and biases"""
+        """store weights and biases
+        
+        Arguments:
+        None
+
+        Returns:
+        None
+        """
         self._AI.nn.store()
 
     def _get_action(self, state, player):
-        """return action for current player"""
+        """get action for current player
+        
+        Arguments:
+        state -- current state
+        player -- current player
+
+        Returns:
+        a (row, col) pair denoting the action
+        """
         ai_player = 1 if self._AI._play_first else -1
         if player == ai_player: return self._AI.get_action(state)
         else: return self._opponent.get_action(state)
 
     def _evaluate(self, state, player):
-        """evaluate state for current player"""
+        """state evaluation
+        
+        Arguments:
+        state -- a list of states to be evaluated
+        player -- a list of players to be evaluated
+
+        Returns:
+        a list of value for each (state, player) pair
+        """
         return self._AI.nn.predict(state, player)
 
     def _update(self, state, player, value):
-        """update neural network for self._AI"""
+        """update the neural network with backpropagation
+        
+        Arguments:
+        state -- a list of input states 
+        player -- a list of input players
+        value -- a list of true value for each (state, player) pair
+
+        Returns:
+        None
+        """
         self._AI.nn.update(state, player, value)
 
     def _rotate(self, row, col, t):
-        """rotate action 90 x t clockwise"""
+        """action rotation
+        
+        Arguments:
+        row -- row number of action
+        col -- column number of action
+        t -- rotation degree = 90 * t
+
+        Returns:
+        rotated action
+        """
         for i in range(t):
             row, col = col, row
             col = 3 - col
         return row, col
     
     def _concat_training_data(self, s, v, new_v, R, c_player):
-        """calculate TD(0) return for given state and value"""
+        """calculate TD(0) return for given state and value
+        
+        Arguments:
+        s -- a list of states
+        v -- a list of value of current states
+        new_v -- a list of value of successive states
+        R -- a list of rewards
+        c_player -- a list of current players
+
+        Returns:
+        input_data -- a list of input states for neural network
+        player -- a list of input players for neural network
+        output -- a list of TD(0) value for input states and players
+        """
         input_data = s + s
         player = [c_player] * 4 + [-c_player] * 4
         output = [0 for i in range(8)]

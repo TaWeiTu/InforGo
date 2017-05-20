@@ -9,16 +9,20 @@ from InforGo.environment.bingo import Bingo as State
 
 
 class NeuralNetwork(object):
-    """
-    Neural Network Setup
-    input layer: state + current_player + pattern
-    hidden layer: n_hidden_layer with nodes at each layer = n_node_hidden, activation function is activation_fn
-    output layer: value of the input state for current player
-    weight and bias are stored in directory
-    learning rate = learning_rate
-    """
+    
     def __init__(self, player_len=1, pattern_len=8, n_hidden_layer=1, n_node_hidden=[32],
                  activation_fn='tanh', learning_rate=0.001, directory='../Data/default/'):
+        """Constructor
+        
+        Arguments:
+        player_len: length of nodes for player in the neural network
+        pattern_len: length of patterns in the neural network
+        n_hidden_layer: number of hidden layer(s)
+        n_node_hidden: a list of number representing the number of nodes in each layer
+        activation_fn: activation function name
+        learning_rate: quantity of step in gradient descent
+        directory: directory of weights and biases
+        """
         logger.info('[NeuralNetwork] Start Building Neural Network')
         self.input_state = tf.placeholder(shape=[None, 4, 4, 4], dtype=tf.float64)
         self.state = tf.reshape(self.input_state, [tf.shape(self.input_state)[0], 64])
@@ -59,6 +63,17 @@ class NeuralNetwork(object):
         logger.info('[NeuralNetwork] Done Building Neural Network')
 
     def initialize_weight(self, n, m, _id):
+        """weight initialization
+
+        Arguments:
+        n -- first dimension of weight matrix
+        m -- second dimension of weight matrix
+        _id -- layer id
+
+        Returns:
+        if there exists the weight file for layer id, return the recorded weights
+        else return random weights
+        """
         if os.path.exists(self.directory + 'weight{}'.format(_id)):
             with open(self.directory + 'weight{}'.format(_id), 'r') as f:
                 weight = np.zeros([n, m])
@@ -73,6 +88,16 @@ class NeuralNetwork(object):
         return tf.Variable(tf.truncated_normal(shape=[n, m], mean=0.0, stddev=0.01, dtype=tf.float64))
 
     def initialize_bias(self, n, _id):
+        """bias initialization
+
+        Arguments:
+        n -- dimension of weight matrix
+        _id -- layer id
+
+        Returns:
+        if there exists the bias file for layer id, return the recorded biases
+        else return random biases
+        """
         if os.path.exists(self.directory + 'bias{}'.format(_id)):
             with open(self.directory + 'bias{}'.format(_id), 'r') as f:
                 bias = np.zeros([1, n])
@@ -86,14 +111,29 @@ class NeuralNetwork(object):
         return tf.Variable(tf.truncated_normal(shape=[1, n], mean=0.0, stddev=0.01, dtype=tf.float64))
 
     def get_fn(self, activation_fn=''):
-        """return tensorflow function"""
+        """get the activation function
+        
+        Arguments:
+        activation_fn: name of the activation function
+
+        Returns:
+        a function
+        """
         if activation_fn == 'tanh': return lambda x: tf.tanh(x)
         if activation_fn == 'relu': return lambda x: tf.nn.relu(x)
         if activation_fn == 'sigmoid': return lambda x: tf.sigmoid(x)
         return lambda x: x
 
     def predict(self, states, players):
-        """return the output value of state for player"""
+        """prediction of neural network
+        
+        Arguments:
+        states -- a list of states to be evaluated
+        players -- a list of players to be evaluated
+
+        Returns:
+        a list of value for each (state, player) pair
+        """
         pattern = [get_pattern(state, player) for state, player in zip(states, players)]
         player_node = np.reshape(players, [len(players), 1])
         states = np.reshape(states, [len(states), 4, 4, 4])
@@ -103,7 +143,16 @@ class NeuralNetwork(object):
         return value[:, 0]
 
     def update(self, states, players, v_):
-        """update the value of state to v_"""
+        """update the neural network with backpropagation
+        
+        Arguments:
+        states -- a list of input states 
+        players -- a list of input players
+        v_ -- a list of true value for each (state, player) pair
+
+        Returns:
+        None
+        """
         pattern = [get_pattern(state, player) for state, player in zip(states, players)]
         pattern = np.reshape(pattern, [len(pattern), 8])
         player_node = np.reshape(players, [len(players), 1])
@@ -114,7 +163,14 @@ class NeuralNetwork(object):
         return err
 
     def store(self):
-        """store weight and bias"""
+        """store weights and biases
+        
+        Arguments:
+        None
+
+        Returns:
+        None
+        """
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
         for _id in range(len(self.weight)):
