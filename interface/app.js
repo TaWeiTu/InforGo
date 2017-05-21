@@ -30,10 +30,12 @@ app.get('/simulate', function(req, res){
 		res.end()
 	})
 })
+app.get('/spawn', function(req, res){
+	res.sendFile(__dirname + '/pages/spawn_record.html', function(){
+		res.end()
+	})
+})
 
-
-
-//start.js
 
 io.sockets.on('connection', function(socket){
 	

@@ -12,7 +12,7 @@ from InforGo.util import decode_action, logger, encode_action, get_winning_move
 class Bot(object):
     """Simple AI that first choose to win then prevent loss, finally play randomly"""
     def __init__(self, player):
-        random.seed(7122)
+        # random.seed(7122)
         self._player = player
         self._opponent = -player
 
@@ -23,8 +23,8 @@ class Bot(object):
         if len(move) > 0: return move[0][1], move[0][2]
         env = State(state)
         actions = [i for i in range(16) if env.valid_action(*decode_action(i))]
-        random.shuffle(actions)
-        return_action = decode_action(actions[random.randint(0, len(actions) - 1)])
+        # random.shuffle(actions)
+        return_action = decode_action(random.choice(actions))
         return return_action[0], return_action[1]
 
 
@@ -34,7 +34,7 @@ class Tester(schema):
         super().__init__(kwargs['n_epoch'], kwargs['player_len'], kwargs['pattern_len'], kwargs['n_hidden_layer'], kwargs['n_node_hidden'],
                          kwargs['activation_fn'], kwargs['learning_rate'], kwargs['directory'], kwargs['alpha'], kwargs['gamma'], kwargs['lamda'],
                          kwargs['search_depth'], kwargs['c'], kwargs['n_playout'], kwargs['playout_depth'], kwargs['play_first'], kwargs['tree_type'],
-                         kwargs['eps'])
+                         kwargs['rollout_limit'])
         self._player = 1 if kwargs['play_first'] else -1
         self._bot = Bot(-self._player)
 

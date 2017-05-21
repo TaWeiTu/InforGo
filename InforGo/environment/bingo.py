@@ -1,3 +1,4 @@
+"""3D-Bingo game environment model, implemented with some Markov Decision Process property"""
 import numpy as np
 
 from InforGo.util import get_pattern
@@ -6,10 +7,10 @@ from InforGo.util import get_pattern
 class Bingo(object):
 
     def __init__(self, board=None):
-        """
-        if board is empty: return empty board
-        if board is a list or numpy array: return the same board
-        if board is another board: return a copy of it
+        """Constructor
+        
+        Arguments:
+        board -- 1. a list of board 2. a numpy array of board 3. a Bingo object
         """
         if board is None:
             self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
@@ -40,7 +41,15 @@ class Bingo(object):
             self.player = 1 if cnt % 2 == 0 else -1
 
     def place(self, row, col):
-        """place a cube on position(height, row, col), and return whether the operation is valid"""
+        """place the cube for current player at given position
+
+        Arguments:
+        row -- row number of the position
+        col -- column number of the position
+
+        Returns:
+        None
+        """
         if not self.valid_action(row, col): return 0
         # if the position is already taken
         height = self.height[row][col]
@@ -54,20 +63,34 @@ class Bingo(object):
         return 0
 
     def full(self):
-        """Return whether the board is full"""
+        """return whether the board is full
+        
+        Arguments:
+        None
+
+        Returns:
+        a boolean
+        """
         for r in range(4):
             for c in range(4):
                 if self.height[r][c] < 4: return False
         return True
 
     def valid_action(self, row, col):
-        """Return whether the action is valid"""
+        """return whether the action is valid"""
         if row < 0 or row > 4 or col < 0 or col > 4: return False
         if self.height[row][col] >= 4: return False
         return True
 
     def win(self, player):
-        """return True if player won"""
+        """return True if player won
+        
+        Argument:
+        player -- player to be checked, 1 for the one who player first, -1 for the opposite
+
+        Returns:
+        a boolean
+        """
         for h in range(4):
             for r in range(4):
                 flag = True
@@ -126,37 +149,76 @@ class Bingo(object):
         return False
 
     def restart(self):
-        """restart the game"""
+        """restart the game
+        
+        Arguments:
+        None
+
+        Returns:
+        None
+        """
         self.__init__()
 
     def undo_action(self, row, col):
-        """Undo the last action at (row, col)"""
+        """undo the last action at given position
+
+        Arguments:
+        row -- row number of undo action
+        col -- column number of undo action
+
+        Returns:
+        None
+        """
         self.height[row][col] -= 1
         self.board[self.height[row][col]][row][col] = 0
 
     def get_state(self):
-        """Get current State"""
+        """get current state
+        
+        Arguments:
+        None
+
+        Returns:
+        a numpy array representing the board
+        """
         return np.reshape(np.array(self.board), [4, 4, 4])
        
     def terminate(self):
-        """Return True if the state is terminal"""
+        """return True if the state is terminal
+        
+        Arguments:
+        None
+
+        Returns:
+        a boolean
+        """
         return self.win(1) or self.win(-1) or self.full()
 
     def get_initial_state(self):
-        """Refresh the game and return the initial state"""
+        """refresh the game and return the initial state
+        
+        Arguments:
+        None
+
+        Returns:
+        a numpy array representing the initial state
+        """
         self.__init__()
         return np.zeros(shape=[4, 4, 4])
 
     def get_reward(self, state, player):
-        """
-        if player win: return 50
-        if opponent win: return -50
-        else return pattern: corner * 1 + two * 2 + three * 3
+        """get the reward for state s_
+
+        Arguments:
+        state -- successive state of taking action a
+        player -- player who receive the reward
+
+        Returns:
+        a number in [-1, 1]
         """
         pattern = get_pattern(Bingo(state), player)
-        tmp_state = Bingo(state)
-        if tmp_state.win(player): return 1
-        if tmp_state.win(-player): return -1
+        if pattern[0, 6]: return 1
+        if pattern[0, 7]: return -1
         reward = 0
         for i in range(6):
             if i % 2 == 0: reward += (i // 2 + 1) * pattern[0, i]
@@ -164,10 +226,22 @@ class Bingo(object):
         return reward / 10
 
     def take_action(self, row, col):
+        """take action at given position
+        
+        Argument:
+        row -- row number of action
+        col -- column number of action
+
+        Returns:
+        flag -- the winner of the game if terminated
+        new_state -- new state from taking action a in state s
+        reward -- reward of taking this action
+        """
         player = self.player
-        """Take action and Return whether the action is valid, whether the player win or not, new state and the reward"""
         origin_reward = self.get_reward(self.get_state(), player)
         flag = self.place(row, col)
+        if self.win(player): return flag, self.get_state(), 1
+        if self.win(player): return flag, self.get_state(), -1
         new_state = self.get_state()
         new_reward = self.get_reward(new_state, player)
         return flag, new_state, new_reward - origin_reward
@@ -177,3 +251,14 @@ class Bingo(object):
         i, j, k = tup
         return self.board[i][j][k]
 
+    def get_height(self, row, col):
+        """get height for given position
+        
+        Arguments:
+        row -- row number of position
+        col -- column number of position
+
+        Returns:
+        height of (row, col)
+        """
+        return self.height[row][col]

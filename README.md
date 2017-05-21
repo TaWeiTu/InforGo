@@ -43,6 +43,7 @@ Valid argument are the following:
 * **\-\-c, -c:** [r_train, test, run] Parameter that controls exploration vs exploitation tradeoff
 * **\-\-n_playout, -np:** [r_train, test, run] Number of playouts at each action selection
 * **\-\-playout_depth, -pd:** [r_train, test, run] Depth where simulation starts
+* **\-\-rollout_limit, -rl:** [r_train, test, run] Limit of rollout
 * **\-\-debug:** Debug mode, default is False
 * **\-\-play_first, -pf:** [r_train, test, run] AI go first or second, default is True
 * **\-\-n_test, -nt:** [s_train] Number of test data to be trained
@@ -52,4 +53,4 @@ Valid argument are the following:
 * **\-\-player_len:** Number of player nodes in neural network
 * **\-\-pattern_len:** Length of pattern recognition
 * **\-\-directory, -dir:** Directory to store weight and bias
-* **\-\-training_directory, -td:** [s_train] Directory to be trained, if not specified, train all of the avaible directory **training_directory:** Directory to be trained, if not specified, train all of the avaible directory
+* **\-\-training_directory, -td:** [s_train] Directory to be trained, if not specified, train all of the avaible directory

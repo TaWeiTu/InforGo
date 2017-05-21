@@ -1,8 +1,6 @@
-var socket = io.connect();
-
 var info = document.getElementById("info")
 var gameBoard = document.getElementById("gameBoard")
-var messageBox = document.getElementById("messageBox")
+var rec = document.getElementById("record")
 
 // set up the renderer
 var scene = new THREE.Scene();
@@ -69,33 +67,33 @@ for(let i = 0; i < 64; ++i){
 }
 
 // set up light
-var ambientLight = new THREE.AmbientLight(0x888888 ,0.5)
-scene.add(ambientLight)
-var directionalLight = new THREE.DirectionalLight(0xcccccc)
-directionalLight.position.set(1, 2, 2).normalize()
-scene.add(directionalLight)
+var ambientLight = new THREE.AmbientLight(0x888888 ,0.5);
+scene.add(ambientLight);
+var directionalLight = new THREE.DirectionalLight(0xcccccc);
+directionalLight.position.set(1, 2, 2).normalize();
+scene.add(directionalLight);
 
 // camera controll
-var manualControl = false
-var longitude = 0
-var latitude = 0
-var savedX
-var savedY
-var savedLongitude
-var savedLatitude
-var scale = 60
-var mouse = new THREE.Vector2()
-camera.target = new THREE.Vector3(0, 0, 0)
+var manualControl = false;
+var longitude = 0;
+var latitude = 0;
+var savedX;
+var savedY;
+var savedLongitude;
+var savedLatitude;
+var scale = 60;
+var mouse = new THREE.Vector2();
+camera.target = new THREE.Vector3(0, 0, 0);
 
 // variable declar
 var selfId;
-var turn = 3
+var turn = 1;
 
 // set up raycaster
-var raycaster = new THREE.Raycaster()
-var firstVisibleObject, selected, intersects
-var t = 0, savedOpacity
-render()
+var raycaster = new THREE.Raycaster();
+var firstVisibleObject, selected, intersects;
+var t = 0, savedOpacity;
+render();
 
 function render(){
 
@@ -133,8 +131,8 @@ function render(){
             if(selected && selected.situation == 3)selected.material = colorClickable;
             selected = firstVisibleObject;
             if(selected.situation == 3){
-                if(selfId == 1)selected.material = TransBlue;
-                if(selfId == 2)selected.material = TransRed;
+                if(turn == 1)selected.material = TransBlue;
+                if(turn == 2)selected.material = TransRed;
             }
         }
     }
@@ -182,8 +180,9 @@ function onDocumentMouseDown(event){
     savedLatitude = latitude;
 
     if(firstVisibleObject && firstVisibleObject.situation == 3){
-        socket.emit('downReq', firstVisibleObject.Num);
+        down(firstVisibleObject.Num);
     }
+    rec.innerHTML = getRecord()
 }
 
 function onDocumentMouseMove(event){
@@ -207,104 +206,130 @@ function onDocumentWheel(event){
     scale = Math.min(scale, 80);
 }
 
-function restoreIcon(){
-    p1Icon1.material = colorBlue;
-    p1Icon2.material = colorBlue;
-    p2Icon1.material = colorRed;
-    p2Icon2.material = colorRed;
-    p1Icon1.geometry = iconBox_small;
-    p1Icon2.geometry = iconBox_small;
-    p2Icon1.geometry = iconBox_small;
-    p2Icon2.geometry = iconBox_small;
-    renderer.setClearColor(0xbbbbbb);
-}
+var steps = []
 
-function renderRefresh(gameStat){
+function reset(){
     for(let i = 0; i < 64; ++i){
-        cubes[i].material = color[gameStat.stat[i]];
-        cubes[i].situation = gameStat.stat[i];
+        cubes[i].situation = 0;
+        cubes[i].material = color[0]
+        if(i % 4 == 0){
+            cubes[i].material = colorClickable;
+            cubes[i].situation = 3;
+        }
     }
-    if(typeof(gameStat.last) != 'undefined'){
-        if(gameStat.stat[gameStat.last] == 1) cubes[gameStat.last].material = blueShine
-        else cubes[gameStat.last].material = redShine
+    rec.innerHTML = getRecord()
+    steps = []
+    turn = 1
+}
+reset()
+
+function prev(){
+    steps.pop()
+    for(let i = 0; i < 64; ++i){
+        cubes[i].situation = 0
+        cubes[i].material = color[0]
+        if(i % 4 == 0){
+            cubes[i].material = colorClickable;
+            cubes[i].situation = 3;
+        }
+    }
+    turn = 1
+    for(let i = 0; i < steps.length; i++){
+        cubes[steps[i]].situation = turn
+        cubes[steps[i]].material = color[turn]
+        if (steps[i] % 4 != 3){
+            cubes[steps[i] + 1].situation = 3
+            cubes[steps[i] + 1].material = color[3]
+        }
+        turn = turn == 1? 2:1
+    }
+    rec.innerHTML = getRecord()
+}
+
+function down(id){
+    steps.push(id)
+    cubes[id].situation = turn
+    cubes[id].material = color[turn]
+    if (id % 4 != 3){
+        cubes[id + 1].situation = 3
+        cubes[id + 1].material = color[3]
+    }
+    turn = turn == 1? 2:1
+    let way = checkWinner(id)
+    if(way != 0) gameOver(way)
+}
+
+function gameOver(way){
+    alert("gameOver")
+    for(let i = 0; i < 64; i++){
+        if(cubes[i].situation == 3){
+            cubes[i].situation = 0
+            cubes[i].material = color[0]
+        }
     }
 }
 
+var stat_3D = []
+for (let i = 0; i < 4; ++i){
+    this.stat_3D[i] = []
+    for (let j = 0; j < 4; ++j) this.stat_3D[i][j] = [0, 0, 0, 0]
+}
 
-socket.on('restart', function(){
-    restoreIcon()  
-})
-socket.on('playerAnnounce',function(playerNum){
-    selfId = playerNum;
-    if (selfId == 1){
-        alert("遊戲開始~~藍方先下子");
-        renderer.setClearColor(0xbbbbdd);
+function checkWinner(id){
+    for(let i = 0; i < 64; i++){
+        stat_3D[i % 4][Math.floor(i / 4) % 4][Math.floor(i / 16)] = cubes[i].situation
     }
-    if (selfId == 2){
-        alert("遊戲開始~~紅方請稍候");
-        renderer.setClearColor(0xddbbbb);
+    // check if the game is over.
+    let x = id % 4
+    let y = Math.floor(id / 4) % 4
+    let z = Math.floor(id / 16)
+    let value = 1;
+    let sum = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    for (let i = 0; i < 4; ++i, value *= 2){
+        let point = [
+            stat_3D[x][y][i], stat_3D[x][i][z], stat_3D[i][y][z], // 1D
+            stat_3D[x][i][i], stat_3D[i][y][i], stat_3D[i][i][z], // 2D
+            stat_3D[x][i][3-i],  stat_3D[i][y][3-i], stat_3D[i][3-i][z], //2D_inverse
+            stat_3D[i][i][i], stat_3D[i][i][3-i], stat_3D[3-i][i][i], // 3D
+            stat_3D[3-i][i][3-i]
+        ]
+        for (let line = 0; line < point.length; ++line){
+            if (point[line] == 1) sum[line] += value
+            if (point[line] == 2) sum[line] -= value
+        }
     }
-})
-socket.on('refreshState',function(data){
-    console.log(data)
-    renderRefresh(data);
-    turn = data.turn;
-})
-socket.on('gameOver',function(gameInfo){
-    if (gameInfo.endWay == 3){
-        alert("此局平手，10秒後開啟新局");
-    }
-    if (gameInfo.endWay == 0){
-        if (gameInfo.winnerId == 1) alert("紅方離開遊戲，藍方 " + gameInfo.winnerName + " 勝利~ 10秒後等候另外兩位參賽者開啟新局");
-        if (gameInfo.winnerId == 2) alert("藍方離開遊戲，紅方 " + gameInfo.winnerName + " 勝利~ 10秒後等候另外兩位參賽者開啟新局");
-    }
-    else {
-        if (gameInfo.winnerId == 1) alert("藍方 " + gameInfo.winnerName + " 勝利~ 10秒後等候另外兩位參賽者開啟新局");
-        if (gameInfo.winnerId == 2) alert("紅方 " + gameInfo.winnerName + " 勝利~ 10秒後等候另外兩位參賽者開啟新局");
-    }
-    if (gameInfo.endWay != 3){
-        p1Icon1.material = color[gameInfo.winnerId];
-        p1Icon2.material = color[gameInfo.winnerId];
-        p2Icon1.material = color[gameInfo.winnerId];
-        p2Icon2.material = color[gameInfo.winnerId];
-    }
-    p1Icon1.geometry = iconBox_big;
-    p1Icon2.geometry = iconBox_big;
-    p2Icon1.geometry = iconBox_big;
-    p2Icon2.geometry = iconBox_big;
-    selfId = null;
-});
-// declare room variables
-var nowRoomId = null;
-var ridList = [];
 
+    // return 1 if there is a line with value "15", ortherwise return 2 if got value"-15". if not, return 0.
+    for (let i = 0; i < sum.length; ++i){
+        if(sum[i] == 15) return 1;
+        if(sum[i] ==-15) return 2;
+    }
+    // return 0 if the game could keep going on.
+    for (let i = 0; i < 64; ++i){
+        if(cubes[i].situation == 3) return 0;
+    }
+    // return 3 if there is no empty place.
+    return 3;
+} 
 
-// socket events
-socket.on('refreshRoomInfo',function(data){
-    refreshRoomInfo(data.list);
-})
-socket.on('message', function(data){
-    spawnMessage(data.message,data.msgId);
-})
-socket.on('joinRoomRes', function(data){
-    if(data.status == 'success'){
-        nowRoomId = data.rid
-        document.getElementById('joinButton').disabled = !data.joinable
-        restoreIcon()
+function getRecord(){
+    let record = ""
+    let n, s
+    for(let i = 0; i < 4; i++){
+        for(let j = 0; j < 4; j++){
+            for(let k = 0; k < 4; k++){
+                n = i * 16 + j + k * 4
+                if (cubes[n].situation == 1) s = '1'
+                else if (cubes[n].situation == 2) s = '-1'
+                else if (cubes[n].situation == 0 || cubes[n].situation == 3) s = '0'
+                record += s
+                if(j != 4 ) record += ' '
+            }
+        }
+        record += '<br>'
     }
-})
-socket.on('joinGameRes', function(data){
-    if(data.status == 'success'){
-        document.getElementById('joinButton').disabled = true
-        spawnMessage('Join game success.')
-    }
-    if(data.status == 'failed'){
-        spawnMessage('Join game failed.')
-    }
-})
-socket.on('createRoomRes', function(data){
-    if(data.status == 'success') socket.emit('joinGameReq')
-})
+    return record
+}
 
 function spawnMessage(text, id){
     if(!id) id = Math.random().toString(36).substring(8)
@@ -320,56 +345,6 @@ function spawnMessage(text, id){
     setTimeout(function(){
         messageBox.removeChild(textBox);
     },6000);
-}
-
-// create room request
-function createRoom(){
-    if (!document.getElementById('name').value){
-        spawnMessage("Name can't be null.", Math.random().toString(36).substring(8))
-        return
-    }
-    let roomName = prompt("請輸入房間名稱")
-    if(!roomName){
-        if (roomName == '') spawnMessage("Room name can't be null.", Math.random().toString(36).substring(8))
-        return
-    }
-    document.getElementById('name').disabled = true;
-    let mode = 'pvp';
-    if (document.getElementById('mode').checked) mode = 'com';
-    socket.emit('createRoomReq',{ 'playerName':document.getElementById('name').value, 'roomName':roomName, 'mode':mode });
-}
-
-// refresh sidebar room info
-function refreshRoomInfo(list){
-    document.getElementById('room-info').innerHTML = "";    
-    for (let i = 0; i < list.length; i++){
-        let flag = true
-        for (let j = 0; j < ridList.length; j++){
-            if (list[i].rid == ridList[j]){
-                document.getElementById('room-info').innerHTML += "<tr class=\"roomList\" id=\'{0}\' onclick='joinRoom(\"{0}\")'><td>{1}</td><td>{2}</td><td>{3}</td></tr>".format(list[i].rid, list[i].name, list[i].mode, list[i].playing);
-                flag = false
-                break;
-            }
-        }
-        if (flag) document.getElementById('room-info').innerHTML += "<tr class=\"roomList animated fadeInUp\" id=\'{0}\' onclick='joinRoom(\"{0}\")'><td>{1}</td><td>{2}</td><td>{3}</td></tr>".format(list[i].rid, list[i].name, list[i].mode, list[i].playing);
-    }
-    ridList = []
-    for(let i = 0; i < list.length; i++) ridList.push(list[i].rid);
-}
-
-function joinRoom(rid){
-    if (!document.getElementById('name').value){
-        spawnMessage("Name can't be null.", Math.random().toString(36).substring(8))
-        return
-    }
-    document.getElementById('name').disabled = true;
-    if (nowRoomId != rid){
-        socket.emit('joinRoomReq', document.getElementById('name').value, rid);
-    }
-}
-
-function joinGame(){
-    socket.emit('joinGameReq')
 }
 
 // string format function
