@@ -2,7 +2,7 @@
 import random
 import numpy as np
 
-from InforGo.util import decode_action, get_winning_move, encode_action
+from InforGo.util import decode_action, get_winning_move, encode_action, logger
 from InforGo.environment.bingo import Bingo as State
 
 
@@ -54,6 +54,13 @@ class TreeNode(object):
         Returns:
         a number in [1, 16] denoting the selected action
         """
+        # for _id, child in self._children.items():
+            # print("id = {}, value = {}".format(_id, node._get_value()))
+        act = max(self._children.items(), key=lambda child: child[1]._get_value())[0]
+        # print("action: ", act)
+        logger.debug("action: {}".format(act
+        
+        ))
         return max(self._children.items(), key=lambda child: child[1]._get_value())[0]
 
     def _get_value(self):
@@ -142,6 +149,8 @@ class MCTS(object):
         for n in range(self._n_playout):
             n_state = State(state)
             self._playout(n_state)
+        # for _id, node in self._root._children.items():
+            # print("id = {}, value = {}".format(_id, node._get_value()))
         return max(self._root._children.items(), key=lambda child: child[1]._get_value())[0]
 
     def _playout(self, state):
@@ -157,6 +166,7 @@ class MCTS(object):
         # v = TD(0) z = eligibility trace
         v = self._evaluate([state.get_state()], [self._player]) if self._lamda < 1 else 0
         z = self._rollout(state) if self._lamda > 0 else 0
+        logger.debug("z = {}".format(z))
         leaf_value = (1 - self._lamda) * v + self._lamda * z
         node._back_prop(leaf_value, self._c)
 
