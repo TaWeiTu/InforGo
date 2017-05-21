@@ -145,7 +145,7 @@ function Room(roomName, mode){
         let that = this
         
         // set up agent
-        this.agent = spawn('python', ['-m', 'InforGo.main', 'run', '-tt', 'mcts', '--n_playout=500', '--play_first=False', '--directory=./Data/3_64_32_16/'],{ cwd:__dirname+'/../../../'})
+        this.agent = spawn('python', ['-m', 'InforGo.main', 'run', '-tt', 'mcts', '--n_playout=100', '--play_first=False', '--directory=./Data/3_64_32_16/'],{ cwd:__dirname+'/../../../'})
 		this.agent.stdout.setEncoding('utf-8')
         this.agent.stdout.on('data', function(data){
             let agentDownId = checkRow(that.stat_1D, parseInt(data[0]), parseInt(data[2]))

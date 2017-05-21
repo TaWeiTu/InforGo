@@ -1,4 +1,4 @@
-interface/node_modules/
+interface/node_modules/*
 interface/Data/record/*
 interface/config.json
 *.swp
