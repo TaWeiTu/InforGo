@@ -23,8 +23,8 @@ class Bot(object):
         if len(move) > 0: return move[0][1], move[0][2]
         env = State(state)
         actions = [i for i in range(16) if env.valid_action(*decode_action(i))]
-        random.shuffle(actions)
-        return_action = decode_action(actions[random.randint(0, len(actions) - 1)])
+        # random.shuffle(actions)
+        return_action = decode_action(random.choice(actions))
         return return_action[0], return_action[1]
 
 

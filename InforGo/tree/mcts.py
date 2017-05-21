@@ -7,19 +7,32 @@ from InforGo.environment.bingo import Bingo as State
 
 
 class TreeNode(object):
-    """Nodes in MCTS, average value and UCT are maintained"""
-    def __init__(self, parent, state, c, p):
+    """Nodes in Monte-Carlo tree search, average value and UCT are maintained"""
+    def __init__(self, parent, state, p):
+        """Constructor
+
+        Arguments:
+        parent -- reference to the parent TreeNode
+        state -- state that this node represents
+        p -- probabilty over choosing the node to other siblings
+        """
         self._parent = parent
         self._children = {}
         self._visit = 0
         self._v = 0
         self._state = state
         self._u = p
-        self._c = c
         self._p = p
 
     def _expand(self):
-        """expand the node for all valid action"""
+        """expand the node for all valid action
+        
+        Arguments:
+        None
+
+        Returns:
+        None
+        """
         actions = [i for i in range(16) if self._state.valid_action(*decode_action(i))]
         c_state = State(self._state)
         total = 0
@@ -30,38 +43,78 @@ class TreeNode(object):
                 h = n_state.get_height(*decode_action(i))
                 n_state.take_action(*decode_action(i))
                 p = self._get_priority(c_state.get_height(*decode_action(i))) / total
-                self._children[i] = TreeNode(self, n_state, self._c, p)
+                self._children[i] = TreeNode(self, n_state, p)
 
     def _select(self):
-        """select child with highest UCT"""
+        """select child with highest UCT
+        
+        Arguments:
+        None
+
+        Returns:
+        a number in [1, 16] denoting the selected action
+        """
         return max(self._children.items(), key=lambda child: child[1]._get_value())[0]
 
     def _get_value(self):
-        """compute UCT"""
+        """compute UCT
+        
+        Arguments:
+        None
+
+        Returns:
+        UCT value of this node
+        """
         return self._v + self._u
 
     def _update(self, leaf_value, c):
-        """update the average value and the number of visits"""
+        """update the average value and the number of visits
+        
+        Arguments:
+        leaf_value -- state evaluation combined with game simulation result
+        c -- parameter in [0, inf] controlling exploration/exploitation tradeoff
+
+        Returns:
+        None
+        """
         self._visit += 1
         self._v += (leaf_value - self._v) / self._visit
         if not self.is_root():
             self._u = 2 * c * self._p * np.sqrt(2 * np.log(self._parent._visit) / self._visit)
 
     def _back_prop(self, leaf_value, c):
-        """recursively back propagate the leaf value to the root"""
+        """recursively back propagate the leaf value to the root
+        
+        Arguments:
+        leaf_value -- state evaluation combined with game simulation result
+        c -- parameter in [0, inf] controlling exploration/exploitation tradeoff
+
+        Returns:
+        None
+        """
         if self._parent:
             self._parent._back_prop(leaf_value, c)
         self._update(leaf_value, c)
 
     def _get_priority(self, height):
+        """compute priority of height of action
+
+        Arguments:
+        height -- height of action
+
+        Returns:
+        priority of input action
+        """
         if height == 0 or height == 1: return 4
         if height == 2: return 3
         return 2
 
     def is_root(self):
+        """return whether this node is root"""
         return self._parent is None
 
     def is_leaf(self):
+        """return whether this node is leaf"""
         return len(self._children) == 0
 
 
@@ -72,7 +125,7 @@ class MCTS(object):
         self._c = c
         self._n_playout = n_playout
         self._evaluator = evaluator
-        self._root = TreeNode(None, State(np.zeros([4, 4, 4])), self._c, 1)
+        self._root = TreeNode(None, State(np.zeros([4, 4, 4])), 1)
         self._playout_depth = playout_depth
         self._player = player
         self._rollout_limit = rollout_limit
@@ -89,7 +142,7 @@ class MCTS(object):
         for n in range(self._n_playout):
             n_state = State(state)
             self._playout(n_state)
-        return max(self._root._children.items(), key=lambda child: child[1]._visit)[0]
+        return max(self._root._children.items(), key=lambda child: child[1]._v)[0]
 
     def _playout(self, state):
         """walking down playout_depth step using node.select(), simulate the game result with rollout policy"""
@@ -117,8 +170,8 @@ class MCTS(object):
             state.take_action(*decode_action(act))
             c_player *= -1
             step += 1
-        if state.win(self._player): return 1 - step * 2 / self._rollout_limit
-        if state.win(-self._player): return -1 + step * 2 / self._rollout_limit
+        if state.win(self._player): return 1
+        if state.win(-self._player): return -1
         return 0
 
     def _evaluate(self, state, player):
@@ -132,5 +185,5 @@ class MCTS(object):
         move = get_winning_move(state, -player)
         if len(move) > 0: return encode_action((move[0][1], move[0][2]))
         valid_action = [i for i in range(16) if state.valid_action(*decode_action(i))]
-        random.shuffle(valid_action)
-        return valid_action[0]
+        # random.shuffle(valid_action)
+        return random.choice(valid_action)
