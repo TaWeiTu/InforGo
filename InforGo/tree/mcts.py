@@ -21,7 +21,7 @@ class TreeNode(object):
         self._visit = 0
         self._v = 0
         self._state = state
-        self._u = p
+        self._u = np.inf
         self._p = p
 
     def _expand(self):
@@ -100,7 +100,7 @@ class TreeNode(object):
         None
         """
         if self._parent:
-            self._parent._back_prop(leaf_value, c)
+            self._parent._back_prop(-leaf_value, c)
         self._update(leaf_value, c)
 
     def _get_priority(self, height):
@@ -149,8 +149,8 @@ class MCTS(object):
         for n in range(self._n_playout):
             n_state = State(state)
             self._playout(n_state)
-        # for _id, node in self._root._children.items():
-            # print("id = {}, value = {}".format(_id, node._get_value()))
+        for _id, node in self._root._children.items():
+            logger.debug("id = {}, value = {}".format(_id, node._get_value()))
         return max(self._root._children.items(), key=lambda child: child[1]._get_value())[0]
 
     def _playout(self, state):
