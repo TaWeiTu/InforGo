@@ -147,7 +147,7 @@ function Room(roomName, mode){
         let that = this
 
     	// set AI arguments
-    	let option = ['-m', 'InforGo.main', 'run', '--directory=./Data/3_64_32_16/']
+    	let option = ['-m', 'InforGo.main', 'run', '--directory=./Data/3_64_32_16/', '-nh', '3', '-nn', '64', '32', '16']
         option = option.concat(this.AIConfig)
         if (this.first == 1) option.push('--play_first=False')
         else option.push('--play_first=True')
