@@ -111,7 +111,7 @@ class TreeNode(object):
         priority of input action
         """
         if height == 0 or height == 1: return 4
-        if height == 2: return 3
+        if height == 2 or height == 3: return 3
         return 2
 
     def is_root(self):
