@@ -58,9 +58,7 @@ class TreeNode(object):
             # print("id = {}, value = {}".format(_id, node._get_value()))
         act = max(self._children.items(), key=lambda child: child[1]._get_value())[0]
         # print("action: ", act)
-        logger.debug("action: {}".format(act
-        
-        ))
+        # logger.debug("action: {}".format(act))
         return max(self._children.items(), key=lambda child: child[1]._get_value())[0]
 
     def _get_value(self):
@@ -100,7 +98,7 @@ class TreeNode(object):
         None
         """
         if self._parent:
-            self._parent._back_prop(-leaf_value, c)
+            self._parent._back_prop(leaf_value, c)
         self._update(leaf_value, c)
 
     def _get_priority(self, height):
@@ -147,6 +145,7 @@ class MCTS(object):
     def get_action(self, state, player):
         """play n_playout playouts, choose action greedily on the basis of visits"""
         for n in range(self._n_playout):
+            if n % 100 == 0: logger.debug("playout: {}".format(n))
             n_state = State(state)
             self._playout(n_state)
         for _id, node in self._root._children.items():
@@ -166,7 +165,7 @@ class MCTS(object):
         # v = TD(0) z = eligibility trace
         v = self._evaluate([state.get_state()], [self._player]) if self._lamda < 1 else 0
         z = self._rollout(state) if self._lamda > 0 else 0
-        logger.debug("z = {}".format(z))
+        # logger.debug("z = {}".format(z))
         leaf_value = (1 - self._lamda) * v + self._lamda * z
         node._back_prop(leaf_value, self._c)
 
@@ -177,6 +176,7 @@ class MCTS(object):
         while not state.terminate():
             if step > self._rollout_limit: return 0
             act = self._rollout_policy(state, c_player)
+            # logger.debug("action: {}".format(act))
             state.take_action(*decode_action(act))
             c_player *= -1
             step += 1
