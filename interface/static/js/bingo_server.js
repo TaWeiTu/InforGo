@@ -94,6 +94,7 @@ function Room(roomName, mode){
 	this.turn = 0
 	this.first = 1
     this.AIConfig = []
+    this.AIAlive = false
 	for (let i = 0; i < 4; ++i){
 		this.stat_3D[i] = []
 		for (let j = 0; j < 4; ++j) this.stat_3D[i][j] = [0, 0, 0, 0]
@@ -160,6 +161,7 @@ function Room(roomName, mode){
         // set up agent
 
         this.agent = spawn('python', option ,{ cwd:__dirname+'/../../../'})
+        this.AIAlive = true
 		this.agent.stdout.setEncoding('utf-8')
         this.agent.stdout.on('data', function(data){
             if (DEBUG) console.log("[Debug] AI print\'{0}\'".format(data))
@@ -175,6 +177,7 @@ function Room(roomName, mode){
         this.agent.on('close', (code) => {
             console.log("[Agent] exit with code",code)
             if (DEBUG & this.playing) this.announce('message', {'message':'AI closed.', 'msgId':randomString(8)})
+            that.AIAlive = false
         })
         this.agent.on('error', (err) => {
             console.log("[Agent] Got output error:",err)
@@ -249,10 +252,8 @@ function Room(roomName, mode){
 		    if (this.mode == 'com'){
                 let writeString = (num % 4).toString() + ' ' + (Math.floor(num / 16)).toString() + ' ' + (Math.floor(num / 4) % 4).toString() + '\n'
                 if (DEBUG) console.log("[Debug] Write input \'{0}\'".format(writeString))
-                try {
+                if (this.AIAlive){
                     this.agent.stdin.write(writeString)
-                }catch (e) {
-                    throw e
                 }
             }
         }

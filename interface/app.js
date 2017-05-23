@@ -113,6 +113,16 @@ function joinRoom(player, rid){
 
 function createRoom(player, data){
 	if (data.mode != 'pvp' && data.mode != 'com') return
+    if (data.mode == 'com'){
+        let cnt = 0
+        for (let i = 0; i < bingo.roomList.length; i++){
+            if (bingo.roomList[i].mode == 'com') cnt++
+        }
+        if (cnt >= 2){
+            player.socket.emit('message', {'message':'Server can hold only two AI.', 'msgId':bingo.randomString(8)})
+            return
+        }
+    }
 	let newRoom = new bingo.Room(data.roomName, data.mode)
     if(data.config) newRoom.AIConfig = data.config
 	bingo.roomList.push(newRoom)
