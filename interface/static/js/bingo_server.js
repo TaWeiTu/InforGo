@@ -147,7 +147,7 @@ function Room(roomName, mode){
         let that = this
 
     	// set AI arguments
-    	let option = ['-m', 'InforGo.main', 'run', '--directory=./Data/3_64_32_16/', '-nh', '3', '-nn', '64', '32', '16']
+    	let option = ['-m', 'InforGo.main', 'run', '--directory=./Data/3_64_32_16/', '-nh', '3', '-nn', '64', '32', '16', '-rl', '20']
         option = option.concat(this.AIConfig)
         if (this.first == 1) option.push('--play_first=False')
         else option.push('--play_first=True')
@@ -162,15 +162,19 @@ function Room(roomName, mode){
         this.agent = spawn('python', option ,{ cwd:__dirname+'/../../../'})
 		this.agent.stdout.setEncoding('utf-8')
         this.agent.stdout.on('data', function(data){
+            if (DEBUG) console.log("[Debug] AI print\'{0}\'".format(data))
             let agentDownId = checkRow(that.stat_1D, parseInt(data[0]), parseInt(data[2]))
             if (DEBUG) console.log("[Debug] AI down at {0}".format(agentDownId))
+            if (agentDownId == undefined) that.announce('message', {'message':'AI tried to down at \({0}, {1}\)'.format(parseInt(data[0]), parseInt(data[2])), 'msgId':randomString(8)})
             that.agentDown(agentDownId) 
         })
         this.agent.stderr.on('data', (data) => {
+            if (DEBUG) console.log("[Debug] Room", this.name, "AI went wrong")
             console.log("[Agent] Std error:",data)
         })
         this.agent.on('close', (code) => {
             console.log("[Agent] exit with code",code)
+            if (DEBUG & this.playing) this.announce('message', {'message':'AI closed.', 'msgId':randomString(8)})
         })
         this.agent.on('error', (err) => {
             console.log("[Agent] Got output error:",err)
@@ -243,8 +247,13 @@ function Room(roomName, mode){
 			this.turn = (this.turn == 1)? 2 : 1
 			this.announce('refreshState', { stat: this.stat_1D, turn: this.turn, last : num })
 		    if (this.mode == 'com'){
-                let writeString = (num % 4).toString() + ' ' + (Math.floor(num / 4) % 4).toString() + ' ' + (Math.floor(num / 16)).toString() + '\n'
-                this.agent.stdin.write(writeString)
+                let writeString = (num % 4).toString() + ' ' + (Math.floor(num / 16)).toString() + ' ' + (Math.floor(num / 4) % 4).toString() + '\n'
+                if (DEBUG) console.log("[Debug] Write input \'{0}\'".format(writeString))
+                try {
+                    this.agent.stdin.write(writeString)
+                }catch (e) {
+                    throw e
+                }
             }
         }
 		else {
@@ -265,7 +274,7 @@ function Room(roomName, mode){
 
 		// stop agent
 		if (this.mode == 'com'){
-			this.agent.stdin.write('-1 -1 -1')
+			//this.agent.stdin.write('-1 -1 -1')
 			this.agent.stdin.end()
 		}
 
@@ -398,6 +407,8 @@ function checkRow(stat,x, y){
         if (stat[rowId + i] == 3) return rowId + i
     }
     console.log("[Bingo] WTFFFFFFFFFFFFF Full row checked!!")
+    console.log("[Bingo] stat:", stat)
+    console.log("[Bingo] AI tryied to downed at \({0}, {1}\)".format(x,y))
     return
 }
 
