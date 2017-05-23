@@ -1,4 +1,4 @@
-from InforGo.util import decode_action
+from InforGo.util import decode_action, encode_action
 from InforGo.environment.global_var import DEBUG
 from InforGo.model.neural_net import NeuralNetwork as NN
 from InforGo.tree.minimax import Minimax as minimax
@@ -27,7 +27,9 @@ class InforGo(object):
         
     def get_action(self, state):
         player = 1 if self._play_first else -1
-        return decode_action(self._tree.get_action(state, player))
+        act = decode_action(self._tree.get_action(state, player))
+        self.step(encode_action(act))
+        return act
 
     def refresh(self):
         self._tree = None
