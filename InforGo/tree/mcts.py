@@ -137,11 +137,10 @@ class MCTS(object):
 
     def step(self, last_action):
         """step to the child selected, release the reference to the previous root"""
-        if last_action in self._root._children:
-            self._root = self._root._children[last_action]
-            self._root._parent = None
-        else:
-            self._root = TreeNode(None, State(np.zeros([4, 4, 4])), 1.0)
+        if not last_action in self._root._children:
+            self._root._expand()
+        self._root = self._root[last_action]
+        self._root._parent = None
 
     def get_action(self, state, player):
         """play n_playout playouts, choose action greedily on the basis of visits"""
