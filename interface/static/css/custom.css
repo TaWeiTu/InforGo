@@ -100,6 +100,7 @@ canvas{
   height: 100%;
   width: 25%;
   text-align: center;
+  z-index: 11;
 }
 #gameInfo{
   position: absolute;
@@ -142,15 +143,41 @@ canvas{
   text-align: center;
   vertical-align: baseline;
 }
+.configWrapper{
+  position: absolute;
+  /*width: 20px;
+  height: 151px;*/
+  left: 25%;
+  top: 0%;
+  transition: 1s;
+  /*background-color: rgba(0, 0, 0, 0.5);*/
+}
+#configIcon{
+  position: absolute;
+  padding: 0.3em;
+  transition: 1s;
+  border: 0px
+}
+#configIcon:hover{
+  color: rgb(155, 241, 255);
+}
+.configIconTrans{
+  transition: 1s;
+  opacity: 0 !important;
+}
 #AIConfig{
   position: absolute;
   background-color: rgba(0, 0, 0, 0.5);
-  left: 25%;
-  top: 0%;
-  height: 30%;
-  width: 35%;
+  left: calc(25% - 350px);
   z-index: 10;
+  width: 350px;
   padding: 0.6em;
+  transition: 1s;
+  opacity: 0;
+}
+.configBounced{
+    left: 25% !important;
+    opacity: 1 !important;
 }
 input::-webkit-inner-spin-button{
     -webkit-appearance:none;

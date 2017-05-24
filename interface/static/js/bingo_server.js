@@ -104,7 +104,7 @@ function Room(roomName, mode){
 		for (let i = 0; i < 64; ++i){
 		    if (i % 4) this.stat_1D[i] = 0
 		    else this.stat_1D[i] = 3
-		    this.stat_3D[i % 4][Math.floor(i / 4) % 4][Math.floor(i / 16)] = this.stat_1D[i]
+		    this.stat_3D[i % 4][Math.floor(i / 16)][Math.floor(i / 4) % 4] = this.stat_1D[i]
 		}
 	}
 	this.initialize(); // Important. If removed, clients might make box's material into null.
@@ -148,7 +148,7 @@ function Room(roomName, mode){
         let that = this
 
     	// set AI arguments
-    	let option = ['-m', 'InforGo.main', 'run', '--directory=./Data/3_64_32_16/', '-nh', '3', '-nn', '64', '32', '16', '-rl', '20']
+    	let option = ['-m', 'InforGo.main', 'run', '--directory=./Data/3_64_32_16/', '-nh', '3', '-nn', '64', '32', '16']
         option = option.concat(this.AIConfig)
         if (this.first == 1) option.push('--play_first=False')
         else option.push('--play_first=True')
@@ -166,6 +166,7 @@ function Room(roomName, mode){
         this.agent.stdout.on('data', function(data){
             if (DEBUG) console.log("[Debug] AI print\'{0}\'".format(data))
             let agentDownId = checkRow(that.stat_1D, parseInt(data[0]), parseInt(data[2]))
+            if (DEBUG) that.announce('message',{ "message": data, "msgId":randomString(8) })
             if (DEBUG) console.log("[Debug] AI down at {0}".format(agentDownId))
             if (agentDownId == undefined) that.announce('message', {'message':'AI tried to down at \({0}, {1}\)'.format(parseInt(data[0]), parseInt(data[2])), 'msgId':randomString(8)})
             that.agentDown(agentDownId) 
@@ -174,9 +175,10 @@ function Room(roomName, mode){
             if (DEBUG) console.log("[Debug] Room", this.name, "AI went wrong")
             console.log("[Agent] Std error:",data)
         })
-        this.agent.on('close', (code) => {
+        this.agent.on('close', (code, signal) => {
             console.log("[Agent] exit with code",code)
-            if (DEBUG & this.playing) this.announce('message', {'message':'AI closed.', 'msgId':randomString(8)})
+            console.log("                  signal", signal)
+            if (DEBUG & this.playing) that.announce('message', {'message':'AI closed.', 'msgId':randomString(8)})
             that.AIAlive = false
         })
         this.agent.on('error', (err) => {
@@ -203,8 +205,8 @@ function Room(roomName, mode){
 	
 		// update stat_1D and record
 		this.stat_1D[num] = this.turn
-		this.stat_3D[num % 4][Math.floor(num / 4) % 4][Math.floor(num / 16)] = this.turn
-		if ((num % 4) != 3) this.stat_1D[num + 1] = 3
+		this.stat_3D[num % 4][Math.floor(num / 16)][Math.floor(num / 4) % 4] = this.turn		
+        if ((num % 4) != 3) this.stat_1D[num + 1] = 3
 		this.appendRecord(num)
 
 		// check winner
@@ -239,7 +241,7 @@ function Room(roomName, mode){
 	
 		// update stat_1D and record
 		this.stat_1D[num] = this.turn
-		this.stat_3D[num % 4][Math.floor(num / 4) % 4][Math.floor(num / 16)] = this.turn
+		this.stat_3D[num % 4][Math.floor(num / 16)][Math.floor(num / 4) % 4] = this.turn
 		if ((num % 4) != 3) this.stat_1D[num + 1] = 3
 		this.appendRecord(num)
 
@@ -252,6 +254,7 @@ function Room(roomName, mode){
 		    if (this.mode == 'com'){
                 let writeString = (num % 4).toString() + ' ' + (Math.floor(num / 16)).toString() + ' ' + (Math.floor(num / 4) % 4).toString() + '\n'
                 if (DEBUG) console.log("[Debug] Write input \'{0}\'".format(writeString))
+                if (DEBUG) this.announce('message',{ "message":writeString, "msgId":randomString(8) })
                 if (this.AIAlive){
                     this.agent.stdin.write(writeString)
                 }
@@ -275,7 +278,11 @@ function Room(roomName, mode){
 
 		// stop agent
 		if (this.mode == 'com'){
-			//this.agent.stdin.write('-1 -1 -1')
+			try{
+                this.agent.stdin.write('-1 -1 -1')
+            }catch(e){
+                console.error(e)
+            }
 			this.agent.stdin.end()
 		}
 
@@ -302,8 +309,8 @@ function Room(roomName, mode){
 	}
 	this.appendRecord = function(id){
 		this.record += id % 4 + ' ';
-		this.record += Math.floor(id / 4) % 4 + ' ';
 		this.record += Math.floor(id / 16) + ' ';
+		this.record += Math.floor(id / 4) % 4 + ' ';
 		this.record += '\n';
 	}
 	this.writeRecord = function (){
@@ -318,8 +325,8 @@ function Room(roomName, mode){
 	this.checkWinner = function(id){
 		// check if the game is over.
 		let x = id % 4;
-		let y = Math.floor(id / 4) % 4;
-		let z = Math.floor(id / 16);
+		let y = Math.floor(id / 16);
+		let z = Math.floor(id / 4) % 4;
 		let value = 1;
 		let sum = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 		for (let i = 0; i < 4; ++i, value *= 2){
@@ -403,7 +410,7 @@ function getSimpleRoomList(){
 }
 
 function checkRow(stat,x, y){
-    let rowId = x*4 + y*16
+    let rowId = x*16 + y*4
     for (let i = 0; i<4;i++){
         if (stat[rowId + i] == 3) return rowId + i
     }

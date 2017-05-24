@@ -39,28 +39,57 @@
 		<div id="gameBoard"></div>
 		<!--<div id="gameInfo"></div>-->
 		<div id="messageBox"></div>
-		<div id="AIConfig">
-			<div class="row">
-				<div class="6u">
-					<select id="--tree_type">
-                        <option style="color: black"value="mcts">mcts</option>
-                        <option style="color: black"value="minimax">minimax</option>
-                    </select>
-                    <input type="number" min="0" step="1" id="--search_depth" placeholder="--search_depth=3">
-					<input type="number" min="0" max ="1" id="--lamda" placeholder="--lamda=0.7">
-				</div>
-				<div class="6u$">
-					<input type="number" min="0" max ="1" id="--c" placeholder="--c=0.3">
-					<input type="number" min="0" step="1" id="--n_playout" placeholder="--n_playout=100">
-					<input type="number" min="0" step="1" id="--playout_depth" placeholder="--playout_depth=3">
-				</div>
-			</div>
-			<ul class="actions">
-				<li><a id="configButton" class="button" onclick="sendConfig()">Send</a></li>
-			</ul>
-		</div>
+		<div class="configWrapper">
+            <i id="configIcon" class="fa fa-cog fa-3x" aria-hidden="true"></i></button>
+            <div id="AIConfig">
+			    <div class="row">
+				    <div class="6u">
+					    <select id="--tree_type">
+                            <option style="color: black"value="mcts">mcts</option>
+                            <option style="color: black"value="minimax">minimax</option>
+                        </select>
+                        <input type="number" min="0" step="1" id="--search_depth" placeholder="--search_depth=3">
+	    				<input type="number" min="0" max ="1" id="--lamda" placeholder="--lamda=0.7">
+                        <input type="number" min="0" max="64" id="--rollout_limit" placeholder="-rl=20">
+	    			</div>
+	    			<div class="6u$">
+				    	<input type="number" min="0" max ="1" id="--c" placeholder="--c=0.3">
+				    	<input type="number" min="0" step="1" id="--n_playout" placeholder="--n_playout=100">
+			    		<input type="number" min="0" step="1" id="--playout_depth" placeholder="--playout_depth=3">
+		    		</div>
+	    		</div>
+    		</div>
+        </div>
 	</body>
 </html>
 <script src="/socket.io/socket.io.js"></script>
 <script src="/static/js/three.min.js"></script>
 <script src="/static/js/bingo_client.js"></script>
+<script src="/static/js/jquery.min.js"></script>
+<script>
+    $('#configIcon').click(function(){
+        $('#AIConfig').addClass("configBounced")
+        $('#configIcon').addClass("configIconTrans")
+    })
+    $('#AIConfig')
+        .mouseover(function(){
+            this.hover = true
+        })
+        .mouseleave(function(){
+            this.hover = false
+        })
+    $('#configIcon')
+        .mouseover(function(){
+            this.hover = true
+        })
+        .mouseleave(function(){
+            this.hover = false
+        })
+
+    document.addEventListener("click", function(){
+        if(!$('#AIConfig')[0].hover && !$('#configIcon')[0].hover ){
+            $('#AIConfig').removeClass("configBounced")
+            $('#configIcon').removeClass("configIconTrans")
+        }
+    });
+</script>

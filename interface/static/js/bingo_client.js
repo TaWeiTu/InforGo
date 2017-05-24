@@ -381,7 +381,8 @@ function getConfig(){
         { id:"--lamda",         default:"0.7"  },
         { id:"--c",             default:"0.3"  },
         { id:"--n_playout",     default:"100"  },
-        { id:"--playout_depth", default:"3"    }
+        { id:"--playout_depth", default:"3"    },
+        { id:"--rollout_limit", default:"20"   }
     ]
     let config = []
     for (let i = 0; i < confList.length; i++){
@@ -396,9 +397,9 @@ function getConfig(){
     return config
 }
 
-function sendConfig(){
+/*function sendConfig(){
     socket.emit('AIConfigReq', { 'config': getConfig() })
-}
+}*/
 
 // string format function
 String.prototype.format = function(){
