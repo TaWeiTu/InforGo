@@ -162,6 +162,7 @@ class MCTS(object):
     def _rollout(self, state):
         """play simulation with _rollout_policy"""
         c_player = state.player
+        player = c_player
         step = 0
         while not state.terminate():
             if step > self._rollout_limit: return 0
@@ -170,8 +171,8 @@ class MCTS(object):
             state.take_action(*decode_action(act))
             c_player *= -1
             step += 1
-        if state.win(self._player): return 1
-        if state.win(-self._player): return -1
+        if state.win(player): return 1
+        if state.win(-player): return -1
         return 0
 
     def _evaluate(self, state, player):
