@@ -34,7 +34,7 @@ class Runner(schema):
         c_player = 1
         while True:
             action = self.get_action(state, state.player)
-            self._AI._tree.step(encode_action(action))
+            # self._AI._tree.step(encode_action(action))
             logger.debug("position: {} {}".format(action[0], action[1]))
             flag, new_s, R = state.take_action(*action)
             v = self._evaluate([s, s], [c_player, -c_player])
@@ -75,6 +75,7 @@ class Runner(schema):
         """
         logger.debug("input (height, row, col):")
         height, row, col = map(int, input().split())
+        self._AI._tree.modify(encode_action((row, col)))
         return row, col
 
     def _update(self, state, player, value):
