@@ -30,7 +30,7 @@ class Runner(schema):
         None
         """
         state = State()
-        s = state.get_state()
+        s = state.get_initial_state()
         c_player = 1
         while True:
             action = self.get_action(state, state.player)
