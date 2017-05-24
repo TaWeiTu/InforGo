@@ -8,7 +8,7 @@ from InforGo.environment.bingo import Bingo as State
 
 class TreeNode(object):
     """Nodes in Monte-Carlo tree search, average value and UCT are maintained"""
-    def __init__(self, parent, state, p):
+    def __init__(self, parent, p):
         """Constructor
 
         Arguments:
@@ -20,11 +20,10 @@ class TreeNode(object):
         self._children = {}
         self._visit = 0
         self._v = 0
-        self._state = state
         self._u = np.inf
         self._p = p
 
-    def _expand(self):
+    def _expand(self, act_prob):
         """expand the node for all valid action
         
         Arguments:
@@ -33,17 +32,9 @@ class TreeNode(object):
         Returns:
         None
         """
-        actions = [i for i in range(16) if self._state.valid_action(*decode_action(i))]
-        c_state = State(self._state)
-        total = 0
-        for i in actions: total += self._get_priority(c_state.get_height(*decode_action(i)))
-        for i in actions:
-            if not i in self._children.keys():
-                n_state = State(self._state)
-                h = n_state.get_height(*decode_action(i))
-                n_state.take_action(*decode_action(i))
-                p = self._get_priority(c_state.get_height(*decode_action(i))) / total
-                self._children[i] = TreeNode(self, n_state, p)
+        for (act, prob) in act_prob:
+            if not act in self._children:
+                self._children[act] = TreeNode(self, prob)
 
     def _select(self):
         """select child with highest UCT
@@ -56,7 +47,7 @@ class TreeNode(object):
         """
         # for _id, child in self._children.items():
             # print("id = {}, value = {}".format(_id, node._get_value()))
-        act = max(self._children.items(), key=lambda child: child[1]._get_value())[0]
+        # act = max(self._children.items(), key=lambda child: child[1]._get_value())[0]
         # print("action: ", act)
         # logger.debug("action: {}".format(act))
         return max(self._children.items(), key=lambda child: child[1]._get_value())[0]
@@ -101,19 +92,6 @@ class TreeNode(object):
             self._parent._back_prop(leaf_value, c)
         self._update(leaf_value, c)
 
-    def _get_priority(self, height):
-        """compute priority of height of action
-
-        Arguments:
-        height -- height of action
-
-        Returns:
-        priority of input action
-        """
-        if height == 0 or height == 1: return 4
-        if height == 2 or height == 3: return 3
-        return 2
-
     def is_root(self):
         """return whether this node is root"""
         return self._parent is None
@@ -137,17 +115,18 @@ class MCTS(object):
         self._c = c
         self._n_playout = n_playout
         self._evaluator = evaluator
-        self._root = TreeNode(None, State(np.zeros([4, 4, 4])), 1.0)
+        self._root = TreeNode(None, 1.0)
         self._playout_depth = playout_depth
         self._player = player
         self._rollout_limit = rollout_limit
 
     def step(self, last_action):
         """step to the child selected, release the reference to the previous root"""
-        if not last_action in self._root._children:
-            self._root._expand()
-        self._root = self._root._children[last_action]
-        self._root._parent = None
+        if last_action in self._root._children:
+            self._root = self._root._children[last_action]
+            self._root._parent = None
+        else:
+            self._root = TreeNode(None, 1.0)
 
     def get_action(self, state, player):
         """play n_playout playouts, choose action greedily on the basis of visits"""
@@ -165,7 +144,11 @@ class MCTS(object):
         for d in range(self._playout_depth):
             if node.is_leaf():
                 if state.terminate(): break
-                node._expand()
+                valid_action = [i for i in range(16) if state.valid_action(*decode_action(i))]
+                height_total = 0
+                for i in valid_action: height_total += self._get_priority(state.get_height(*decode_action(i)))
+                act_prob = [(act, self._get_priority(state.get_height(*decode_action(act)))) for act in valid_action]
+                node._expand(act_prob)
             action = node._select()
             node = node._children[action]
             state.take_action(*decode_action(action))
@@ -207,3 +190,16 @@ class MCTS(object):
 
     def modify(self, action):
         self._root._modify(action)
+    
+    def _get_priority(self, height):
+        """compute priority of height of action
+
+        Arguments:
+        height -- height of action
+
+        Returns:
+        priority of input action
+        """
+        if height == 0 or height == 1: return 4
+        if height == 2 or height == 3: return 3
+        return 2
