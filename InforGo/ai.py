@@ -28,7 +28,7 @@ class InforGo(object):
     def get_action(self, state):
         player = 1 if self._play_first else -1
         act = decode_action(self._tree.get_action(state, player))
-        # self.step(encode_action(act))
+        self.step(encode_action(act))
         return act
 
     def refresh(self):
