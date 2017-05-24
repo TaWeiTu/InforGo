@@ -147,7 +147,7 @@ class MCTS(object):
                 valid_action = [i for i in range(16) if state.valid_action(*decode_action(i))]
                 height_total = 0
                 for i in valid_action: height_total += self._get_priority(state.get_height(*decode_action(i)))
-                act_prob = [(act, self._get_priority(state.get_height(*decode_action(act)))) for act in valid_action]
+                act_prob = [(act, self._get_priority(state.get_height(*decode_action(act))) / height_total) for act in valid_action]
                 node._expand(act_prob)
             action = node._select()
             node = node._children[action]
