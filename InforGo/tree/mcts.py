@@ -36,7 +36,7 @@ class TreeNode(object):
             if not act in self._children:
                 self._children[act] = TreeNode(self, prob)
 
-    def _select(self):
+    def _select(self, c):
         """select child with highest UCT
         
         Arguments:
@@ -50,9 +50,9 @@ class TreeNode(object):
         # act = max(self._children.items(), key=lambda child: child[1]._get_value())[0]
         # print("action: ", act)
         # logger.debug("action: {}".format(act))
-        return max(self._children.items(), key=lambda child: child[1]._get_value())[0]
+        return max(self._children.items(), key=lambda child: child[1]._get_value(c))[0]
 
-    def _get_value(self):
+    def _get_value(self, c):
         """compute UCT
         
         Arguments:
@@ -61,6 +61,8 @@ class TreeNode(object):
         Returns:
         UCT value of this node
         """
+        if not self.is_root() and self._visit:
+            self._u = 2 * c * self._p * np.sqrt(2 * np.log(self._parent._visit) / self._visit)
         return self._v + self._u
 
     def _update(self, leaf_value, c):
@@ -75,7 +77,7 @@ class TreeNode(object):
         """
         self._visit += 1
         self._v += (leaf_value - self._v) / self._visit
-        if not self.is_root():
+        if not self.is_root() and self._visit:
             self._u = 2 * c * self._p * np.sqrt(2 * np.log(self._parent._visit) / self._visit)
 
     def _back_prop(self, leaf_value, c):
@@ -128,8 +130,8 @@ class MCTS(object):
             n_state = State(state)
             self._playout(n_state)
         for _id, node in self._root._children.items():
-            logger.debug("id = {}, value = {}".format(_id, node._get_value()))
-        return max(self._root._children.items(), key=lambda child: child[1]._get_value())[0]
+            logger.debug("id = {}, value = {}".format(_id, node._get_value(self._c)))
+        return max(self._root._children.items(), key=lambda child: child[1]._get_value(self._c))[0]
 
     def _playout(self, state):
         """walking down playout_depth step using node.select(), simulate the game result with rollout policy"""
@@ -142,7 +144,7 @@ class MCTS(object):
                 for i in valid_action: height_total += self._get_priority(state.get_height(*decode_action(i)))
                 act_prob = [(act, self._get_priority(state.get_height(*decode_action(act))) / height_total) for act in valid_action]
                 node._expand(act_prob)
-            action = node._select()
+            action = node._select(self._c)
             # print("action: {}".format(action))
             node = node._children[action]
             state.take_action(*decode_action(action))
