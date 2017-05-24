@@ -121,6 +121,13 @@ class TreeNode(object):
     def is_leaf(self):
         """return whether this node is leaf"""
         return len(self._children) == 0
+    
+    def _modify(self, action):
+        if not self._state.valid_action(*decode_action(action)): return False
+        self._state.take_action(*decode_action(action))
+        for (_id, child) in self._children.items():
+            if not child._modify(action):
+                self._children.pop(_id, None)
 
 
 class MCTS(object):
@@ -197,3 +204,6 @@ class MCTS(object):
         valid_action = [i for i in range(16) if state.valid_action(*decode_action(i))]
         # random.shuffle(valid_action)
         return random.choice(valid_action)
+
+    def modify(self, action):
+        self._root._modify(action)
