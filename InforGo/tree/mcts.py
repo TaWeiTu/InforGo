@@ -129,7 +129,7 @@ class MCTS(object):
             self._playout(n_state)
         for _id, node in self._root._children.items():
             logger.debug("id = {}, value = {}".format(_id, node._get_value()))
-        return max(self._root._children.items(), key=lambda child: child[1]._v)[0]
+        return max(self._root._children.items(), key=lambda child: child[1]._get_value())[0]
 
     def _playout(self, state):
         """walking down playout_depth step using node.select(), simulate the game result with rollout policy"""
@@ -143,12 +143,14 @@ class MCTS(object):
                 act_prob = [(act, self._get_priority(state.get_height(*decode_action(act))) / height_total) for act in valid_action]
                 node._expand(act_prob)
             action = node._select()
+            # print("action: {}".format(action))
             node = node._children[action]
             state.take_action(*decode_action(action))
         # v = TD(0) z = eligibility trace
         v = self._evaluate([state.get_state()], [self._player]) if self._lamda < 1 else 0
         z = self._rollout(state) if self._lamda > 0 else 0
         # logger.debug("z = {}".format(z))
+        # print("z = {}".format(z))
         leaf_value = (1 - self._lamda) * v + self._lamda * z
         node._back_prop(leaf_value, self._c)
 
