@@ -99,13 +99,6 @@ class TreeNode(object):
     def is_leaf(self):
         """return whether this node is leaf"""
         return len(self._children) == 0
-    
-    def _modify(self, action):
-        if not self._state.valid_action(*decode_action(action)): return False
-        self._state.take_action(*decode_action(action))
-        for (_id, child) in self._children.items():
-            if not child._modify(action):
-                self._children.pop(_id, None)
 
 
 class MCTS(object):
@@ -136,7 +129,7 @@ class MCTS(object):
             self._playout(n_state)
         for _id, node in self._root._children.items():
             logger.debug("id = {}, value = {}".format(_id, node._get_value()))
-        return max(self._root._children.items(), key=lambda child: child[1]._get_value())[0]
+        return max(self._root._children.items(), key=lambda child: child[1]._v)[0]
 
     def _playout(self, state):
         """walking down playout_depth step using node.select(), simulate the game result with rollout policy"""
@@ -162,7 +155,7 @@ class MCTS(object):
     def _rollout(self, state):
         """play simulation with _rollout_policy"""
         c_player = state.player
-        player = c_player
+        # player = c_player
         step = 0
         while not state.terminate():
             if step > self._rollout_limit: return 0
@@ -171,8 +164,8 @@ class MCTS(object):
             state.take_action(*decode_action(act))
             c_player *= -1
             step += 1
-        if state.win(player): return 1
-        if state.win(-player): return -1
+        if state.win(self._player): return 1
+        if state.win(-self._player): return -1
         return 0
 
     def _evaluate(self, state, player):
@@ -189,9 +182,6 @@ class MCTS(object):
         # random.shuffle(valid_action)
         return random.choice(valid_action)
 
-    def modify(self, action):
-        self._root._modify(action)
-    
     def _get_priority(self, height):
         """compute priority of height of action
 
