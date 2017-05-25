@@ -196,7 +196,7 @@ class MCTS(object):
         # print(move)
         if len(move) > 0: return encode_action((move[0][1], move[0][2]))
         valid_action = [i for i in range(16) if state.valid_action(*decode_action(i))]
-        print('jizz')
+        # print('jizz')
         # random.shuffle(valid_action)
         return random.choice(valid_action)
 

@@ -60,7 +60,7 @@ class Bingo(object):
         # place the cube
         self.board[height][row][col] = self.player
         for i in gv.scoring_index[self.height[row][col]][row][col]:
-            self.line_scoring[i] -= self.player
+            self.line_scoring[i] += self.player
         self.player = -self.player
         self.height[row][col] += 1
         if self.win(1): return 1
