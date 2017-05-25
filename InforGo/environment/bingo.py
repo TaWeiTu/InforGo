@@ -91,7 +91,7 @@ class Bingo(object):
         """
         if player == 0: return self.full()
         for i in range(len(self.line_scoring)):
-            if self.line_scoring[i] == player*4:
+            if self.line_scoring[i] == player * 4:
                 return True
         return False
 
@@ -191,7 +191,7 @@ class Bingo(object):
         origin_reward = self.get_reward(self.get_state(), player)
         flag = self.place(row, col)
         if self.win(player): return flag, self.get_state(), 1
-        if self.win(player): return flag, self.get_state(), -1
+        if self.win(-player): return flag, self.get_state(), -1
         new_state = self.get_state()
         new_reward = self.get_reward(new_state, player)
         return flag, new_state, new_reward - origin_reward

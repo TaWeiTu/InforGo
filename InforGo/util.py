@@ -172,81 +172,81 @@ def get_winning_move(state, player):
     """Calculate corner position, two in a line, three in a line for both player"""
     position = []
     for i in range(16):
-        if state.line_scoring[i] == player*3:
-            row, col = i//4, i%4
+        if state.line_scoring[i] == player * 3:
+            row, col = i // 4, i % 4
             for j in range(4):
                 if not state[j, row, col]:
                     position.append((j, row, col))
                     break
     for i in range(16):
-        if state.line_scoring[i+16] == player*3:
-            hei, col = i//4, i%4
+        if state.line_scoring[i + 16] == player * 3:
+            hei, col = i // 4, i % 4
             for j in range(4):
                 if not state[hei, j, col]:
                     position.append((hei, j, col))
                     break
     for i in range(16):
-        if state.line_scoring[i+32] == player*3:
-            hei, row = i//4, i%4
+        if state.line_scoring[i + 32] == player * 3:
+            hei, row = i // 4, i % 4
             for j in range(4):
                 if not state[hei, row, j]:
                     position.append((hei, row, j))
                     break
     for i in range(4):
-        if state.line_scoring[i+48] == player*3:
+        if state.line_scoring[i + 48] == player * 3:
             for j in range(4):
                 if not state[i, j, j]:
                     position.append((i, j, j))
                     break
     for i in range(4):
-        if state.line_scoring[i+52] == player*3:
+        if state.line_scoring[i + 52] == player * 3:
             for j in range(4):
-                if not state[i, j, 3-j]:
-                    position.append((i, j, 3-j))
+                if not state[i, j, 3 - j]:
+                    position.append((i, j, 3 - j))
                     break
     for i in range(4):
-        if state.line_scoring[i+56] == player*3:
+        if state.line_scoring[i + 56] == player * 3:
             for j in range(4):
                 if not state[j, i, j]:
                     position.append((j, i, j))
                     break
     for i in range(4):
-        if state.line_scoring[i+60] == player*3:
+        if state.line_scoring[i + 60] == player * 3:
             for j in range(4):
-                if not state[j, i, 3-j]:
-                    position.append((j, i, 3-j))
+                if not state[j, i, 3 - j]:
+                    position.append((j, i, 3 - j))
                     break
     for i in range(4):
-        if state.line_scoring[i+64] == player*3:
+        if state.line_scoring[i + 64] == player * 3:
             for j in range(4):
                 if not state[j, j, i]:
                     position.append((j, j, i))
                     break
     for i in range(4):
-        if state.line_scoring[i+68] == player*3:
+        if state.line_scoring[i + 68] == player * 3:
             for j in range(4):
-                if not state[j, 3-j, i]:
-                    position.append((j, 3-j, i))
+                if not state[j, 3 - j, i]:
+                    position.append((j, 3 - j, i))
                     break
-    if state.line_scoring[72] == player*3:
+    if state.line_scoring[72] == player * 3:
         for j in range(4):
             if not state[j, j, j]:
                 position.append((j, j, j))
                 break
-    if state.line_scoring[73] == player*3:
+    if state.line_scoring[73] == player * 3:
         for j in range(4):
-            if not state[j, j, 3-j]:
-                position.append((j, j, 3-j))
+            if not state[j, j, 3 - j]:
+                position.append((j, j, 3 - j))
                 break
     if state.line_scoring[74] == player*3:
         for j in range(4):
-            if not state[j, 3-j, j]:
-                position.append((j, 3-j, j))
+            if not state[j, 3 - j, j]:
+                position.append((j, 3 - j, j))
                 break
-    if state.line_scoring[75] == player*3:
+    if state.line_scoring[75] == player * 3:
         for j in range(4):
-            if not state[j, 3-j, 3-j]:
-                position.append((j, 3-j, 3-j))
+            if not state[j, 3 - j, 3 - j]:
+                position.append((j, 3 - j, 3 - j))
                 break
     return position
 

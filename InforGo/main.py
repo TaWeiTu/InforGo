@@ -82,19 +82,19 @@ def main():
     for h in range(4):
         for i in range(4):
             for j in range(4):
-                global_var.__dict__['scoring_index'][h][i][j].append(i*4 + j)
-                global_var.__dict__['scoring_index'][h][i][j].append(16 + h*4 + j)
-                global_var.__dict__['scoring_index'][h][i][j].append(32 + h*4 + i)
+                global_var.__dict__['scoring_index'][h][i][j].append(i * 4 + j)
+                global_var.__dict__['scoring_index'][h][i][j].append(16 + h * 4 + j)
+                global_var.__dict__['scoring_index'][h][i][j].append(32 + h * 4 + i)
             global_var.__dict__['scoring_index'][h][i][i].append(48 + h)
-            global_var.__dict__['scoring_index'][h][i][3-i].append(52 + h)
+            global_var.__dict__['scoring_index'][h][i][3 - i].append(52 + h)
             global_var.__dict__['scoring_index'][i][h][i].append(56 + h)
-            global_var.__dict__['scoring_index'][i][h][3-i].append(60 + h)
+            global_var.__dict__['scoring_index'][i][h][3 - i].append(60 + h)
             global_var.__dict__['scoring_index'][i][i][h].append(64 + h)
-            global_var.__dict__['scoring_index'][i][3-i][h].append(68 + h)
+            global_var.__dict__['scoring_index'][i][3 - i][h].append(68 + h)
         global_var.__dict__['scoring_index'][h][h][h].append(72)
-        global_var.__dict__['scoring_index'][h][h][3-h].append(73)
-        global_var.__dict__['scoring_index'][h][3-h][h].append(74)
-        global_var.__dict__['scoring_index'][h][3-h][3-h].append(75)
+        global_var.__dict__['scoring_index'][h][h][3 - h].append(73)
+        global_var.__dict__['scoring_index'][h][3 - h][h].append(74)
+        global_var.__dict__['scoring_index'][h][3 - h][3 - h].append(75)
     
     if args.directory[-1] != '/': args.directory += '/'
     if args.training_directory[0]:
