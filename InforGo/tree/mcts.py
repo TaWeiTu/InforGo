@@ -180,7 +180,15 @@ class MCTS(object):
         return self._evaluator.predict(state, player)[0]
 
     def _rollout_policy(self, state, player):
-        """randomized rollout"""
+        """randomized rollout
+        
+        Arguments:
+        state -- current state
+        player -- current player
+
+        Returns:
+        action chosen by rollout policy
+        """
         move = get_winning_move(state, player)
         # print(move)
         if len(move) > 0: return encode_action((move[0][1], move[0][2]))
