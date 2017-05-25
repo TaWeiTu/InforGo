@@ -1,5 +1,7 @@
 """3D-Bingo game environment model, implemented with some Markov Decision Process property"""
 import numpy as np
+import copy
+import InforGo.environment.global_var as gv
 
 from InforGo.util import get_pattern
 
@@ -15,21 +17,15 @@ class Bingo(object):
         if board is None:
             self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
             self.height = [[0 for i in range(4)] for j in range(4)]
+            self.line_scoring = [0 for i in range(76)]
             self.player = 1
         elif type(board) != 'list' and type(board).__module__ != np.__name__:
-            self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
-            self.height = [[0 for i in range(4)] for j in range(4)]
-            for i in range(4):
-                for j in range(4):
-                    for k in range(4): self.board[i][j][k] = board.board[i][j][k]
-            for i in range(4):
-                for j in range(4): self.height[i][j] = board.height[i][j]
+            self.board = copy.deepcopy(board.board)
+            self.height = copy.deepcopy(board.height)
+            self.line_scoring = copy.deepcopy(board.line_scoring)
             self.player = board.player
         else:
-            self.board = [[[0 for i in range(4)] for j in range(4)] for k in range(4)]
-            for h in range(4):
-                for r in range(4):
-                    for c in range(4): self.board[h][r][c] = board[h][r][c]
+            self.board = copy.deepcopy(board)
             self.height = [[0 for i in range(4)] for j in range(4)]
             cnt = 0
             for h in range(4):
@@ -55,6 +51,8 @@ class Bingo(object):
         height = self.height[row][col]
         # place the cube
         self.board[height][row][col] = self.player
+        for i in gv.scoring_index[self.height[row][col]][row][col]:
+            self.line_scoring[i] -= self.player
         self.player = -self.player
         self.height[row][col] += 1
         if self.win(1): return 1
@@ -91,61 +89,10 @@ class Bingo(object):
         Returns:
         a boolean
         """
-        for h in range(4):
-            for r in range(4):
-                flag = True
-                for c in range(4): flag = False if self.board[h][r][c] != player else flag
-                if flag: return True
-
-        for h in range(4):
-            for c in range(4):
-                flag = True
-                for r in range(4): flag = False if self.board[h][r][c] != player else flag
-                if flag: return True
-
-        for r in range(4):
-            for c in range(4):
-                flag = True
-                for h in range(4): flag = False if self.board[h][r][c] != player else flag
-                if flag: return True
-
-        for h in range(4):
-            flag = True
-            for i in range(4): flag = False if self.board[h][i][i] != player else flag
-            if flag: return True
-            flag = True
-            for i in range(4): flag = False if self.board[h][i][3 - i] != player else flag
-            if flag: return True
-
-        for r in range(4):
-            flag = True
-            for i in range(4): flag = False if self.board[i][r][i] != player else flag
-            if flag: return True
-            flag = True
-            for i in range(4): flag = False if self.board[i][r][3 - i] != player else flag
-            if flag: return True
-
-        for c in range(4):
-            flag = True
-            for i in range(4): flag = False if self.board[i][i][c] != player else flag
-            if flag: return True
-            flag = True
-            for i in range(4): flag = False if self.board[i][3 - i][c] != player else flag
-            if flag: return True
-
-        flag = True
-        for i in range(4): flag = False if self.board[i][i][i] != player else flag
-        if flag: return True
-        flag = True
-        for i in range(4): flag = False if self.board[i][i][3 - i] != player else flag
-        if flag: return True
-        flag = True
-        for i in range(4): flag = False if self.board[i][3 - i][i] != player else flag
-        if flag: return True
-        flag = True
-        for i in range(4): flag = False if self.board[3 - i][i][i] != player else flag
-        if flag: return True
         if player == 0: return self.full()
+        for i in range(len(self.line_scoring)):
+            if self.line_scoring[i] == player*4:
+                return True
         return False
 
     def restart(self):
@@ -159,7 +106,7 @@ class Bingo(object):
         """
         self.__init__()
 
-    def undo_action(self, row, col):
+    def undo_action(self, player, row, col):
         """undo the last action at given position
 
         Arguments:
@@ -171,6 +118,9 @@ class Bingo(object):
         """
         self.height[row][col] -= 1
         self.board[self.height[row][col]][row][col] = 0
+        for i in range(global_var['scoring_index'][self.height[row][col]][row][col]):
+            self.line_scoring[global_var['scoring_index'][self.height[row][col]][row][col][i]] -= player
+
 
     def get_state(self):
         """get current state
