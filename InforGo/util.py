@@ -170,94 +170,84 @@ def get_pattern(state, player):
 
 def get_winning_move(state, player):
     """Calculate corner position, two in a line, three in a line for both player"""
-    three = [0, 0]
-    f = lambda x: 0 if x == player else 1
     position = []
-    for h in range(4):
-        for r in range(4):
-            cnt = [0, 0]
-            for c in range(4):
-                if state[h, r, c]: cnt[f(state[h, r, c])] += 1
-            if cnt[0] == 3 and cnt[1] == 0:
-                for c in range(4):
-                    if state[h, r, c] == 0: position.append((h, r, c))
-        for c in range(4):
-            cnt = [0, 0]
-            for r in range(4):
-                if state[h, r, c]: cnt[f(state[h, r, c])] += 1
-            if cnt[0] == 3 and cnt[1] == 0:
-                for r in range(4):
-                    if state[h, r, c] == 0: position.append((h, r, c))
-        cnt = [0, 0]
-        for i in range(4):
-            if state[h, i, i]: cnt[f(state[h, i, i])] += 1
-        if cnt[0] == 3 and cnt[1] == 0:
-            for i in range(4):
-                if state[h, i, i] == 0: position.append((h, i, i))
-        cnt = [0, 0]
-        for i in range(4):
-            if state[h, i, 3 - i]: cnt[f(state[h, i, 3 - i])] += 1
-        if cnt[0] == 3 and cnt[1] == 0:
-            for i in range(4):
-                if state[h, i, 3 - i] == 0: position.append((h, i, 3 - i))
-
-    for r in range(4):
-        for c in range(4):
-            cnt = [0, 0]
-            for h in range(4):
-                if state[h, r, c]: cnt[f(state[h, r, c])] += 1
-            if cnt[0] == 3 and cnt[1] == 0: 
-                for h in range(4):
-                    if state[h, r, c] == 0: position.append((h, r, c))
-        cnt = [0, 0]
-        for i in range(4):
-            if state[i, r, i]: cnt[f(state[i, r, i])] += 1
-        if cnt[0] == 3 and cnt[1] == 0:
-            for i in range(4):
-                if state[i, r, i] == 0: position.append((i, r, i))
-        cnt = [0, 0]
-        for i in range(4):
-            if state[i, r, 3 - i]: cnt[f(state[i, r, 3 - i])] += 1
-        if cnt[0] == 3 and cnt[1] == 0:
-            for i in range(4):
-                if state[i, r, 3 - i] == 0: position.append((i, r, 3 - i))
-    for c in range(4):
-        cnt = [0, 0]
-        for i in range(4):
-            if state[i, i, c]: cnt[f(state[i, i, c])] += 1
-        if cnt[0] == 3 and cnt[1] == 0: 
-            for i in range(4):
-                if state[i, i, c] == 0: position.append((i, i, c))
-        cnt = [0, 0]
-        for i in range(4):
-            if state[i, 3 - i, c]: cnt[f(state[i, 3 - i, c])] += 1
-        if cnt[0] == 3 and cnt[1] == 0: 
-            for i in range(4):
-                if state[i, 3 - i, c] == 0: position.append((i, 3 - i, c))
-    cnt = [0, 0]
+    for i in range(16):
+        if state.line_scoring[i] == player*3:
+            row, col = i//4, i%4
+            for j in range(4):
+                if not state[j, row, col]:
+                    position.append((j, row, col))
+                    break
+    for i in range(16):
+        if state.line_scoring[i+16] == player*3:
+            hei, col = i//4, i%4
+            for j in range(4):
+                if not state[hei, j, col]:
+                    position.append((hei, j, col))
+                    break
+    for i in range(16):
+        if state.line_scoring[i+32] == player*3:
+            hei, row = i//4, i%4
+            for j in range(4):
+                if not state[hei, row, j]:
+                    position.append((hei, row, j))
+                    break
     for i in range(4):
-        if state[i, i, i]: cnt[f(state[i, i, i])] += 1
-    if cnt[0] == 3 and cnt[1] == 0:
-        for i in range(4):
-            if state[i, i, i] == 0: position.append((i, i, i))
-    cnt = [0, 0]
+        if state.line_scoring[i+48] == player*3:
+            for j in range(4):
+                if not state[i, j, j]:
+                    position.append((i, j, j))
+                    break
     for i in range(4):
-        if state[i, i, 3 - i]: cnt[f(state[i, i, 3 - i])] += 1
-    if cnt[0] == 3 and cnt[1] == 0: 
-        for i in range(4):
-            if state[i, i, 3 - i] == 0: position.append((i, i, 3 - i))
-    cnt = [0, 0]
+        if state.line_scoring[i+52] == player*3:
+            for j in range(4):
+                if not state[i, j, 3-j]:
+                    position.append((i, j, 3-j))
+                    break
     for i in range(4):
-        if state[3 - i, i, i]: cnt[f(state[3 - i, i, i])] += 1
-    if cnt[0] == 3 and cnt[1] == 0:
-        for i in range(4):
-            if state[3 - i, i, i] == 0: position.append((3 - i, i, i))
-    cnt = [0, 0]
+        if state.line_scoring[i+56] == player*3:
+            for j in range(4):
+                if not state[j, i, j]:
+                    position.append((j, i, j))
+                    break
     for i in range(4):
-        if state[i, 3 - i, i]: cnt[f(state[i, 3 - i, i])] += 1
-    if cnt[0] == 3 and cnt[1] == 0:
-        for i in range(4):
-            if state[i, 3 - i, i] == 0: position.append((i, 3 - i, i))
+        if state.line_scoring[i+60] == player*3:
+            for j in range(4):
+                if not state[j, i, 3-j]:
+                    position.append((j, i, 3-j))
+                    break
+    for i in range(4):
+        if state.line_scoring[i+64] == player*3:
+            for j in range(4):
+                if not state[j, j, i]:
+                    position.append((j, j, i))
+                    break
+    for i in range(4):
+        if state.line_scoring[i+68] == player*3:
+            for j in range(4):
+                if not state[j, 3-j, i]:
+                    position.append((j, 3-j, i))
+                    break
+    if state.line_scoring[72] == player*3:
+        for j in range(4):
+            if not state[j, j, j]:
+                position.append((j, j, j))
+                break
+    if state.line_scoring[73] == player*3:
+        for j in range(4):
+            if not state[j, j, 3-j]:
+                position.append((j, j, 3-j))
+                break
+    if state.line_scoring[74] == player*3:
+        for j in range(4):
+            if not state[j, 3-j, j]:
+                position.append((j, 3-j, j))
+                break
+    if state.line_scoring[75] == player*3:
+        for j in range(4):
+            if not state[j, 3-j, 3-j]:
+                position.append((j, 3-j, 3-j))
+                break
     return position
 
 def decode_action(action_num):
