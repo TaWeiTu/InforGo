@@ -248,6 +248,8 @@ def get_winning_move(state, player):
             if not state[j, 3-j, 3-j]:
                 position.append((j, 3-j, 3-j))
                 break
+    # print(state.line_scoring)
+    # print(player, position)
     return position
 
 def decode_action(action_num):

@@ -35,6 +35,14 @@ class Bingo(object):
                             self.height[r][c] = h + 1
                             cnt += 1
             self.player = 1 if cnt % 2 == 0 else -1
+            self.line_scoring = [0 for i in range(76)]
+            for j in range(4):
+                for k in range(4):
+                    for i in range(4):
+                        if not self.board[i][j][k]:
+                            break
+                        for ii in gv.scoring_index[i][j][k]:
+                            self.line_scoring += self.board[i][j][k]
 
     def place(self, row, col):
         """place the cube for current player at given position
