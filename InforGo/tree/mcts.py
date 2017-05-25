@@ -114,6 +114,7 @@ class MCTS(object):
         self._playout_depth = playout_depth
         self._player = player
         self._rollout_limit = rollout_limit
+        self._step = 0
 
     def step(self, last_action):
         """step to the child selected, release the reference to the previous root"""
@@ -122,6 +123,8 @@ class MCTS(object):
             self._root._parent = None
         else:
             self._root = TreeNode(None, 1.0)
+        self._step += 1
+        self._decay_rollout_limit()
 
     def get_action(self, state, player):
         """play n_playout playouts, choose action greedily on the basis of visits"""
@@ -198,3 +201,7 @@ class MCTS(object):
         if height == 0 or height == 1: return 4
         if height == 2: return 3
         return 2
+
+    def _decay_rollout_limit(self):
+        if self._step % 5 == 0:
+            self._rollout_limit -= 2
