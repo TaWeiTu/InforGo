@@ -24,29 +24,31 @@ class NeuralNetwork(object):
         directory: directory of weights and biases
         """
         logger.info('[NeuralNetwork] Start Building Neural Network')
+        # Input state
         self.input_state = tf.placeholder(shape=[None, 4, 4, 4], dtype=tf.float64)
+        # Flatten input state
         self.state = tf.reshape(self.input_state, [tf.shape(self.input_state)[0], 64])
+        # Current player
         self.player_node = tf.placeholder(shape=[None, player_len], dtype=tf.float64)
         self.player_len = player_len
+        # Pattern of input state
         self.pattern = tf.placeholder(shape=[None, pattern_len], dtype=tf.float64)
+        # Activation function
         self.activation_fn = self.get_fn(activation_fn)
         # Initialize weights and biases
         self.weight = [None for i in range(n_hidden_layer + 1)]
         self.bias = [None for i in range(n_hidden_layer + 1)]
         self.directory = directory
-        self.hidden_layer = [{} for i in range(n_hidden_layer)]
-
         self.weight[0] = self.initialize_weight(64 + player_len + pattern_len, n_node_hidden[0], 0)
         self.bias[0] = self.initialize_bias(n_node_hidden[0], 0)
-
         for i in range(1, n_hidden_layer):
             self.weight[i] = self.initialize_weight(n_node_hidden[i - 1], n_node_hidden[i], i)
             self.bias[i] = self.initialize_bias(n_node_hidden[i], i)
         self.weight[n_hidden_layer] = self.initialize_weight(n_node_hidden[n_hidden_layer - 1], 1, n_hidden_layer)
         self.bias[n_hidden_layer] = self.initialize_bias(1, n_hidden_layer)
-
+        # Net input and activated output
+        self.hidden_layer = [{} for i in range(n_hidden_layer)]
         self.hidden_layer[0]['output'] = tf.add(tf.matmul(tf.concat([self.state, self.player_node, self.pattern], 1), self.weight[0]), self.bias[0])
-
         for i in range(1, n_hidden_layer):
             self.hidden_layer[i - 1]['activate'] = self.activation_fn(self.hidden_layer[i - 1]['output'])
             self.hidden_layer[i]['output'] = tf.add(tf.matmul(self.hidden_layer[i - 1]['activate'], self.weight[i]), self.bias[i])
@@ -54,10 +56,12 @@ class NeuralNetwork(object):
         # Apply tanh to the output layer, which maps R to [-1, 1]
         self.v = tf.tanh(tf.add(tf.matmul(self.hidden_layer[n_hidden_layer - 1]['activate'], self.weight[n_hidden_layer]), self.bias[n_hidden_layer]))
         self.v_ = tf.placeholder(shape=[None, 1], dtype=tf.float64)
-        # square difference of the prediction and label
+        # Quadratic error
         self.error = tf.reduce_sum(tf.square(self.v - self.v_))
+        # Adagrad
         self.trainer = tf.train.AdagradOptimizer(learning_rate)
         self.opt_model = self.trainer.minimize(self.error)
+        # Tensorflow session
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
         logger.info('[NeuralNetwork] Done Building Neural Network')

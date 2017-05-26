@@ -27,6 +27,7 @@ Valid method are:
 * **r_train:** Reinforcement training by self-playing
 * **test:** Testing the training result
 * **run:** Play with human
+* **debug:** Debug mode for neural network
 
 Valid argument are the following:
 * **\-\-n_epoch, -ne:** [s_train, r_train, test] number of epoches to every training data, default is 1
