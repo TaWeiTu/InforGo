@@ -215,4 +215,5 @@ class MCTS(object):
 
     def _decay_rollout_limit(self):
         if self._step % 5 == 0:
-            self._rollout_limit -= 2
+            self._rollout_limit -= 3
+            if self._rollout_limit < 5: self._rollout_limit = 5
