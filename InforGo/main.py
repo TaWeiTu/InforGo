@@ -1,3 +1,4 @@
+"""Entry point"""
 import os.path
 import argparse
 import distutils.util
@@ -67,7 +68,7 @@ def main():
     parser.add_argument('--c', '-c', default=0.3, type=float, help='Exploration/Exploitation')
     parser.add_argument('--lamda', '-ld', default=0.7, type=float, help='TD(lambda)')
     parser.add_argument('--rollout_limit', '-rl', default=20, type=int, help='Limit depth of rollout')
-    
+
     # GPU
     parser.add_argument('--gpu', default=False, const=True, nargs='?', help='Run Tensorflow with/without GPUs')
 

@@ -78,18 +78,18 @@ class FileSystem(object):
         logger.info('[Filesystem] Done Collecting Record')
         return filename
 
-    def get_next_batch(self, number):
+    def get_next_batch(self, batch_size):
         """get a batch of training data
         
         Arguments:
-        number -- number of training data in this batch
+        batch_size -- number of training data in this batch
 
         Returns:
         x -- a list of tuple (state, player)
         y -- expected value for each (state, player) tuple
         """
         random.shuffle(self.shuffle)
-        files = [self.files[i] for i in self.shuffle[:number]]
+        files = [self.files[i] for i in self.shuffle[:batch_size]]
         data = self._read_file(files)
         x, y = self._get_value(data)
         return x, y

@@ -7,12 +7,12 @@ from InforGo.tree.mcts import MCTS as mcts
 
 
 class InforGo(object):
-
+    """InforGo is an artificial intelligence capable of playing 3D Bingo game"""
     def __init__(self, player_len=1, pattern_len=8, n_hidden_layer=1, n_node_hidden=[32], activation_fn='tanh',
                  learning_rate=0.1, directory='./Data/default/', alpha=0.1, gamma=0.99, lamda=0.85, search_depth=3,
                  c=1, n_playout=100, playout_depth=1, play_first=True, tree_type='minimax', rollout_limit=20):
         """Consturcor
-        
+
         Arguments:
         player_len -- length of player node
         pattern_len -- length of pattern length
@@ -45,11 +45,12 @@ class InforGo(object):
         self._rollout_limit = rollout_limit
         player = 1 if self._play_first else -1
         self._tree = minimax(search_depth, self.nn) if tree_type == 'minimax' \
-                                                    else mcts(lamda, c, n_playout, self.nn, playout_depth, rollout_limit, player)
+                                                    else mcts(lamda, c, n_playout,
+                                                    self.nn, playout_depth, rollout_limit, player)
         
     def get_action(self, state):
         """get action of InforGo given current state
-        
+
         Arguments:
         state -- current state
 
@@ -63,7 +64,7 @@ class InforGo(object):
 
     def refresh(self):
         """reconstruct a new InforGo
-        
+
         Arguments:
         None
 
@@ -73,11 +74,12 @@ class InforGo(object):
         self._tree = None
         player = 1 if self._play_first else -1
         self._tree = minimax(self._search_depth, self.nn) if self._tree_type == 'minimax' \
-                                                          else mcts(self._lamda, self._c, self._n_playout, self.nn, self._playout_depth, self._rollout_limit, player)
+                                                          else mcts(self._lamda, self._c, self._n_playout,
+                                                          self.nn, self._playout_depth, self._rollout_limit, player)
 
     def step(self, act):
         """step furthur in search tree
-        
+
         Arguments:
         None
 
