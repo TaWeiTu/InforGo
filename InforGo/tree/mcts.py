@@ -45,11 +45,6 @@ class TreeNode(object):
         Returns:
         a number in [1, 16] denoting the selected action
         """
-        # for _id, child in self._children.items():
-            # print("id = {}, value = {}".format(_id, node._get_value()))
-        # act = max(self._children.items(), key=lambda child: child[1]._get_value())[0]
-        # print("action: ", act)
-        # logger.debug("action: {}".format(act))
         return max(self._children.items(), key=lambda child: child[1]._get_value(c))[0]
 
     def _get_value(self, c):
@@ -148,21 +143,17 @@ class MCTS(object):
                 act_prob = [(act, self._get_priority(state.get_height(*decode_action(act))) / height_total) for act in valid_action]
                 node._expand(act_prob)
             action = node._select(self._c)
-            # print("action: {}".format(action))
             node = node._children[action]
             state.take_action(*decode_action(action))
         # v = TD(0) z = eligibility trace
         v = self._evaluate([state.get_state()], [self._player]) if self._lamda < 1 else 0
         z = self._rollout(state) if self._lamda > 0 else 0
-        # logger.debug("z = {}".format(z))
-        # print("z = {}".format(z))
         leaf_value = (1 - self._lamda) * v + self._lamda * z
         node._back_prop(leaf_value, self._c)
 
     def _rollout(self, state):
         """play simulation with _rollout_policy"""
         c_player = state.player
-        # player = c_player
         step = 0
         while not state.terminate():
             if step > self._rollout_limit: return 0
@@ -190,14 +181,10 @@ class MCTS(object):
         action chosen by rollout policy
         """
         move = get_winning_move(state, player)
-        # print(move)
         if len(move) > 0: return encode_action((move[0][1], move[0][2]))
         move = get_winning_move(state, -player)
-        # print(move)
         if len(move) > 0: return encode_action((move[0][1], move[0][2]))
         valid_action = [i for i in range(16) if state.valid_action(*decode_action(i))]
-        # print('jizz')
-        # random.shuffle(valid_action)
         return random.choice(valid_action)
 
     def _get_priority(self, height):
@@ -216,4 +203,4 @@ class MCTS(object):
     def _decay_rollout_limit(self):
         if self._step % 5 == 0:
             self._rollout_limit -= 3
-            if self._rollout_limit < 5: self._rollout_limit = 5
+            if self._rollout_limit < 3: self._rollout_limit = 3
