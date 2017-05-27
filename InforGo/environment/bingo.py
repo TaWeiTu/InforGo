@@ -19,10 +19,12 @@ class Bingo(object):
             self.height = [[0 for i in range(4)] for j in range(4)]
             self.line_scoring = [0 for i in range(76)]
             self.player = 1
+            self.last_move = [-1, -1, -1]
         elif type(board) != 'list' and type(board).__module__ != np.__name__:
             self.board = copy.deepcopy(board.board)
             self.height = copy.deepcopy(board.height)
             self.line_scoring = copy.deepcopy(board.line_scoring)
+            self.last_move = copy.deepcopy(board.last_move)
             self.player = board.player
         else:
             self.board = copy.deepcopy(board)
@@ -43,6 +45,7 @@ class Bingo(object):
                             break
                         for ii in gv.scoring_index[i][j][k]:
                             self.line_scoring += self.board[i][j][k]
+            self.last_move = [-1, -1, -1]
 
     def place(self, row, col):
         """place the cube for current player at given position
@@ -61,6 +64,7 @@ class Bingo(object):
         self.board[height][row][col] = self.player
         for i in gv.scoring_index[self.height[row][col]][row][col]:
             self.line_scoring[i] += self.player
+        last_move = [height, row, col]
         self.player = -self.player
         self.height[row][col] += 1
         if self.win(1): return 1
@@ -98,7 +102,7 @@ class Bingo(object):
         a boolean
         """
         if player == 0: return self.full()
-        for i in range(len(self.line_scoring)):
+        for i in gv.scoring_index[self.last_move[0]][self.last_move[1]][self.last_move[2]]:
             if self.line_scoring[i] == player * 4:
                 return True
         return False
