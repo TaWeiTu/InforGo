@@ -13,12 +13,33 @@ class Minimax(object):
         self._evaluator = evaluator
 
     def get_action(self, c_state, player):
-        """return action which minimize opponent's maximum reward"""
+        """get action which minimize opponent's maximum reward
+
+        Arguments:
+        c_state -- a copy of current state
+        player -- current player
+
+        Returns:
+        a number in [1, 16] denoting the selected action
+        """
         val, action = self._search(State(c_state), player, self._search_depth)
         return action
 
     def _search(self, c_state, player, depth, max_level=True, alpha=-np.inf, beta=np.inf):
-        """recursively search every possible action and evaluate the leaf nodes"""
+        """recursively search every possible action and evaluate the leaf nodes
+
+        Arguments:
+        c_state -- a copy of current state
+        player -- current player
+        depth -- depth left for furthur searching
+        max_level -- whether the level is maximizer
+        alpha -- best value along the path from root to maximizer
+        beta -- worst value along the path from root to minimizer
+
+        Returns:
+        return_val -- value of this node
+        return_action -- where return_val comes from
+        """
         if c_state.terminate():
             if c_state.win(player): return 1, None
             if c_state.win(-player): return -1, None
@@ -41,7 +62,19 @@ class Minimax(object):
         return return_val, return_action
 
     def _alpha_beta_pruning(self, val, max_level, alpha, beta):
-        """update alpha and beta"""
+        """update alpha and beta and decide to prune or not
+
+        Arguments:
+        val -- value of evaluated node
+        max_level -- whether this level is maximizer
+        alpha -- best value along the path from root to maximizer
+        beta -- worst value along the path from root to minimizer
+
+        Returns:
+        alpha -- new alpha
+        beta -- new beta
+        prune -- to prune or not
+        """
         if max_level: alpha = max(alpha, val)
         else: beta = min(beta, val)
         prune = True if alpha >= beta else False
@@ -52,5 +85,13 @@ class Minimax(object):
         pass
 
     def _evaluate(self, state, player):
-        """state evalutation"""
+        """state evalutation
+        
+        Arguments:
+        state -- current state
+        player -- current player
+
+        Returs:
+        evaluation of current state for current player
+        """
         return self._evaluator.predict(state, player)

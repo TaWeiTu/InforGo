@@ -7,7 +7,7 @@ from InforGo.util import get_pattern
 
 
 class Bingo(object):
-
+    """3D Bingo game model"""
     def __init__(self, board=None):
         """Constructor
         
