@@ -310,18 +310,18 @@ socket.on('AIConfigRes', function(data){
 
 function spawnMessage(text, id){
     if(!id) id = Math.random().toString(36).substring(8)
+    console.log(text)
     let textBox = document.createElement('div');
     textBox.id = id;
-    // console.log(id);
     textBox.className = 'messageBoxText fadeInUp animated';
     textBox.innerHTML = '{0}'.format(text);
     messageBox.appendChild(textBox);
     setTimeout(function(){
         document.getElementById(id).className += ' fadeOutUp';
-    },5000);
+    },8000);
     setTimeout(function(){
         messageBox.removeChild(textBox);
-    },6000);
+    },9000);
 }
 
 // create room request
@@ -380,7 +380,7 @@ function getConfig(){
         { id:"--search_depth",  default:"3"    },
         { id:"--lamda",         default:"0.7"  },
         { id:"--c",             default:"0.3"  },
-        { id:"--n_playout",     default:"100"  },
+        { id:"--n_playout",     default:"300"  },
         { id:"--playout_depth", default:"3"    },
         { id:"--rollout_limit", default:"20"   }
     ]

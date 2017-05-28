@@ -202,7 +202,7 @@ function Room(roomName, mode){
         })
         this.agent.stderr.on('data', (data) => {
             if (DEBUG) print("[Debug] Room", that.name, "AI went wrong")
-            console.error(getTime() + "[Agent] Room", that.name, "AI get stderr:",data)
+            console.error(getTime() + "[Agent] Room", that.name, "AI get stderr:",data.toString())
         })
         this.agent.on('close', (code, signal) => {
             print("[Agent] Room", that.name, "AI exit with code",code, "signal", signal)
@@ -443,7 +443,7 @@ function checkRow(stat,x, y){
         if (stat[rowId + i] == 3) return rowId + i
     }
     print("[Bingo] WTFFFFFFFFFFFFF Full row checked!!")
-    //print("[Error] stat:", stat)
+    print("[Error] stat:", stat)
     print("[Error] AI tryied to downed at \({0}, {1}\)".format(x,y))
     return
 }
