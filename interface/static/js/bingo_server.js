@@ -1,12 +1,41 @@
+// requirement
 var rdmString  = require('randomstring')
 var spawn = require('child_process').spawn
 var fs = require('fs')
-var roomList = [];
-var io,config,DEBUG;
-var fileNum = 0, recordRoot = __dirname + "/../../Data/record/" + rdmString.generate(16) + '/';
-fs.mkdir(recordRoot, function (err) {
-	if(err) throw err;
-});
+var colors = require('colors')
+// Global variable
+var roomList = []
+var io,config,DEBUG
+// Record setting
+var fileNum = 0, recordRoot = __dirname + "/../../../Data/record/new/";
+
+// check if record folder exists
+if (!fs.existsSync(recordRoot)){
+    fs.mkdir(recordRoot, function (err) {
+	    if(err) throw err;
+    });
+}
+
+// get fileNum
+for (;; fileNum++){
+    if (!fs.existsSync(recordRoot + fileNum.toString())) {
+        print("[Setup] FileNum start from", fileNum)
+        break
+    }
+}
+
+/*
+// move all record into 'new' folder
+fs.readdir(recordRoot + '../', function(err, files){
+    console.log(files)
+    for (let j = 0; j < files.length; j++){
+        if(files[j] == 'new') continue
+        for (let i = 0; fs.existsSync(recordRoot + '../' + files[j] + '/' + i.toString()); i++){
+            fs.rename( recordRoot + '../' + files[j] + '/' + i.toString(), recordRoot + fileNum.toString())
+            fileNum++
+        }
+    }
+})*/
 
 function init(data){
 	io = data.io
@@ -40,7 +69,7 @@ function Player(socket, name){
 		this.rid = room.rid;
 		this.socket.emit('joinRoomRes', {'status':'success', 'rid':room.rid, 'joinable':room.isJoinable()})
         if (DEBUG){
-            console.log("[Debug] Emit refreshstat command with")
+            print("[Debug] Emit refreshstat command with")
         }
         this.socket.emit('refreshState', { stat: room.stat_1D, turn: room.turn })
 	}
@@ -51,7 +80,7 @@ function Player(socket, name){
 			if(room.playerList[i] == this){
 				if(room.playing){
 					let winnerId = i==0? 2:1
-					if (DEBUG) console.log("[Debug] someone in the game left with mode", room.mode)
+					if (DEBUG) print("[Debug] someone in the game left with mode", room.mode)
                     if (room.mode == 'com'){
                          room.gameOver({
                             'endWay':0,
@@ -125,7 +154,7 @@ function Room(roomName, mode){
 	this.tryStart = function(){
 		if (this.mode == 'pvp' && this.playerList.length == 2) this.pvpStart()
 		if (this.mode == 'com' && this.playerList.length == 1) this.comStart()
-		if (DEBUG) console.log("[Debug] Tried to start with \"mode {0}, player count {1}\".".format(this.mode, this.playerList.length))
+		if (DEBUG) print("[Debug] Tried to start with \"mode {0}, player count {1}\".".format(this.mode, this.playerList.length))
 	}
 	this.pvpStart = function(){
 
@@ -140,11 +169,11 @@ function Room(roomName, mode){
 		io.emit('refreshRoomInfo', { 'list':getSimpleRoomList() });
 		this.playerList[0].socket.emit('playerAnnounce', 1)
 		this.playerList[1].socket.emit('playerAnnounce', 2)
-		console.log("[Bingo] Room", this.name, "game start!")
+		print("[Bingo] Room", this.name, "game start!")
 	}
 	this.comStart = function(){
 		
-        if (DEBUG) console.log("[Debug] Called comstart function")
+        if (DEBUG) print("[Debug] Called comstart function")
         let that = this
 
     	// set AI arguments
@@ -154,7 +183,7 @@ function Room(roomName, mode){
         else option.push('--play_first=True')
         
         if (DEBUG){
-        	console.log("[Debug] Start with option :", option)
+        	print("[Debug] Start with option :", option)
         	this.announce('AIConfigRes', { 'config': option })
         }
 
@@ -164,25 +193,24 @@ function Room(roomName, mode){
         this.AIAlive = true
 		this.agent.stdout.setEncoding('utf-8')
         this.agent.stdout.on('data', function(data){
-            if (DEBUG) console.log("[Debug] AI print\'{0}\'".format(data))
+            if (DEBUG) print("[Debug] AI print\'{0}\'".format(_escape(data)))
             let agentDownId = checkRow(that.stat_1D, parseInt(data[0]), parseInt(data[2]))
             if (DEBUG) that.announce('message',{ "message": data, "msgId":randomString(8) })
-            if (DEBUG) console.log("[Debug] AI down at {0}".format(agentDownId))
+            print("[Bingo] Room", that.name, "AI down at {0}".format(agentDownId))
             if (agentDownId == undefined) that.announce('message', {'message':'AI tried to down at \({0}, {1}\)'.format(parseInt(data[0]), parseInt(data[2])), 'msgId':randomString(8)})
             that.agentDown(agentDownId) 
         })
         this.agent.stderr.on('data', (data) => {
-            if (DEBUG) console.log("[Debug] Room", this.name, "AI went wrong")
-            console.log("[Agent] Std error:",data)
+            if (DEBUG) print("[Debug] Room", that.name, "AI went wrong")
+            console.error(getTime() + "[Agent] Room", that.name, "AI get stderr:",data.toString())
         })
         this.agent.on('close', (code, signal) => {
-            console.log("[Agent] exit with code",code)
-            console.log("                  signal", signal)
+            print("[Agent] Room", that.name, "AI exit with code",code, "signal", signal)
             if (DEBUG & this.playing) that.announce('message', {'message':'AI closed.', 'msgId':randomString(8)})
             that.AIAlive = false
         })
         this.agent.on('error', (err) => {
-            console.log("[Agent] Got output error:",err)
+            print("[Agent] Got output error:",err)
         })
 
         // setup variables, stat and agent
@@ -199,7 +227,7 @@ function Room(roomName, mode){
 		// filter
 		if (!this.playing) return
 		if (this.stat_1D[num] != 3){
-			console.log("[Bingo] WTFFFFFFFFFFFFFFFFFFFFFF, computer down at invalid place")
+			print("[Bingo] WTFFFFFFFFFFFFFFFFFFFFFF, computer down at invalid place")
 			return
 		}
 	
@@ -226,7 +254,7 @@ function Room(roomName, mode){
 				})
 			}
 			else {
-				console.log("[Bingo] WTFFFFFFFFFFFFFFFFFF player win while AI down.")
+				print("[Bingo] WTFFFFFFFFFFFFFFFFFF player win while AI down.")
 			}
 		}
 	}
@@ -234,10 +262,10 @@ function Room(roomName, mode){
 
 		// filter
 		if (!this.playing) return
-        if (DEBUG) console.log("[Debug] turn =", this.turn)
+        if (DEBUG) print("[Debug] turn =", this.turn)
 		if (!this.playerList[this.turn-1] || playerId != this.playerList[this.turn - 1].id) return
 		if (this.stat_1D[num] != 3) return
-		if (DEBUG) console.log("[Bingo]", "Player", this.playerList[this.turn - 1].name, "downed at", num)
+		print("[Bingo]", "Player", this.playerList[this.turn - 1].name, "downed at", num)
 	
 		// update stat_1D and record
 		this.stat_1D[num] = this.turn
@@ -253,7 +281,7 @@ function Room(roomName, mode){
 			this.announce('refreshState', { stat: this.stat_1D, turn: this.turn, last : num })
 		    if (this.mode == 'com'){
                 let writeString = (num % 4).toString() + ' ' + (Math.floor(num / 16)).toString() + ' ' + (Math.floor(num / 4) % 4).toString() + '\n'
-                if (DEBUG) console.log("[Debug] Write input \'{0}\'".format(writeString))
+                if (DEBUG) print("[Debug] Write input \'{0}\'".format(_escape(writeString)))
                 if (DEBUG) this.announce('message',{ "message":writeString, "msgId":randomString(8) })
                 if (this.AIAlive){
                     this.agent.stdin.write(writeString)
@@ -274,7 +302,7 @@ function Room(roomName, mode){
 		for (let i = 0; i < this.playerList.length; ++i) if (this.playerList[i].id == Socket_id) return this.playerList[i];
 	}
 	this.gameOver = function(gameInfo){
-		if (DEBUG) console.log("[Debug] called gameOver")
+		if (DEBUG) print("[Debug] called gameOver")
 
 		// stop agent
 		if (this.mode == 'com'){
@@ -301,11 +329,11 @@ function Room(roomName, mode){
 
 		// try start again
 		let tmp = this;
-		setTimeout(this.tryStart.bind(this), 10000);
+		setTimeout(this.tryStart.bind(this), 20000);
 
 		// write record
 		if (gameInfo.endWay != 0) this.writeRecord();
-		console.log("[Bingo] Game over with", gameInfo.endWay);
+		print("[Bingo] Game over with", gameInfo.endWay);
 	}
 	this.appendRecord = function(id){
 		this.record += id % 4 + ' ';
@@ -357,7 +385,7 @@ function Room(roomName, mode){
 	}
 	this.removeRoom = function(){
 		io.emit('message', {'message':'Room removed.', 'msgId':randomString(8)})
-		if (DEBUG) console.log('[Debug] Room', this.rid, 'removed.');
+		if (DEBUG) print('[Debug] Room', this.rid, 'removed.');
 		for(let i = 0; i < roomList.length; ++i){
 			if (roomList[i].rid == this.rid){
 				roomList.splice(i, 1);
@@ -384,7 +412,7 @@ function randomString(length){
 
 function playerDisconnect(player){
 	player.leaveRoom();
-	console.log("[Bingo] someone disconnect")
+	print("[Bingo] someone disconnect")
 }
 
 function getRoomByRid(rid){
@@ -411,13 +439,31 @@ function getSimpleRoomList(){
 
 function checkRow(stat,x, y){
     let rowId = x*16 + y*4
-    for (let i = 0; i<4;i++){
+    for (let i = 0; i < 4; i++){
         if (stat[rowId + i] == 3) return rowId + i
     }
-    console.log("[Bingo] WTFFFFFFFFFFFFF Full row checked!!")
-    console.log("[Bingo] stat:", stat)
-    console.log("[Bingo] AI tryied to downed at \({0}, {1}\)".format(x,y))
+    print("[Bingo] WTFFFFFFFFFFFFF Full row checked!!")
+    print("[Error] stat:", stat)
+    print("[Error] AI tryied to downed at \({0}, {1}\)".format(x,y))
     return
+}
+
+function print(){
+    let str = "", reg = /[[A-Za-z\s]{0,}]/
+    for (let i = 0; i < arguments.length; i++){
+        if (i) str += ' '
+        if(typeof(arguments[i]) == 'object') str += "[ {0} ]".format(arguments[i])
+        else str += arguments[i]
+    }
+    console.log(getTime().green, reg.exec(str)[0].cyan, str.replace(reg, ""))
+}
+function getTime(){
+    let now = new Date()
+    return '[' + now.toLocaleTimeString() + ']'
+}
+
+function _escape(str){
+    return str.replace('\n','\\n')
 }
 
 // string format function
@@ -429,12 +475,13 @@ String.prototype.format = function(){
 
 module.exports = {
 	init,
+    DEBUG,
 	Room,
 	Player,
 	randomString,
 	roomList,
 	playerDisconnect,
 	getRoomByRid,
-	//getRoomByPlayer,
+	print,
 	getSimpleRoomList,
 }
