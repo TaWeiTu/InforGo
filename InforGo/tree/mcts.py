@@ -124,11 +124,11 @@ class MCTS(object):
     def get_action(self, state, player):
         """play n_playout playouts, choose action greedily on the basis of visits"""
         for n in range(self._n_playout):
-            if n % 100 == 0: logger.debug("playout: {}".format(n))
+            # if n % 100 == 0: logger.debug("playout: {}".format(n))
             n_state = State(state)
             self._playout(n_state)
-        for _id, node in self._root._children.items():
-            logger.debug("id = {}, value = {}".format(_id, node._get_value(self._c)))
+        # for _id, node in self._root._children.items():
+            # logger.debug("id = {}, value = {}".format(_id, node._get_value(self._c)))
         return max(self._root._children.items(), key=lambda child: child[1]._get_value(self._c))[0]
 
     def _playout(self, state):
