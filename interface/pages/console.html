@@ -1,0 +1,72 @@
+<!DOCTYPE <html>
+<html>
+	<head>
+		<title>Simulate</title>
+		<link rel="stylesheet" href="/static/css/main.css" />
+		<link rel="stylesheet" href="/static/css/custom.css" />
+		<style>
+			#info{
+				position: absolute;
+				left: 0%;
+				height: 100%;
+				width: 25%;
+				text-align: center;
+			}
+			#gameBoard{
+				position: absolute;
+				right: 0%;
+				height: 100%;
+				width: 75%;
+			}
+			#recInput{
+				margin: 5%;
+				width: 90%;
+			}
+			#messageBox{
+				position: absolute;
+				margin: 0 0 0 0;
+				padding-top: 1em;
+				right: 17.5%;
+				width: 40%;
+				text-align: center;
+			}
+			.messageBoxText{
+				margin: 0 0.5em;
+				text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+				line-height: 2;
+				font-size: 1.7em;
+				font-weight: bold;
+				font-style: oblique;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="info">
+			<div class="wrapper">
+				<div class="inner">
+					<!-- input -->
+					<div class="field">
+						<p style="text-align: center">Record</p>
+					</div>
+					<!-- buttons -->
+					<ul class="actions">
+						<li><a id="resetButton" class="button special" onclick="reset()">Reset</a></li>
+						<li><a id="startButton" class="button special" onclick="start()">Start</a></li>
+					</ul>
+					<ul class="actions">
+						<li><a id="nextButton" class="button" onclick="prev()">Prev</a></li>
+						<li><a id="prevButton" class="button" onclick="next()">Next</a></li>
+					</ul>
+					<input type="checkbox" id="auto" checked="">
+					<label for="auto">Auto Run</label>
+				</div>
+			</div>
+		</div>
+
+		<div id="gameBoard"></div>
+		<div id="messageBox"></div>
+	</body>
+</html>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/static/js/three.min.js"></script>
+<script src="/static/js/console.js"></script>
