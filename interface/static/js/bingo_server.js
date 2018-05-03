@@ -1,8 +1,9 @@
-// requirement
-var rdmString  = require('randomstring')
-var spawn = require('child_process').spawn
-var fs = require('fs')
-var colors = require('colors')
+// Requirement
+var rdmString	= require('randomstring')
+var spawn		= require('child_process').spawn
+var fs			= require('fs')
+var colors		= require('colors')
+
 // Global variable
 var roomList = []
 var io,config,DEBUG
